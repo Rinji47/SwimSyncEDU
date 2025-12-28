@@ -6,22 +6,58 @@ from accounts.models import User
 from datetime import datetime
 
 # Create your views here.
-def manage_class_types(request):
+def manage_class_types(request, class_type_id=None):
+    class_types = ClassType.objects.all()
+
+    if class_type_id:
+        class_type = get_object_or_404(ClassType, pk=class_type_id)  # for editing the existing class type
+    else:
+        class_type = None  # for new class type creation
+
     if request.method == 'POST':
         name = request.POST.get('name')
         description = request.POST.get('description')
         cost = request.POST.get('cost')
-
-        ClassType.objects.create(
-            name=name,
-            description=description,
-            cost=cost
-        )
+        if class_type is not None:
+            if class_types.filter(name=name).exclude(class_type_id=class_type_id).exists():
+                messages.error(request, 'A class type with this name already exists.')
+                return redirect('manage_class_types')
+        else:
+            if class_types.filter(name=name).exists():
+                messages.error(request, 'A class type with this name already exists.')
+                return redirect('manage_class_types')
+        
+        if class_type:
+            class_type.name = name
+            class_type.description = description
+            class_type.cost = cost
+            class_type.save()
+            messages.success(request, 'Class type updated successfully.')
+        else:
+            ClassType.objects.create(
+                name=name,
+                description=description,
+                cost=cost
+            )
+            messages.success(request, 'New class type added successfully.')
 
         return redirect('manage_class_types')
     
-    class_types = ClassType.objects.all()
     return render(request, 'dashboards/admin/admin_manage_class_types.html', {'class_types': class_types})
+
+def close_class_type(request, class_type_id):
+    class_type = get_object_or_404(ClassType, pk=class_type_id)
+    if class_type.is_closed == True:
+        messages.error(request, 'Class type is already closed.')
+        return redirect('manage_class_types')
+    
+    class_type.is_closed = True
+
+    if class_type.is_closed == True:
+        messages.success(request, 'Class type has been closed successfully.')
+        
+    class_type.save()
+    return redirect('manage_class_types')
 
 def manage_class_sessions(request, class_id=None):
     if class_id:
@@ -66,9 +102,8 @@ def manage_class_sessions(request, class_id=None):
             return redirect('manage_classes')
 
         pool = get_object_or_404(Pool, pk=pool_id)
-        class_type = get_object_or_404(ClassType, pk=class_type_id)
+        class_type = get_object_or_404(ClassType, pk=class_type_id, is_closed=False)
         trainer = get_object_or_404(User, pk=user_id, role='trainer')
-        
         
         if seats > pool.capacity:
             messages.error(request, f'Seats cannot exceed pool capacity. The pool capacity is {pool.capacity}.')
@@ -139,7 +174,7 @@ def manage_class_sessions(request, class_id=None):
         'trainers': trainers
     })
 
-def cancel_class_session(request, class_id):
+def close_class_session(request, class_id):
     class_session = get_object_or_404(ClassSession, pk=class_id)
     if class_session.is_cancelled == True:
         messages.error(request, 'Class session is already cancelled.')

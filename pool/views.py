@@ -30,8 +30,7 @@ def manage_pools(request, pool_id=None):
             if pools.filter(name=name).exclude(pk=pool_id).exists() or pools.filter(address=address).exclude(pk=pool_id).exists():
                 messages.error(request, 'A pool with this name or address already exists.')
                 return redirect('manage_pools')
-            
-        if pool == None:
+        else:
             if pools.filter(name=name).exists() or pools.filter(address=address).exists():
                 messages.error(request, 'A pool with this name or address already exists.')
                 return redirect('manage_pools')
@@ -58,3 +57,13 @@ def manage_pools(request, pool_id=None):
         return redirect('manage_pools')
     
     return render(request, 'dashboards/admin/admin_manage_pools.html', {'pools': pools})
+
+def close_pool(request, pool_id):
+    pool = Pool.objects.get(pk=pool_id)
+    if pool.is_closed:
+        messages.error(request, 'Pool is already closed.')
+        return redirect('manage_pools')
+    pool.is_closed = True
+    pool.save()
+    messages.success(request, 'Pool has been closed successfully.')
+    return redirect('manage_pools')

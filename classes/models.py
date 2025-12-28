@@ -8,6 +8,7 @@ class ClassType(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     cost = models.DecimalField(max_digits=8, decimal_places=2)
+    is_closed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

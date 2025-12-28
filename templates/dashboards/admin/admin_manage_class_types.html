@@ -29,6 +29,7 @@
                             <th>Name</th>
                             <th>Description</th>
                             <th>Cost</th>
+                            <th>Is Closed</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -39,8 +40,27 @@
                             <td>{{ type.description }}</td>
                             <td>${{ type.cost }}</td>
                             <td>
-                                <button class="btn-sm btn-secondary">Edit</button>
-                                <button class="btn-sm btn-danger">Delete</button>
+                                {% if type.is_closed %}
+                                    <span class="status-closed">Closed</span>
+                                {% else %}
+                                    <span class="status-open">Open</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn-sm btn-secondary"
+                                onclick="openEditClassTypeModal(this)"
+                                    data-url="{% url 'edit_class_types' type.class_type_id %}"
+                                    data-class-type='{
+                                        "name": "{{ type.name }}",
+                                        "description": "{{ type.description }}",
+                                        "cost": "{{ type.cost }}",
+                                        "is_closed": "{{ type.is_closed }}"
+                                    }'
+                                >Edit</button>
+                                <button class="btn-sm btn-danger">
+                                    <a href="{% url 'close_class_type' type.class_type_id %}" style="text-decoration: none; color: white;"
+                                    onclick="return confirm('Are you sure you want to close this class type?');">Close</a>
+                                </button>
                             </td>
                         </tr>
                         {% endfor %}

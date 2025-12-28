@@ -30,6 +30,48 @@ function openEditModal(btn) {
   document.querySelector('#classModal h2').textContent = "Edit Class Session";
 }
 
+function openEditPoolModal(btn) {
+    // Open the modal
+    const modal = document.getElementById('poolModal');
+    modal.style.display = "block";
+
+    // Get the URL for form submission
+    const editUrl = btn.dataset.url;
+
+    // Parse the pool data from the data attribute
+    const pool = JSON.parse(btn.dataset.pool);
+
+    // Populate modal fields
+    document.getElementById('name').value = pool.name;
+    document.getElementById('address').value = pool.address;
+    document.getElementById('capacity').value = pool.capacity;
+    document.getElementById('coordinates').value = pool.coordinates;
+
+    // Update the form action
+    document.querySelector('#poolModal form').action = editUrl;
+
+    // Change the modal title
+    document.querySelector('#poolModal h2').textContent = "Edit Pool";
+}
+
+function openEditClassTypeModal(btn) {
+    const modal = document.getElementById('classTypeModal');
+    modal.style.display = "block";
+
+    const editUrl = btn.dataset.url;
+    const type = JSON.parse(btn.dataset.classType);
+
+    // Populate modal fields
+    document.getElementById('type_name').value = type.name;
+    document.getElementById('cost').value = type.cost;
+    document.getElementById('description').value = type.description;
+
+
+    // Update form action
+    document.querySelector('#classTypeModal form').action = editUrl;
+    document.querySelector('#classTypeModal h2').textContent = "Edit Class Type";
+}
+
 
 // Close modal when clicking outside
 window.onclick = (event) => {

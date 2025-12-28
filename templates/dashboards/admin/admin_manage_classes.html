@@ -32,6 +32,7 @@
                             <th>Dates</th>
                             <th>Time</th>
                             <th>Seats</th>
+                            <th>Total Price</th>
                             <th>Is Cancelled</th>
                             <th>Actions</th>
                         </tr>
@@ -45,6 +46,7 @@
                             <td>{{ session.start_date|date:"M d" }} - {{ session.end_date|date:"M d" }}</td>
                             <td>{{ session.start_time }} - {{ session.end_time }}</td>
                             <td>{{ session.seats }}</td>
+                            <td>${{ session.total_price }}</td>
                             <td>{{ session.is_cancelled|yesno:"Yes,No" }}</td>
                             <td>
                                 <button class="btn-sm btn-secondary"
