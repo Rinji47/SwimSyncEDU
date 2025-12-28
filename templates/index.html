@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SwimSync EDU - Swimming Pool Booking System{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/landing.css' %}">
+{% endblock %}
+
+{% block content %}
+<!-- Navigation -->
+<nav class="navbar">
+    <div class="container">
+        <div class="nav-brand">SwimSync EDU</div>
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <ul class="nav-menu" id="navMenu">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#roles">For You</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="{% url 'login' %}">Login</a></li>
+            <li><a href="{% url 'signup' %}" class="btn-primary">Get Started</a></li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1>Master Swimming with SwimSync EDU</h1>
+            <p class="hero-subtitle">Connect with certified trainers, book classes, and dive into your swimming journey</p>
+            <div class="hero-buttons">
+                <a href="{% url 'signup' %}" class="btn-primary btn-lg">Start Learning</a>
+                <a href="#features" class="btn-secondary btn-lg">Learn More</a>
+            </div>
+        </div>
+        <div class="hero-image">
+            <div class="hero-pool-illustration"></div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="features">
+    <div class="container">
+        <h2 class="section-title">Why Choose SwimSync EDU</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🏊</div>
+                <h3>Expert Trainers</h3>
+                <p>Learn from certified swimming trainers with years of experience</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📅</div>
+                <h3>Easy Booking</h3>
+                <p>Book classes at your convenience with our intuitive scheduling system</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🏢</div>
+                <h3>Multiple Pools</h3>
+                <p>Access swimming pools across various locations near you</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⭐</div>
+                <h3>Quality Assured</h3>
+                <p>Read reviews and ratings to find the perfect trainer for you</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💧</div>
+                <h3>Water Quality Monitoring</h3>
+                <p>Swim in clean, safe environments with regular quality checks</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>Mobile Friendly</h3>
+                <p>Manage your bookings anytime, anywhere on any device</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Roles Section -->
+<section id="roles" class="roles">
+    <div class="container">
+        <h2 class="section-title">Built for Everyone</h2>
+        <div class="roles-grid">
+            <div class="role-card">
+                <div class="role-icon">👤</div>
+                <h3>For Members</h3>
+                <ul class="role-features">
+                    <li>Browse and book swimming classes</li>
+                    <li>Find facilities near you</li>
+                    <li>Track your progress and bookings</li>
+                </ul>
+                <a href="{% url 'signup' %}" class="btn-primary">Join as Member</a>
+            </div>
+            <div class="role-card">
+                <div class="role-icon">👨‍🏫</div>
+                <h3>For Trainers</h3>
+                <ul class="role-features">
+                    <li>Manage your teaching schedule</li>
+                    <li>Track student progress</li>
+                    <li>Build your reputation</li>
+                    <li>Grow your income</li>
+                </ul>
+            </div>
+            <div class="role-card">
+                <div class="role-icon">⚙️</div>
+                <h3>For Admins</h3>
+                <ul class="role-features">
+                    <li>Manage facilities and pools</li>
+                    <li>Oversee trainer applications</li>
+                    <li>Monitor water quality</li>
+                    <li>Generate reports and analytics</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About Section -->
+<section id="about" class="about">
+    <div class="container">
+        <h2 class="section-title">About SwimSync EDU</h2>
+        <p class="about-text">SwimSync EDU is the leading platform connecting swimming enthusiasts with certified trainers. We're committed to making swimming education accessible, convenient, and effective for everyone.</p>
+        <div class="stats-row">
+            <div class="stat-item">
+                <h3>{{ total_members }}+</h3>
+                <p>Active Members</p>
+            </div>
+            <div class="stat-item">
+                <h3>{{ total_trainers }}+</h3>
+                <p>Certified Trainers</p>
+            </div>
+            <div class="stat-item">
+                <h3>{{ total_facilities }}+</h3>
+                <p>Partner Facilities</p>
+            </div>
+            <div class="stat-item">
+                <h3>{{ total_classes }}+</h3>
+                <p>Classes Completed</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>SwimSync EDU</h4>
+                <p>Making swimming education accessible to everyone.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#roles">For You</a></li>
+                    <li><a href="#about">About</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <p>info@swimsyncedu.com</p>
+                <p>9800000000</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 SwimSync EDU. All rights reserved.</p>
+        </div>
+    </div>
+</footer>
+{% endblock %}

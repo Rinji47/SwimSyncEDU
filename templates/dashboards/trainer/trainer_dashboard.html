@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trainer Dashboard - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-header">
+            <h2>SwimSync EDU</h2>
+            <p class="user-role">Trainer</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active">
+                <span class="nav-icon">📊</span>
+                Dashboard
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">📚</span>
+                My Classes
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">📅</span>
+                Schedule
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">👥</span>
+                Students
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">⭐</span>
+                Reviews
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">💰</span>
+                Earnings
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">👤</span>
+                Profile
+            </a>
+            <a href="{% url 'logout' %}" class="nav-item">
+                <span class="nav-icon">🚪</span>
+                Logout
+            </a>
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <div class="dashboard-header">
+            <h1>Welcome, {{ user.name }}!</h1>
+            <button class="btn-primary">Create Class</button>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📚</div>
+                <div class="stat-content">
+                    <h3>{{ active_classes }}</h3>
+                    <p>Active Classes</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-content">
+                    <h3>{{ total_students }}</h3>
+                    <p>Total Students</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-content">
+                    <h3>{{ average_rating }}</h3>
+                    <p>Average Rating</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-content">
+                    <h3>${{ monthly_earnings }}</h3>
+                    <p>This Month</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Today's Schedule -->
+        <section class="dashboard-section">
+            <h2>Today's Schedule</h2>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Class Name</th>
+                            <th>Facility</th>
+                            <th>Students</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for class in todays_classes %}
+                        <tr>
+                            <td>{{ class.time }}</td>
+                            <td>{{ class.name }}</td>
+                            <td>{{ class.facility_name }}</td>
+                            <td>{{ class.enrolled }}/{{ class.capacity }}</td>
+                            <td><span class="status-badge status-{{ class.status }}">{{ class.status }}</span></td>
+                            <td>
+                                <button class="btn-sm btn-primary">View Details</button>
+                                <button class="btn-sm btn-secondary">Attendance</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center;">No classes scheduled for today</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- Recent Reviews -->
+        <section class="dashboard-section">
+            <h2>Recent Reviews</h2>
+            <div class="reviews-list">
+                {% for review in recent_reviews %}
+                <div class="review-card">
+                    <div class="review-header">
+                        <div>
+                            <strong>{{ review.student_name }}</strong>
+                            <p class="review-class">{{ review.class_name }}</p>
+                        </div>
+                        <div class="review-rating">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= review.rating %}⭐{% else %}☆{% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <p class="review-text">{{ review.comment }}</p>
+                    <small class="review-date">{{ review.date|date:"M d, Y" }}</small>
+                </div>
+                {% empty %}
+                <p>No reviews yet</p>
+                {% endfor %}
+            </div>
+        </section>
+        
+        <!-- Upcoming Classes -->
+        <section class="dashboard-section">
+            <h2>Upcoming Classes This Week</h2>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Class Name</th>
+                            <th>Date & Time</th>
+                            <th>Facility</th>
+                            <th>Enrolled</th>
+                            <th>Capacity</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for class in upcoming_classes %}
+                        <tr>
+                            <td>{{ class.name }}</td>
+                            <td>{{ class.datetime|date:"M d, Y - h:i A" }}</td>
+                            <td>{{ class.facility_name }}</td>
+                            <td>{{ class.enrolled }}</td>
+                            <td>{{ class.capacity }}</td>
+                            <td>
+                                <button class="btn-sm btn-primary">Edit</button>
+                                <button class="btn-sm btn-secondary">View</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center;">No upcoming classes</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}

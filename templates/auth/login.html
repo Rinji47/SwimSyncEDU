@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1>Welcome Back</h1>
+            <p>Sign in to your SwimSync EDU account</p>
+        </div>
+        
+        <form method="post" action="{% url 'login' %}" class="auth-form" id="loginForm">
+            {% csrf_token %}
+            
+            <!-- Added Django message display for backend errors -->
+            {% include "../components/message.html" %}
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required placeholder="Enter your username">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="Enter your password">
+            </div>
+            
+            <div class="form-options">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="remember"> Remember me
+                </label>
+                <a href="#" class="link">Forgot password?</a>
+            </div>
+            
+            <button type="submit" class="btn-primary btn-block">Sign In</button>
+        </form>
+        
+        <div class="auth-footer">
+            <p>Don't have an account? <a href="{% url 'signup' %}" class="link">Sign up</a></p>
+        </div>
+        
+        <div class="back-home">
+            <a href="{% url 'index' %}" class="link">← Back to Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

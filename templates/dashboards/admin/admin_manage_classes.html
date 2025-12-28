@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Classes - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <!-- ... existing sidebar ... -->
+    {% include "./components/admin_sidebar.html" %}
+    
+     <!-- Main Content -->
+    <main class="dashboard-main">
+        {% include "../../components/message.html" %}
+        <div class="dashboard-header">
+            <h1>Manage Class Sessions</h1>
+            <button class="btn-primary" onclick="toggleModal('classModal')">Schedule New Class</button>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Class Name</th>
+                            <th>Pool</th>
+                            <th>Trainer</th>
+                            <th>Dates</th>
+                            <th>Time</th>
+                            <th>Seats</th>
+                            <th>Is Cancelled</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in classes %}
+                        <tr>
+                            <td>{{ session.class_name }}</td>
+                            <td>{{ session.pool.name }}</td>
+                            <td>{{ session.user.full_name|default:session.user.username }}</td>
+                            <td>{{ session.start_date|date:"M d" }} - {{ session.end_date|date:"M d" }}</td>
+                            <td>{{ session.start_time }} - {{ session.end_time }}</td>
+                            <td>{{ session.seats }}</td>
+                            <td>{{ session.is_cancelled|yesno:"Yes,No" }}</td>
+                            <td>
+                                <button class="btn-sm btn-secondary"
+                                    onclick="openEditModal(this)"
+                                    data-url="{% url 'edit_class' session.id %}"
+                                    data-session='{
+                                        "class_name": "{{ session.class_name }}",
+                                        "pool_id": "{{ session.pool.pool_id }}",
+                                        "class_type_id": "{{ session.class_type.class_type_id }}",
+                                        "user_id": "{{ session.user.user_id }}",
+                                        "start_date": "{{ session.start_date|date:"Y-m-d" }}",
+                                        "end_date": "{{ session.end_date|date:"Y-m-d" }}",
+                                        "start_time": "{{ session.start_time|time:"H:i" }}",
+                                        "end_time": "{{ session.end_time|time:"H:i" }}",
+                                        "seats": "{{ session.seats }}",
+                                        "total_sessions": "{{ session.total_sessions }}"
+                                    }'>
+                                    Edit
+                                </button>
+                                <button class="btn-sm btn-danger">
+                                    <a href="{% url 'cancel_class' session.id %}" style="text-decoration: none; color: white;"
+                                    onclick="return confirm('Are you sure you want to cancel this class session?');">Cancel</a>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Modal -->
+<div id="classModal" class="modal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h2>Schedule New Class Session</h2>
+            <span class="close" onclick="toggleModal('classModal')">&times;</span>
+        </div>
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="class_name">Class Name</label>
+                    <input type="text" id="class_name" name="class_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="pool_id">Select Pool</label>
+                    <select id="pool_id" name="pool_id" required>
+                        <option value="">Choose a pool...</option>
+                        {% for pool in pools %}
+                        <option value="{{ pool.pool_id }}">{{ pool.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="class_type_id">Class Type</label>
+                    <select id="class_type_id" name="class_type_id" required>
+                        <option value="">Choose type...</option>
+                        {% for type in class_types %}
+                        <option value="{{ type.class_type_id }}">{{ type.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="user_id">Assign Trainer</label>
+                    <select id="user_id" name="user_id" required>
+                        <option value="">Choose trainer...</option>
+                        {% for trainer in trainers %}
+                        <option value="{{ trainer.user_id }}">{{ trainer.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="start_date">Start Date</label>
+                    <input type="date" id="start_date" name="start_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="end_date">End Date</label>
+                    <input type="date" id="end_date" name="end_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="start_time">Start Time</label>
+                    <input type="time" id="start_time" name="start_time" required>
+                </div>
+                <div class="form-group">
+                    <label for="end_time">End Time</label>
+                    <input type="time" id="end_time" name="end_time" required>
+                </div>
+                <div class="form-group">
+                    <label for="seats">Available Seats</label>
+                    <input type="number" id="seats" name="seats" required>
+                </div>
+                <div class="form-group">
+                    <label for="total_sessions">Total Sessions</label>
+                    <input type="number" id="total_sessions" name="total_sessions" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="toggleModal('classModal')">Cancel</button>
+                <button type="submit" class="btn-primary">Schedule Class</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

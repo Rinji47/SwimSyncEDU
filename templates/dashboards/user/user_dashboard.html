@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}User Dashboard - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-header">
+            <h2>SwimSync EDU</h2>
+            <p class="user-role">User</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active">
+                <span class="nav-icon">📊</span>
+                Dashboard
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">🏊</span>
+                Browse Classes
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">📅</span>
+                My Bookings
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">🏢</span>
+                Facilities
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">⭐</span>
+                My Reviews
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">👤</span>
+                Profile
+            </a>
+            <a href="{% url 'logout' %}" class="nav-item">
+                <span class="nav-icon">🚪</span>
+                Logout
+            </a>
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <div class="dashboard-header">
+            <h1>Welcome, {{ user.name }}!</h1>
+            <button class="btn-primary">Book a Class</button>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📚</div>
+                <div class="stat-content">
+                    <h3>{{ upcoming_classes }}</h3>
+                    <p>Upcoming Classes</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <h3>{{ completed_classes }}</h3>
+                    <p>Completed Classes</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👨‍🏫</div>
+                <div class="stat-content">
+                    <h3>{{ favorite_instructors }}</h3>
+                    <p>Favorite Instructors</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-content">
+                    <h3>{{ reviews_given }}</h3>
+                    <p>Reviews Given</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Upcoming Classes -->
+        <section class="dashboard-section">
+            <h2>Upcoming Classes</h2>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Class Name</th>
+                            <th>Instructor</th>
+                            <th>Facility</th>
+                            <th>Date & Time</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in upcoming_bookings %}
+                        <tr>
+                            <td>{{ booking.class_name }}</td>
+                            <td>{{ booking.instructor_name }}</td>
+                            <td>{{ booking.facility_name }}</td>
+                            <td>{{ booking.datetime|date:"M d, Y - h:i A" }}</td>
+                            <td><span class="status-badge status-{{ booking.status }}">{{ booking.status }}</span></td>
+                            <td>
+                                <button class="btn-sm btn-secondary">Reschedule</button>
+                                <button class="btn-sm btn-danger">Cancel</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center;">No upcoming classes. <a href="#" class="link">Book a class</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- Available Classes -->
+        <section class="dashboard-section">
+            <h2>Available Classes Near You</h2>
+            <div class="classes-grid">
+                {% for class in available_classes %}
+                <div class="class-card">
+                    <div class="class-header">
+                        <h3>{{ class.name }}</h3>
+                        <span class="class-level">{{ class.level }}</span>
+                    </div>
+                    <p class="class-instructor">Instructor: {{ class.instructor_name }}</p>
+                    <p class="class-facility">📍 {{ class.facility_name }}</p>
+                    <p class="class-time">📅 {{ class.datetime|date:"M d, Y - h:i A" }}</p>
+                    <p class="class-price">${{ class.price }}</p>
+                    <div class="class-footer">
+                        <div class="class-rating">⭐ {{ class.rating }} ({{ class.reviews }} reviews)</div>
+                        <button class="btn-primary btn-sm">Book Now</button>
+                    </div>
+                </div>
+                {% empty %}
+                <p>No classes available at the moment.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}

@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Dashboard - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <!-- Sidebar -->
+    {% include "./components/admin_sidebar.html" %}
+    
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <div class="dashboard-header">
+            <h1>Admin Dashboard</h1>
+            <button class="btn-primary">Generate Report</button>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🏢</div>
+                <div class="stat-content">
+                    <h3>{{ total_facilities }}</h3>
+                    <p>Total Facilities</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-content">
+                    <h3>{{ total_users }}</h3>
+                    <p>Total Users</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📚</div>
+                <div class="stat-content">
+                    <h3>{{ active_classes }}</h3>
+                    <p>Active Classes</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-content">
+                    <h3>${{ monthly_revenue }}</h3>
+                    <p>Monthly Revenue</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Role Requests & Instructor Applications -->
+        <section class="dashboard-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin-bottom: 0;">Role Requests & Instructor Applications</h2>
+                <div class="filter-controls">
+                    <select class="form-select-sm">
+                        <option value="all">All Requests</option>
+                        <option value="instructor">Instructor</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Requested Role</th>
+                            <th>Details/Certs</th>
+                            <th>Applied Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in pending_applications %}
+                        <tr>
+                            <td>{{ application.name }}</td>
+                            <td>{{ application.email }}</td>
+                            <td><span class="status-badge status-secondary">{{ application.requested_role|default:"Instructor" }}</span></td>
+                            <td>{{ application.certifications }}</td>
+                            <td>{{ application.applied_date|date:"M d, Y" }}</td>
+                            <td>
+                                <button class="btn-sm btn-success">Approve Role</button>
+                                <button class="btn-sm btn-danger">Reject</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center;">No pending applications</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- Facilities Overview -->
+        <section class="dashboard-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="margin-bottom: 0;">Facilities Overview</h2>
+                <button class="btn-primary">Add Facility</button>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Facility Name</th>
+                            <th>Location</th>
+                            <th>Pools</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for facility in facilities %}
+                        <tr>
+                            <td>{{ facility.name }}</td>
+                            <td>{{ facility.location }}</td>
+                            <td>{{ facility.pool_count }}</td>
+                            <td><span class="status-badge status-{{ facility.status|lower }}">{{ facility.status }}</span></td>
+                            <td>
+                                <button class="btn-sm btn-secondary">Edit</button>
+                                <button class="btn-sm btn-primary">View Details</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" style="text-align: center;">No facilities added</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- Water Quality Alerts -->
+        <section class="dashboard-section">
+            <h2>Water Quality Alerts</h2>
+            <div class="alerts-list">
+                {% for alert in water_quality_alerts %}
+                <div class="alert-item alert-{{ alert.severity }}">
+                    <div class="alert-icon">⚠️</div>
+                    <div class="alert-content">
+                        <strong>{{ alert.pool_name }}</strong>
+                        <p>{{ alert.message }}</p>
+                        <small>{{ alert.timestamp|date:"M d, Y - h:i A" }}</small>
+                    </div>
+                    <button class="btn-sm btn-secondary">Resolve</button>
+                </div>
+                {% empty %}
+                <p style="color: #64748b;">No water quality alerts at this time.</p>
+                {% endfor %}
+            </div>
+        </section>
+        
+        <!-- Recent Activity -->
+        <section class="dashboard-section">
+            <h2>Recent Bookings</h2>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Class</th>
+                            <th>Instructor</th>
+                            <th>Facility</th>
+                            <th>Date & Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in recent_bookings %}
+                        <tr>
+                            <td>{{ booking.member_name }}</td>
+                            <td>{{ booking.class_name }}</td>
+                            <td>{{ booking.instructor_name }}</td>
+                            <td>{{ booking.facility_name }}</td>
+                            <td>{{ booking.datetime|date:"M d, Y - h:i A" }}</td>
+                            <td><span class="status-badge status-{{ booking.status }}">{{ booking.status }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center;">No recent bookings</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}
