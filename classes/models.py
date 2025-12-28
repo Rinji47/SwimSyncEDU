@@ -29,8 +29,14 @@ class ClassSession(models.Model):
 
     is_cancelled = models.BooleanField(default=False)
 
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        self.total_price = self.class_type.cost * self.total_sessions
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.class_name} at {self.pool.name}"

@@ -27,13 +27,13 @@ def manage_pools(request, pool_id=None):
             return redirect('manage_pools')
         
         if pool != None:
-            if pools.filter(name=name).exclude(pk=pool_id).exists():
-                messages.error(request, 'A pool with this name already exists.')
+            if pools.filter(name=name).exclude(pk=pool_id).exists() or pools.filter(address=address).exclude(pk=pool_id).exists():
+                messages.error(request, 'A pool with this name or address already exists.')
                 return redirect('manage_pools')
             
         if pool == None:
-            if pools.filter(name=name).exists():
-                messages.error(request, 'A pool with this name already exists.')
+            if pools.filter(name=name).exists() or pools.filter(address=address).exists():
+                messages.error(request, 'A pool with this name or address already exists.')
                 return redirect('manage_pools')
         
         if pool:
