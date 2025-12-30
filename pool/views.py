@@ -14,7 +14,7 @@ def manage_pools(request, pool_id=None):
     if request.method == 'POST':
         name = request.POST.get('name')
         address = request.POST.get('address')
-        capacity = request.POST.get('capacity')
+        capacity = int(request.POST.get('capacity'))
         coordinates = request.POST.get('coordinates')
         image = request.FILES.get('image')
 
@@ -22,9 +22,10 @@ def manage_pools(request, pool_id=None):
             messages.error(request, 'Pool not found.')
             return redirect('manage_pools')
         
-        if pool.name == name and pool.address == address and pool.capacity == capacity and pool.coordinates == coordinates and (not image or pool.image_url == image.name):
-            messages.info(request, 'No changes detected.')
-            return redirect('manage_pools')
+        if pool: 
+            if pool.name == name and pool.address == address and pool.capacity == capacity and pool.coordinates == coordinates and (not image or pool.image_url == image.name):
+                messages.info(request, 'No changes detected.')
+                return redirect('manage_pools')
         
         if pool != None:
             if pools.filter(name=name).exclude(pk=pool_id).exists() or pools.filter(address=address).exclude(pk=pool_id).exists():

@@ -163,8 +163,8 @@ def manage_class_sessions(request, class_id=None):
             return redirect('manage_classes')
         
     class_sessions = ClassSession.objects.all()
-    pools = Pool.objects.all()
-    class_types = ClassType.objects.all()
+    pools = Pool.objects.filter(is_closed=False).all()
+    class_types = ClassType.objects.filter(is_closed=False).all()
     trainers = User.objects.filter(role='trainer')
 
     return render(request, 'dashboards/admin/admin_manage_classes.html', {

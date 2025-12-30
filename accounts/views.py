@@ -16,7 +16,8 @@ def login_view(request):
             context = {
                 'messages': [
                     {'tags': 'success', 'message': 'Login successful.'}
-                ]
+                ], 
+                'user': user
             }
 
             if user.role == 'admin':

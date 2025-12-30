@@ -32,10 +32,10 @@
                 <span class="nav-icon">👥</span>
                 Students
             </a>
-            <a href="#" class="nav-item">
+            <!-- <a href="#" class="nav-item">
                 <span class="nav-icon">⭐</span>
                 Reviews
-            </a>
+            </a> -->
             <a href="#" class="nav-item">
                 <span class="nav-icon">💰</span>
                 Earnings
@@ -54,8 +54,7 @@
     <!-- Main Content -->
     <main class="dashboard-main">
         <div class="dashboard-header">
-            <h1>Welcome, {{ user.name }}!</h1>
-            <button class="btn-primary">Create Class</button>
+            <h1>Welcome, {{ user.full_name }}!</h1>
         </div>
         
         <!-- Stats Cards -->
@@ -74,13 +73,13 @@
                     <p>Total Students</p>
                 </div>
             </div>
-            <div class="stat-card">
+            <!-- <div class="stat-card">
                 <div class="stat-icon">⭐</div>
                 <div class="stat-content">
                     <h3>{{ average_rating }}</h3>
                     <p>Average Rating</p>
                 </div>
-            </div>
+            </div> -->
             <div class="stat-card">
                 <div class="stat-icon">💰</div>
                 <div class="stat-content">
@@ -129,7 +128,7 @@
         </section>
         
         <!-- Recent Reviews -->
-        <section class="dashboard-section">
+        <!-- <section class="dashboard-section">
             <h2>Recent Reviews</h2>
             <div class="reviews-list">
                 {% for review in recent_reviews %}
@@ -152,7 +151,7 @@
                 <p>No reviews yet</p>
                 {% endfor %}
             </div>
-        </section>
+        </section> -->
         
         <!-- Upcoming Classes -->
         <section class="dashboard-section">
