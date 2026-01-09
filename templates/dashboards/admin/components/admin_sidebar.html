@@ -16,15 +16,16 @@
             <span class="nav-icon">🏊</span>
             Manage Pools
         </a>
-        <a href="#" class="nav-item">
+        <!-- Added link to manage trainers page -->
+        <a href="{% url 'manage_trainers' %}" class="nav-item">
             <span class="nav-icon">👨‍🏫</span>
-            Instructors
+            Manage Trainers
         </a>
         <a href="#" class="nav-item">
             <span class="nav-icon">👥</span>
             Members
         </a>
-        <a href="#" class="nav-item">
+        <a href="{% url 'manage_quality' %}" class="nav-item">
             <span class="nav-icon">💧</span>
             Water Quality
         </a>

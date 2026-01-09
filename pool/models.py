@@ -14,3 +14,22 @@ class Pool(models.Model):
 
     def __str__(self):
         return self.name
+    
+
+class PoolQuality(models.Model):
+    quality_id = models.AutoField(primary_key=True)
+    pool = models.ForeignKey(Pool, on_delete=models.CASCADE, related_name='qualities')
+    cleanliness_rating = models.IntegerField()
+    pH_level = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    water_temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    chlorine_level = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('pool', 'date')
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.pool.name} Quality on {self.date}"

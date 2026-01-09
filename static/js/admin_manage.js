@@ -1,88 +1,204 @@
-// Minimal JS for Modals
+// ---------------------- GLOBALS ----------------------
+const google = window.google; // Google Maps
+
+// ---------------------- MODAL UTILS ----------------------
 function toggleModal(modalId) {
-  const modal = document.getElementById(modalId)
-  if (modal.style.display === "block") {
-    modal.style.display = "none"
-  } else {
-    modal.style.display = "block"
-  }
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    if (modal.classList.contains("show")) {
+        modal.classList.remove("show");
+        setTimeout(() => {
+            modal.style.display = "none";
+            resetModalFields(modal);
+        }, 300);
+    } else {
+        modal.style.display = "block";
+        setTimeout(() => {
+            modal.classList.add("show");
+        }, 10);
+
+        if (modalId === "poolModal") onPoolModalOpen();
+    }
 }
 
-function openEditModal(btn) {
-  const modal = document.getElementById('classModal');
-  modal.style.display = "block";
-  
-  const editUrl = btn.dataset.url;
-  const session = JSON.parse(btn.dataset.session);
-  
-  document.getElementById('class_name').value = session.class_name;
-  document.getElementById('pool_id').value = session.pool_id;
-  document.getElementById('class_type_id').value = session.class_type_id;
-  document.getElementById('user_id').value = session.user_id;
-  document.getElementById('start_date').value = session.start_date;
-  document.getElementById('end_date').value = session.end_date;
-  document.getElementById('start_time').value = session.start_time;
-  document.getElementById('end_time').value = session.end_time;
-  document.getElementById('seats').value = session.seats;
-  document.getElementById('total_sessions').value = session.total_sessions;
+// Close modal on outside click
+window.addEventListener("click", (event) => {
+    if (event.target.classList.contains("modal")) {
+        toggleModal(event.target.id);
+    }
+});
 
-  document.querySelector('#classModal form').action = editUrl; // adjust id if needed
-  document.querySelector('#classModal h2').textContent = "Edit Class Session";
+// Generic function to reset any modal
+function resetModalFields(modal) {
+    const form = modal.querySelector("form");
+    if (form) form.reset();
 }
 
+// ---------------------- GOOGLE MAPS ----------------------
+let map, marker;
+
+function initMap() {
+    const defaultLoc = { lat: 27.7172, lng: 85.324 };
+
+    map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 13,
+        center: defaultLoc,
+    });
+
+    map.addListener("click", (e) => {
+        const lat = e.latLng.lat().toFixed(6);
+        const lng = e.latLng.lng().toFixed(6);
+
+        if (marker) marker.setMap(null);
+
+        marker = new google.maps.Marker({
+            position: e.latLng,
+            map: map,
+        });
+
+        document.getElementById("coordinates").value = `${lat}, ${lng}`;
+        document.getElementById("coordDisplay").innerText = `Selected: ${lat}, ${lng}`;
+    });
+}
+
+function onPoolModalOpen() {
+    setTimeout(() => {
+        if (map) {
+            google.maps.event.trigger(map, "resize");
+            map.setCenter({ lat: 27.7172, lng: 85.324 });
+        }
+    }, 200);
+}
+
+// ---------------------- POOL MODAL ----------------------
 function openEditPoolModal(btn) {
-    // Open the modal
-    const modal = document.getElementById('poolModal');
-    modal.style.display = "block";
-
-    // Get the URL for form submission
+    const modal = document.getElementById("poolModal");
+    const pool = JSON.parse(btn.dataset.pool);
     const editUrl = btn.dataset.url;
 
-    // Parse the pool data from the data attribute
-    const pool = JSON.parse(btn.dataset.pool);
+    modal.querySelector("#name").value = pool.name;
+    modal.querySelector("#address").value = pool.address;
+    modal.querySelector("#capacity").value = pool.capacity;
+    modal.querySelector("#coordinates").value = pool.coordinates;
 
-    // Populate modal fields
-    document.getElementById('name').value = pool.name;
-    document.getElementById('address').value = pool.address;
-    document.getElementById('capacity').value = pool.capacity;
-    document.getElementById('coordinates').value = pool.coordinates;
+    modal.querySelector("form").action = editUrl;
+    modal.querySelector("h2").textContent = "Edit Pool";
 
-    // Update the form action
-    document.querySelector('#poolModal form').action = editUrl;
-
-    // Change the modal title
-    document.querySelector('#poolModal h2').textContent = "Edit Pool";
+    toggleModal("poolModal");
 }
 
-function openEditClassTypeModal(btn) {
-    const modal = document.getElementById('classTypeModal');
-    modal.style.display = "block";
+// ---------------------- CLASS MODAL ----------------------
+function openEditClassModal(btn) {
+    const modal = document.getElementById("classModal");
+    const session = JSON.parse(btn.dataset.session);
 
-    const editUrl = btn.dataset.url;
+    modal.querySelector("#class_name").value = session.class_name;
+    modal.querySelector("#pool_id").value = session.pool_id;
+    modal.querySelector("#class_type_id").value = session.class_type_id;
+    modal.querySelector("#user_id").value = session.user_id;
+    modal.querySelector("#start_date").value = session.start_date;
+    modal.querySelector("#end_date").value = session.end_date;
+    modal.querySelector("#start_time").value = session.start_time;
+    modal.querySelector("#end_time").value = session.end_time;
+    modal.querySelector("#seats").value = session.seats;
+    modal.querySelector("#total_sessions").value = session.total_sessions;
+
+    modal.querySelector("form").action = btn.dataset.url;
+    modal.querySelector("h2").textContent = "Edit Class Session";
+
+    toggleModal("classModal");
+}
+
+// ---------------------- CLASS TYPE MODAL ----------------------
+function openEditClassTypeModal(btn) {
+    const modal = document.getElementById("classTypeModal");
     const type = JSON.parse(btn.dataset.classType);
 
-    // Populate modal fields
-    document.getElementById('type_name').value = type.name;
-    document.getElementById('cost').value = type.cost;
-    document.getElementById('description').value = type.description;
+    modal.querySelector("#type_name").value = type.name;
+    modal.querySelector("#cost").value = type.cost;
+    modal.querySelector("#description").value = type.description;
 
+    modal.querySelector("form").action = btn.dataset.url;
+    modal.querySelector("h2").textContent = "Edit Class Type";
 
-    // Update form action
-    document.querySelector('#classTypeModal form').action = editUrl;
-    document.querySelector('#classTypeModal h2').textContent = "Edit Class Type";
+    toggleModal("classTypeModal");
 }
 
+// ---------------------- POOL QUALITY MODAL ----------------------
+function openEditQualityModal(btn) {
+    const modal = document.getElementById("qualityModal");
+    const quality = JSON.parse(btn.dataset.quality);
 
-// Close modal when clicking outside
-window.onclick = (event) => {
-  if (event.target.classList.contains("modal")) {
-    event.target.style.display = "none"
-  }
+    modal.querySelector("#quality_pool_id").value = quality.pool_id;
+    modal.querySelector("#quality_date").value = quality.date;
+    modal.querySelector("#cleanliness_rating").value = quality.cleanliness_rating;
+    modal.querySelector("#pH_level").value = quality.pH_level || "";
+    modal.querySelector("#water_temperature").value = quality.water_temperature || "";
+    modal.querySelector("#chlorine_level").value = quality.chlorine_level || "";
+
+    modal.querySelector("form").action = btn.dataset.url;
+    modal.querySelector("h2").textContent = "Edit Quality Record";
+
+    toggleModal("qualityModal");
 }
 
-// window.confirmCancel = function(classId) {
-//   console.log("Attempting to cancel class with ID:", classId)
-//   if (confirm("Are you sure you want to cancel this class session?")) {
-//     window.location.href = `cancel_class/${classId}/`
-//   }
-// }
+function openAddQualityModal() {
+    const modal = document.getElementById("qualityModal");
+    resetModalFields(modal);
+    // Use data attribute in HTML for URL instead of {% url %} in JS
+    modal.querySelector("form").action = modal.querySelector("form").dataset.addUrl;
+    modal.querySelector("h2").textContent = "Add Quality Record";
+    toggleModal("qualityModal");
+}
+
+// ---------------------- TRAINER MODAL ----------------------
+
+// Open modal for editing an existing trainer
+function openEditTrainerModal(btn) {
+    const modal = document.getElementById("trainerModal");
+    const trainer = JSON.parse(btn.dataset.trainer);
+
+    modal.querySelector("#username").value = trainer.username;
+    modal.querySelector("#email").value = trainer.email;
+    modal.querySelector("#full_name").value = trainer.full_name;
+    modal.querySelector("#phone").value = trainer.phone;
+    modal.querySelector("#gender").value = trainer.gender;
+    modal.querySelector("#specialization").value = trainer.specialization;
+    modal.querySelector("#experience_years").value = trainer.experience_years;
+
+    // Hide password field when editing
+    const passwordField = modal.querySelector("#password-field");
+    if (passwordField) {
+        passwordField.style.display = "none";
+        modal.querySelector("#password").removeAttribute("required");
+    }
+
+    // Set form action to edit URL
+    modal.querySelector("form").action = btn.dataset.url;
+    modal.querySelector("h2").textContent = "Edit Trainer";
+
+    toggleModal("trainerModal");
+}
+
+// Open modal for adding a new trainer
+function openAddTrainerModal() {
+    const modal = document.getElementById("trainerModal");
+
+    // Reset all fields
+    resetModalFields(modal);
+
+    // Show password field and make it required
+    const passwordField = modal.querySelector("#password-field");
+    if (passwordField) {
+        passwordField.style.display = "block";
+        modal.querySelector("#password").setAttribute("required", "required");
+    }
+
+    // ✅ Get the Add URL from the form's data attribute
+    modal.querySelector("form").action = modal.querySelector("form").dataset.addUrl;
+
+    modal.querySelector("h2").textContent = "Add New Trainer";
+
+    toggleModal("trainerModal");
+}

@@ -1,4 +1,4 @@
-/* Admin Management Specific Styles */
+/* Smooth fade-in + slide for modal */
 .modal {
   display: none;
   position: fixed;
@@ -8,29 +8,41 @@
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modal.show {
+  display: block;
+  opacity: 1;
 }
 
 .modal-content {
   background-color: white;
-  margin: 5% auto;
-  padding: 2rem;
+  margin: 3% auto; /* less top margin */
+  padding: 1.5rem; /* slightly smaller padding */
   border-radius: 12px;
   width: 90%;
-  max-width: 600px;
+  max-width: 500px; /* reduced from 600px */
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transform: translateY(-40px);
+  transition: transform 0.3s ease;
+  max-height: 80vh; /* prevent modal from overflowing screen */
+  overflow-y: auto; /* scroll if content is too tall */
 }
 
-.modal-lg {
-  max-width: 800px;
+.modal.show .modal-content {
+  transform: translateY(0);
 }
 
+/* Modal header */
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 1rem;
+  padding-bottom: 0.8rem;
 }
 
 .close {
@@ -39,30 +51,105 @@
   color: var(--text-secondary);
 }
 
+/* Form grid */
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  gap: 1rem 1rem; /* vertical + horizontal spacing */
 }
 
 .form-group.full-width {
   grid-column: span 2;
 }
 
+/* Labels and inputs */
+.modal-content label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--text-primary);
+}
+
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+  width: 100%;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.modal-content input:focus,
+.modal-content select:focus,
+.modal-content textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Map + coordinates styling */
+#coordinates {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0.25rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+#coordinates:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+#map {
+  width: 100%;
+  height: 220px; /* smaller map */
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 0.25rem;
+}
+
+/* Coordinate display text */
+.modal-content small {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Modal footer buttons */
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1rem;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+  padding-top: 0.8rem;
   border-top: 1px solid var(--border);
 }
 
+.modal-footer button {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 8px;
+}
+
+/* Responsive adjustments */
 @media (max-width: 600px) {
   .form-grid {
     grid-template-columns: 1fr;
+    gap: 0.8rem;
   }
   .form-group.full-width {
     grid-column: span 1;
+  }
+  #map {
+    height: 180px; /* smaller map on mobile */
   }
 }

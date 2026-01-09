@@ -1,6 +1,6 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .models import Pool
+from .models import Pool, PoolQuality
 
 # Create your views here.
 def manage_pools(request, pool_id=None):
@@ -68,3 +68,81 @@ def close_pool(request, pool_id):
     pool.save()
     messages.success(request, 'Pool has been closed successfully.')
     return redirect('manage_pools')
+
+def manage_quality(request):
+    pools = Pool.objects.all()
+    pool_filter = request.GET.get('pool')
+
+    if pool_filter:
+        qualities = PoolQuality.objects.filter(pool_id=pool_filter).order_by('-date')
+    else:
+        qualities = PoolQuality.objects.all().order_by('-date')
+
+    context = {
+        'pools': pools,
+        'qualities': qualities
+    }
+    return render(request, 'dashboards/admin/admin_manage_quality.html', context)
+
+def add_quality(request):
+    if request.method == 'POST':
+        pool_id = request.POST.get('pool_id')
+        date = request.POST.get('date')
+        cleanliness_rating = request.POST.get('cleanliness_rating')
+        pH_level = request.POST.get('pH_level') or None
+        water_temperature = request.POST.get('water_temperature') or None
+        chlorine_level = request.POST.get('chlorine_level') or None
+
+        # Check for existing record for the same pool & date
+        if PoolQuality.objects.filter(pool_id=pool_id, date=date).exists():
+            messages.error(request, 'A quality record for this pool on this date already exists.')
+            return redirect('manage_quality')
+
+        PoolQuality.objects.create(
+            pool_id=pool_id,
+            date=date,
+            cleanliness_rating=cleanliness_rating,
+            pH_level=pH_level,
+            water_temperature=water_temperature,
+            chlorine_level=chlorine_level
+        )
+        messages.success(request, 'Quality record added successfully.')
+        return redirect('manage_quality')
+
+    messages.error(request, 'Invalid request.')
+    return redirect('manage_quality')
+
+def edit_quality(request, quality_id):
+    quality = get_object_or_404(PoolQuality, pk=quality_id)
+
+    if request.method == 'POST':
+        pool_id = request.POST.get('pool_id')
+        date = request.POST.get('date')
+        cleanliness_rating = request.POST.get('cleanliness_rating')
+        pH_level = request.POST.get('pH_level') or None
+        water_temperature = request.POST.get('water_temperature') or None
+        chlorine_level = request.POST.get('chlorine_level') or None
+
+        if PoolQuality.objects.filter(pool_id=pool_id, date=date).exclude(pk=quality_id).exists():
+            messages.error(request, 'A quality record for this pool on this date already exists.')
+            return redirect('manage_quality')
+
+        quality.pool_id = pool_id
+        quality.date = date
+        quality.cleanliness_rating = cleanliness_rating
+        quality.pH_level = pH_level
+        quality.water_temperature = water_temperature
+        quality.chlorine_level = chlorine_level
+        quality.save()
+
+        messages.success(request, 'Quality record updated successfully.')
+        return redirect('manage_quality')
+
+    messages.error(request, 'Invalid request.')
+    return redirect('manage_quality')
+
+def delete_quality(request, quality_id):
+    quality = get_object_or_404(PoolQuality, pk=quality_id)
+    quality.delete()
+    messages.success(request, 'Quality record deleted successfully.')
+    return redirect('manage_quality')
