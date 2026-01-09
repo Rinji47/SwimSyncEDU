@@ -1,5 +1,5 @@
 // ---------------------- GLOBALS ----------------------
-const google = window.google; // Google Maps
+//const google = window.google; // Google Maps
 
 // ---------------------- MODAL UTILS ----------------------
 function toggleModal(modalId) {
@@ -8,17 +8,28 @@ function toggleModal(modalId) {
 
     if (modal.classList.contains("show")) {
         modal.classList.remove("show");
+
         setTimeout(() => {
             modal.style.display = "none";
             resetModalFields(modal);
         }, 300);
+
     } else {
         modal.style.display = "block";
+
         setTimeout(() => {
             modal.classList.add("show");
-        }, 10);
 
-        if (modalId === "poolModal") onPoolModalOpen();
+            if (modalId === "poolModal") {
+                if (!map) {
+                    initMap();
+                } else {
+                    google.maps.event.trigger(map, "resize");
+                    map.setCenter(marker?.getPosition() || { lat: 27.7172, lng: 85.3240 });
+                }
+            }
+
+        }, 300);
     }
 }
 
@@ -33,59 +44,161 @@ window.addEventListener("click", (event) => {
 function resetModalFields(modal) {
     const form = modal.querySelector("form");
     if (form) form.reset();
+
+    // Reset marker and map only for Pool modal (Add Pool)
+    if (modal.id === "poolModal") {
+        const defaultLoc = { lat: 27.7172, lng: 85.3240 }; // Kathmandu default
+        if (marker) marker.setPosition(defaultLoc);
+        if (map) map.setCenter(defaultLoc);
+
+        document.getElementById("coordinates").value = "";
+        document.getElementById("coordDisplay").innerText = "Click on the map to select location";
+    }
 }
 
+
 // ---------------------- GOOGLE MAPS ----------------------
-let map, marker;
+let map = null;
+let marker = null;
 
 function initMap() {
-    const defaultLoc = { lat: 27.7172, lng: 85.324 };
+    const mapDiv = document.getElementById("map");
+    if (!mapDiv) return; // Wait for the modal to open or map div to exist
 
-    map = new google.maps.Map(document.getElementById("map"), {
+    const defaultLoc = { lat: 27.7172, lng: 85.3240 }; // Kathmandu
+
+    map = new google.maps.Map(mapDiv, {
         zoom: 13,
         center: defaultLoc,
     });
 
-    map.addListener("click", (e) => {
-        const lat = e.latLng.lat().toFixed(6);
-        const lng = e.latLng.lng().toFixed(6);
-
-        if (marker) marker.setMap(null);
-
-        marker = new google.maps.Marker({
-            position: e.latLng,
-            map: map,
-        });
-
-        document.getElementById("coordinates").value = `${lat}, ${lng}`;
-        document.getElementById("coordDisplay").innerText = `Selected: ${lat}, ${lng}`;
+    marker = new google.maps.Marker({
+        position: defaultLoc,
+        map,
+        draggable: true,
     });
+
+    map.addListener("click", (e) => {
+        setMarker(e.latLng.lat(), e.latLng.lng());
+    });
+
+    marker.addListener("dragend", (e) => {
+        setMarker(e.latLng.lat(), e.latLng.lng());
+    });
+}
+
+function setMarker(lat, lng) {
+    if (!marker) return;
+
+    marker.setPosition({ lat, lng });
+    document.getElementById("coordinates").value = `${lat}, ${lng}`;
+    document.getElementById("coordDisplay").innerText =
+        `Selected: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 }
 
 function onPoolModalOpen() {
     setTimeout(() => {
-        if (map) {
-            google.maps.event.trigger(map, "resize");
-            map.setCenter({ lat: 27.7172, lng: 85.324 });
+        if (!map) return;
+
+        google.maps.event.trigger(map, "resize");
+
+        const pos = marker ? marker.getPosition() : { lat: 27.7172, lng: 85.3240 };
+
+        map.setCenter(pos);
+
+        const coordInput = document.getElementById('coordinates');
+        const coordDisplay = document.getElementById('coordDisplay');
+
+        if (!coordInput.value) {
+            coordInput.value = `${pos.lat().toFixed(6)},${pos.lng().toFixed(6)}`;
+            coordDisplay.innerText = `Selected: ${pos.lat().toFixed(6)}, ${pos.lng().toFixed(6)}`;
         }
-    }, 200);
+    }, 300);
 }
 
 // ---------------------- POOL MODAL ----------------------
+
+// function initMap() {
+//     const defaultLoc = { lat: 27.7172, lng: 85.3240 }; // default: Kathmandu
+
+//     map = new google.maps.Map(document.getElementById("map"), {
+//         zoom: 13,
+//         center: defaultLoc,
+//     });
+
+//     map.addListener("click", (e) => {
+//         const lat = e.latLng.lat().toFixed(6);
+//         const lng = e.latLng.lng().toFixed(6);
+
+//         if (marker) marker.setMap(null);
+
+//         marker = new google.maps.Marker({
+//             position: e.latLng,
+//             map: map
+//         });
+
+//         document.getElementById("coordinates").value = `${lat}, ${lng}`;
+//         document.getElementById("coordDisplay").innerText = `Selected: ${lat}, ${lng}`;
+//     });
+// }
+
+// function onPoolModalOpen() {
+//     setTimeout(() => {
+//         if (map) {
+//             google.maps.event.trigger(map, "resize");
+//             map.setCenter({ lat: 27.7172, lng: 85.3240 });
+//         }
+//     }, 200);
+// }
+
 function openEditPoolModal(btn) {
-    const modal = document.getElementById("poolModal");
+    const modal = document.getElementById('poolModal');
     const pool = JSON.parse(btn.dataset.pool);
     const editUrl = btn.dataset.url;
 
-    modal.querySelector("#name").value = pool.name;
-    modal.querySelector("#address").value = pool.address;
-    modal.querySelector("#capacity").value = pool.capacity;
-    modal.querySelector("#coordinates").value = pool.coordinates;
+    // Fill form fields
+    document.getElementById('name').value = pool.name;
+    document.getElementById('address').value = pool.address;
+    document.getElementById('capacity').value = pool.capacity;
+    document.getElementById('coordinates').value = pool.coordinates;
 
-    modal.querySelector("form").action = editUrl;
-    modal.querySelector("h2").textContent = "Edit Pool";
+    // Parse existing coordinates
+    let lat, lng;
+    if (pool.coordinates) {
+        const parts = pool.coordinates.split(',');
+        lat = parseFloat(parts[0]);
+        lng = parseFloat(parts[1]);
+    }
 
-    toggleModal("poolModal");
+    // Initialize or update map
+    const mapDiv = document.getElementById('map');
+    if (!map) {
+        map = new google.maps.Map(mapDiv, {
+            center: { lat, lng },
+            zoom: 14,
+        });
+        marker = new google.maps.Marker({
+            position: { lat, lng },
+            map,
+            draggable: true,
+        });
+
+        map.addListener("click", (e) => setMarker(e.latLng.lat(), e.latLng.lng()));
+        marker.addListener("dragend", (e) => setMarker(e.latLng.lat(), e.latLng.lng()));
+    } else {
+        marker.setPosition({ lat, lng });
+        map.setCenter({ lat, lng });
+        google.maps.event.trigger(map, "resize");
+    }
+
+    // Update form action
+    modal.querySelector('form').action = editUrl;
+
+    // Change modal title
+    modal.querySelector('h2').textContent = "Edit Pool";
+
+    // Show modal
+    toggleModal('poolModal');
 }
 
 // ---------------------- CLASS MODAL ----------------------

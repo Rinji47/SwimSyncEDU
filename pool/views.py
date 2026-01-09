@@ -7,9 +7,9 @@ def manage_pools(request, pool_id=None):
     pools = Pool.objects.all()
 
     if pool_id:
-        pool = Pool.objects.get(pk=pool_id)  # for editing the existing pool
+        pool = Pool.objects.get(pk=pool_id)
     else:
-        pool = None  # for new pool creation
+        pool = None
 
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -27,14 +27,22 @@ def manage_pools(request, pool_id=None):
                 messages.info(request, 'No changes detected.')
                 return redirect('manage_pools')
         
-        if pool != None:
-            if pools.filter(name=name).exclude(pk=pool_id).exists() or pools.filter(address=address).exclude(pk=pool_id).exists():
-                messages.error(request, 'A pool with this name or address already exists.')
+        if pool is not None:
+            if (pools.filter(name=name).exclude(pk=pool_id).exists() or
+                pools.filter(address=address).exclude(pk=pool_id).exists() or
+                pools.filter(coordinates=coordinates).exclude(pk=pool_id).exists()):
+                messages.error(request, 'A pool with this name, address, or coordinates already exists.')
                 return redirect('manage_pools')
         else:
-            if pools.filter(name=name).exists() or pools.filter(address=address).exists():
-                messages.error(request, 'A pool with this name or address already exists.')
+            if (pools.filter(name=name).exists() or
+                pools.filter(address=address).exists() or
+                pools.filter(coordinates=coordinates).exists()):
+                messages.error(request, 'A pool with this name, address, or coordinates already exists.')
                 return redirect('manage_pools')
+        
+        if coordinates == "" or coordinates is None:
+            messages.error(request, 'Please select a coordinate')
+            return redirect('manage_pools')
         
         if pool:
             pool.name = name
@@ -97,7 +105,7 @@ def add_quality(request):
         if PoolQuality.objects.filter(pool_id=pool_id, date=date).exists():
             messages.error(request, 'A quality record for this pool on this date already exists.')
             return redirect('manage_quality')
-
+        
         PoolQuality.objects.create(
             pool_id=pool_id,
             date=date,
