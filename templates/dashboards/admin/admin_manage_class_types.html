@@ -21,51 +21,70 @@
             <button class="btn-primary" onclick="toggleModal('classTypeModal')">Add Class Type</button>
         </div>
 
+        <form class="filter-bar" method="GET">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search class types..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-class-types">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced" id="filters-class-types">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Open</option>
+                        <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>Closed</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>Cost Min</label>
+                    <input type="number" class="filter-number" name="cost_min" min="0" step="0.01" value="{{ request.GET.cost_min|default_if_none:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>Cost Max</label>
+                    <input type="number" class="filter-number" name="cost_max" min="0" step="0.01" value="{{ request.GET.cost_max|default_if_none:'' }}">
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section">
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Description</th>
-                            <th>Cost</th>
-                            <th>Is Closed</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for type in class_types %}
-                        <tr>
-                            <td>{{ type.name }}</td>
-                            <td>{{ type.description }}</td>
-                            <td>${{ type.cost }}</td>
-                            <td>
-                                {% if type.is_closed %}
-                                    <span class="status-closed">Closed</span>
-                                {% else %}
-                                    <span class="status-open">Open</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <button class="btn-sm btn-secondary"
-                                onclick="openEditClassTypeModal(this)"
-                                    data-url="{% url 'edit_class_types' type.class_type_id %}"
-                                    data-class-type='{
-                                        "name": "{{ type.name }}",
-                                        "description": "{{ type.description }}",
-                                        "cost": "{{ type.cost }}",
-                                        "is_closed": "{{ type.is_closed }}"
-                                    }'
-                                >Edit</button>
-                                <button class="btn-sm btn-danger">
-                                    <a href="{% url 'close_class_type' type.class_type_id %}" style="text-decoration: none; color: white;"
-                                    onclick="return confirm('Are you sure you want to close this class type?');">Close</a>
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="data-card-grid">
+                {% for type in class_types %}
+                <div class="data-card">
+                    <span class="data-card-status {% if type.is_closed %}status-closed{% else %}status-open{% endif %}">
+                        {% if type.is_closed %}Closed{% else %}Open{% endif %}
+                    </span>
+                    <h3 class="data-card-title">{{ type.name }}</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Description:</span>
+                        <span>{{ type.description }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Cost:</span>
+                        <span>${{ type.cost }}</span>
+                    </div>
+                    <div class="data-card-actions">
+                        <button class="btn-sm btn-secondary"
+                            onclick="openEditClassTypeModal(this)"
+                            data-url="{% url 'edit_class_types' type.class_type_id %}"
+                            data-class-type='{
+                                "name": "{{ type.name|escapejs }}",
+                                "description": "{{ type.description|escapejs }}",
+                                "cost": "{{ type.cost }}",
+                                "is_closed": "{{ type.is_closed }}"
+                            }'
+                        >Edit</button>
+                        <button class="btn-sm btn-danger">
+                            <a href="{% url 'close_class_type' type.class_type_id %}" style="text-decoration: none; color: white;"
+                            onclick="return confirm('Are you sure you want to close this class type?');">Close</a>
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-secondary);">No class types found.</p>
+                {% endfor %}
             </div>
         </div>
     </main>

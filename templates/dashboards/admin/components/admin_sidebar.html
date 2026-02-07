@@ -4,36 +4,40 @@
         <p class="user-role">Administrator</p>
     </div>
     <nav class="sidebar-nav">
-        <a href="{% url 'admin_dashboard' %}" class="nav-item active">
+        {% url 'admin_dashboard' as admin_dashboard_url %}
+        {% url 'manage_pools' as manage_pools_url %}
+        {% url 'manage_trainers' as manage_trainers_url %}
+        {% url 'manage_members' as manage_members_url %}
+        {% url 'manage_quality' as manage_quality_url %}
+        {% url 'manage_class_types' as manage_class_types_url %}
+        {% url 'manage_classes' as manage_classes_url %}
+
+        <a href="{{ admin_dashboard_url }}" class="nav-item {% if request.path == admin_dashboard_url %}active{% endif %}">
             <span class="nav-icon">📊</span>
             Dashboard
         </a>
-        <a href="#" class="nav-item">
-            <span class="nav-icon">🏢</span>
-            Facilities
-        </a>
-        <a href="{% url 'manage_pools' %}" class="nav-item">
+        <a href="{{ manage_pools_url }}" class="nav-item {% if request.path == manage_pools_url %}active{% endif %}">
             <span class="nav-icon">🏊</span>
             Manage Pools
         </a>
         <!-- Added link to manage trainers page -->
-        <a href="{% url 'manage_trainers' %}" class="nav-item">
+        <a href="{{ manage_trainers_url }}" class="nav-item {% if request.path == manage_trainers_url %}active{% endif %}">
             <span class="nav-icon">👨‍🏫</span>
             Manage Trainers
         </a>
-        <a href="#" class="nav-item">
+        <a href="{{ manage_members_url }}" class="nav-item {% if request.path == manage_members_url %}active{% endif %}">
             <span class="nav-icon">👥</span>
             Members
         </a>
-        <a href="{% url 'manage_quality' %}" class="nav-item">
+        <a href="{{ manage_quality_url }}" class="nav-item {% if request.path == manage_quality_url %}active{% endif %}">
             <span class="nav-icon">💧</span>
             Water Quality
         </a>
-        <a href="{% url 'manage_class_types' %}" class="nav-item">
+        <a href="{{ manage_class_types_url }}" class="nav-item {% if request.path == manage_class_types_url %}active{% endif %}">
             <span class="nav-icon">🏷️</span>
             Class Types
         </a>
-        <a href="{% url 'manage_classes' %}" class="nav-item">
+        <a href="{{ manage_classes_url }}" class="nav-item {% if request.path == manage_classes_url %}active{% endif %}">
             <span class="nav-icon">📚</span>
             Manage Classes
         </a>

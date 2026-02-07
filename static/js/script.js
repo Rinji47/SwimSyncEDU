@@ -34,4 +34,19 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Signup form submitted")
     })
   }
+
+  // Filter toggle behavior
+  const filterToggles = document.querySelectorAll(".filter-toggle")
+  filterToggles.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.getAttribute("aria-controls")
+      if (!targetId) return
+      const panel = document.getElementById(targetId)
+      if (!panel) return
+
+      const expanded = btn.getAttribute("aria-expanded") === "true"
+      btn.setAttribute("aria-expanded", String(!expanded))
+      panel.classList.toggle("show", !expanded)
+    })
+  })
 })

@@ -52,6 +52,20 @@ function openEditQualityModal(btn) {
 
     toggleModal("qualityModal");
 }
+
+function openQualityViewModal(btn) {
+    const modal = document.getElementById("qualityViewModal");
+    const quality = JSON.parse(btn.dataset.quality);
+
+    modal.querySelector("#quality_view_pool").textContent = quality.pool_name || "";
+    modal.querySelector("#quality_view_date").textContent = quality.date || "";
+    modal.querySelector("#quality_view_rating").textContent = quality.cleanliness_rating || "";
+    modal.querySelector("#quality_view_ph").textContent = quality.pH_level || "N/A";
+    modal.querySelector("#quality_view_temp").textContent = quality.water_temperature ? `${quality.water_temperature}°C` : "N/A";
+    modal.querySelector("#quality_view_chlorine").textContent = quality.chlorine_level ? `${quality.chlorine_level} ppm` : "N/A";
+
+    toggleModal("qualityViewModal");
+}
 </script>
 {% endblock %}
 
@@ -68,119 +82,140 @@ function openEditQualityModal(btn) {
         </div>
 
         <!-- Filter Section -->
-        <div class="dashboard-section" style="padding: 1rem 1.5rem; margin-bottom: 1.5rem;">
-            <form method="GET" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label for="pool_filter" style="font-weight: 500;">Filter by Pool:</label>
-                    <select name="pool" id="pool_filter" style="padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 8px;">
+        <form class="filter-bar" method="GET">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search quality..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-quality">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced" id="filters-quality">
+                <div class="filter-field">
+                    <label for="pool_filter">Pool</label>
+                    <select name="pool" id="pool_filter" class="filter-select">
                         <option value="">All Pools</option>
                         {% for pool in pools %}
                         <option value="{{ pool.pool_id }}" {% if request.GET.pool == pool.pool_id|stringformat:"i" %}selected{% endif %}>{{ pool.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <button type="submit" class="btn-secondary" style="padding: 0.5rem 1rem;">Apply Filter</button>
-            </form>
-        </div>
+                <div class="filter-field">
+                    <label for="rating_filter">Rating</label>
+                    <select name="rating" id="rating_filter" class="filter-select">
+                        <option value="">Any</option>
+                        <option value="5" {% if request.GET.rating == '5' %}selected{% endif %}>5</option>
+                        <option value="4" {% if request.GET.rating == '4' %}selected{% endif %}>4</option>
+                        <option value="3" {% if request.GET.rating == '3' %}selected{% endif %}>3</option>
+                        <option value="2" {% if request.GET.rating == '2' %}selected{% endif %}>2</option>
+                        <option value="1" {% if request.GET.rating == '1' %}selected{% endif %}>1</option>
+                    </select>
+                </div>
+            </div>
+        </form>
 
-        <!-- Quality Records Table -->
+        <!-- Quality Records Cards -->
         <div class="dashboard-section">
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Pool</th>
-                            <th>Date</th>
-                            <th>Cleanliness Rating</th>
-                            <th>pH Level</th>
-                            <th>Water Temp (°C)</th>
-                            <th>Chlorine Level</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for quality in qualities %}
-                        <tr>
-                            <td>{{ quality.pool.name }}</td>
-                            <td>{{ quality.date|date:"M d, Y" }}</td>
-                            <td>
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <span class="rating-stars">
-                                        {% for i in "12345" %}
-                                            {% if forloop.counter <= quality.cleanliness_rating %}
-                                                <span style="color: #fbbf24;">★</span>
-                                            {% else %}
-                                                <span style="color: #e5e7eb;">★</span>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </span>
-                                    <span>({{ quality.cleanliness_rating }}/5)</span>
-                                </div>
-                            </td>
-                            <td>
-                                {% if quality.pH_level %}
-                                    <span class="{% if quality.pH_level >= 7.2 and quality.pH_level <= 7.8 %}status-open{% else %}status-closed{% endif %}">
-                                        {{ quality.pH_level }}
-                                    </span>
-                                {% else %}
-                                    <span style="color: var(--text-secondary);">N/A</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if quality.water_temperature %}
-                                    {{ quality.water_temperature }}°C
-                                {% else %}
-                                    <span style="color: var(--text-secondary);">N/A</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if quality.chlorine_level %}
-                                    <span class="{% if quality.chlorine_level >= 1.0 and quality.chlorine_level <= 3.0 %}status-open{% else %}status-closed{% endif %}">
-                                        {{ quality.chlorine_level }} ppm
-                                    </span>
-                                {% else %}
-                                    <span style="color: var(--text-secondary);">N/A</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if quality.cleanliness_rating >= 4 %}
-                                    <span class="status-open">Excellent</span>
-                                {% elif quality.cleanliness_rating >= 3 %}
-                                    <span class="status-warning">Good</span>
-                                {% else %}
-                                    <span class="status-closed">Needs Attention</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <button class="btn-sm btn-secondary"
-                                        onclick="openEditQualityModal(this)"
-                                        data-url="{% url 'edit_quality' quality.quality_id %}"
-                                        data-quality='{
-                                            "pool_id": "{{ quality.pool.pool_id }}",
-                                            "cleanliness_rating": "{{ quality.cleanliness_rating }}",
-                                            "pH_level": "{{ quality.pH_level|default_if_none:"" }}",
-                                            "water_temperature": "{{ quality.water_temperature|default_if_none:"" }}",
-                                            "chlorine_level": "{{ quality.chlorine_level|default_if_none:"" }}",
-                                            "date": "{{ quality.date|date:"Y-m-d" }}"
-                                        }'>
-                                    Edit
-                                </button>
-                                <button class="btn-sm btn-danger">
-                                    <a href="{% url 'delete_quality' quality.quality_id %}" style="text-decoration: none; color: white;"
-                                       onclick="return confirm('Are you sure you want to delete this quality record?');">Delete</a>
-                                </button>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
-                                No quality records found. Add a new record to get started.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="data-card-grid">
+                {% for quality in qualities %}
+                <div class="data-card">
+                    <span class="data-card-status">
+                        {% if quality.cleanliness_rating >= 4 %}
+                            Excellent
+                        {% elif quality.cleanliness_rating >= 3 %}
+                            Good
+                        {% else %}
+                            Needs Attention
+                        {% endif %}
+                    </span>
+                    <h3 class="data-card-title">{{ quality.pool.name }}</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Date:</span>
+                        <span>{{ quality.date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Rating:</span>
+                        <span>
+                            <span class="rating-stars">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= quality.cleanliness_rating %}
+                                        <span style="color: #fbbf24;">★</span>
+                                    {% else %}
+                                        <span style="color: #e5e7eb;">★</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                            ({{ quality.cleanliness_rating }}/5)
+                        </span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">pH:</span>
+                        <span>
+                            {% if quality.pH_level %}
+                                <span class="{% if quality.pH_level >= 7.2 and quality.pH_level <= 7.8 %}status-open{% else %}status-closed{% endif %}">
+                                    {{ quality.pH_level }}
+                                </span>
+                            {% else %}
+                                <span style="color: var(--text-secondary);">N/A</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Temp:</span>
+                        <span>
+                            {% if quality.water_temperature %}
+                                {{ quality.water_temperature }}°C
+                            {% else %}
+                                <span style="color: var(--text-secondary);">N/A</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Chlorine:</span>
+                        <span>
+                            {% if quality.chlorine_level %}
+                                <span class="{% if quality.chlorine_level >= 1.0 and quality.chlorine_level <= 3.0 %}status-open{% else %}status-closed{% endif %}">
+                                    {{ quality.chlorine_level }} ppm
+                                </span>
+                            {% else %}
+                                <span style="color: var(--text-secondary);">N/A</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="data-card-actions">
+                        <button class="btn-sm btn-primary" type="button"
+                            onclick="openQualityViewModal(this)"
+                            data-quality='{
+                                "pool_name": "{{ quality.pool.name|escapejs }}",
+                                "cleanliness_rating": "{{ quality.cleanliness_rating }}",
+                                "pH_level": "{{ quality.pH_level|default_if_none:"" }}",
+                                "water_temperature": "{{ quality.water_temperature|default_if_none:"" }}",
+                                "chlorine_level": "{{ quality.chlorine_level|default_if_none:"" }}",
+                                "date": "{{ quality.date|date:"M d, Y" }}"
+                            }'
+                        >View</button>
+                        <button class="btn-sm btn-secondary"
+                                onclick="openEditQualityModal(this)"
+                                data-url="{% url 'edit_quality' quality.quality_id %}"
+                                data-quality='{
+                                    "pool_id": "{{ quality.pool.pool_id }}",
+                                    "cleanliness_rating": "{{ quality.cleanliness_rating }}",
+                                    "pH_level": "{{ quality.pH_level|default_if_none:"" }}",
+                                    "water_temperature": "{{ quality.water_temperature|default_if_none:"" }}",
+                                    "chlorine_level": "{{ quality.chlorine_level|default_if_none:"" }}",
+                                    "date": "{{ quality.date|date:"Y-m-d" }}"
+                                }'>
+                            Edit
+                        </button>
+                        <button class="btn-sm btn-danger">
+                            <a href="{% url 'delete_quality' quality.quality_id %}" style="text-decoration: none; color: white;"
+                               onclick="return confirm('Are you sure you want to delete this quality record?');">Delete</a>
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-secondary);">No quality records found. Add a new record to get started.</p>
+                {% endfor %}
             </div>
         </div>
 
@@ -236,6 +271,45 @@ function openEditQualityModal(btn) {
                         <button type="submit" class="btn-primary">Save Record</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- View Quality Modal -->
+        <div id="qualityViewModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Quality Details</h2>
+                    <span class="close" onclick="toggleModal('qualityViewModal')">&times;</span>
+                </div>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Pool</span>
+                        <span class="detail-value" id="quality_view_pool"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Date</span>
+                        <span class="detail-value" id="quality_view_date"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Rating</span>
+                        <span class="detail-value" id="quality_view_rating"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">pH</span>
+                        <span class="detail-value" id="quality_view_ph"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Temp</span>
+                        <span class="detail-value" id="quality_view_temp"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Chlorine</span>
+                        <span class="detail-value" id="quality_view_chlorine"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="toggleModal('qualityViewModal')">Close</button>
+                </div>
             </div>
         </div>
 

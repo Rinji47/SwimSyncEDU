@@ -19,75 +19,142 @@
             <button class="btn-primary" id="addTrainerBtn" onclick="openAddTrainerModal()">Add New Trainer</button>
         </div>
 
-        <div class="dashboard-section">
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Profile</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Specialization</th>
-                            <th>Experience</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for trainer in trainers %}
-                        <tr>
-                            <td>
-                                {% if trainer.profile_picture %}
-                                    <img src="{{ trainer.profile_picture.url }}" alt="{{ trainer.full_name }}" class="trainer-avatar">
-                                {% else %}
-                                    <div class="trainer-avatar-placeholder">{{ trainer.username|slice:":1"|upper }}</div>
-                                {% endif %}
-                            </td>
-                            <td>{{ trainer.full_name|default:trainer.username }}</td>
-                            <td>{{ trainer.email }}</td>
-                            <td>{{ trainer.phone|default:"-" }}</td>
-                            <td>{{ trainer.specialization|default:"-" }}</td>
-                            <td>{{ trainer.experience_years|default:"-" }}{% if trainer.experience_years %} year{{ trainer.experience_years|pluralize }}{% endif %}</td>
-                            <td>
-                                {% if trainer.is_active %}
-                                    <span class="status-open">Active</span>
-                                {% else %}
-                                    <span class="status-closed">Inactive</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <button type="button" class="btn-sm btn-secondary editTrainerBtn"
-                                    data-url="{% url 'edit_trainer' trainer.user_id %}"
-                                    data-trainer='{
-                                        "username": "{{ trainer.username|escapejs }}",
-                                        "email": "{{ trainer.email|escapejs }}",
-                                        "full_name": "{{ trainer.full_name|escapejs }}",
-                                        "phone": "{{ trainer.phone|default:""|escapejs }}",
-                                        "gender": "{{ trainer.gender|default:""|escapejs }}",
-                                        "specialization": "{{ trainer.specialization|default:""|escapejs }}",
-                                        "experience_years": "{{ trainer.experience_years|default:"" }}"
-                                    }'
-                                    onclick="openEditTrainerModal(this)"
-                                >Edit</button>
+        <form class="filter-bar" method="GET">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search trainers..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-trainers">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced" id="filters-trainers">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>Specialization</label>
+                    <input type="text" class="filter-input" name="specialization" placeholder="e.g. Beginner" value="{{ request.GET.specialization|default_if_none:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>Min Exp</label>
+                    <input type="number" class="filter-number" name="min_exp" min="0" value="{{ request.GET.min_exp|default_if_none:'' }}">
+                </div>
+            </div>
+        </form>
 
-                                <button class="btn-sm btn-danger">
-                                    <a href="{% url 'toggle_trainer_status' trainer.user_id %}" style="text-decoration: none; color: white;"
-                                    onclick="return confirm('Are you sure you want to {% if trainer.is_active %}deactivate{% else %}activate{% endif %} this trainer?');">
-                                        {% if trainer.is_active %}Deactivate{% else %}Activate{% endif %}
-                                    </a>
-                                </button>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
-                                No trainers found. Click "Add New Trainer" to create one.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <div class="dashboard-section">
+            <div class="data-card-grid">
+                {% for trainer in trainers %}
+                <div class="data-card">
+                    <span class="data-card-status {% if trainer.is_active %}status-open{% else %}status-closed{% endif %}">
+                        {% if trainer.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                    <div class="data-card-header">
+                        {% if trainer.profile_picture %}
+                            <img src="{{ trainer.profile_picture.url }}" alt="{{ trainer.full_name }}" class="data-card-avatar">
+                        {% else %}
+                            <div class="data-card-avatar-placeholder">{{ trainer.username|slice:":1"|upper }}</div>
+                        {% endif %}
+                        <h3 class="data-card-title">{{ trainer.full_name|default:trainer.username }}</h3>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Email:</span>
+                        <span>{{ trainer.email }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Phone:</span>
+                        <span>{{ trainer.phone|default:"-" }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Specialization:</span>
+                        <span>{{ trainer.specialization|default:"-" }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Experience:</span>
+                        <span>{{ trainer.experience_years|default:"-" }}{% if trainer.experience_years %} year{{ trainer.experience_years|pluralize }}{% endif %}</span>
+                    </div>
+                    <div class="data-card-actions">
+                        <button type="button" class="btn-sm btn-primary"
+                            onclick="openTrainerViewModal(this)"
+                            data-trainer='{
+                                "username": "{{ trainer.username|escapejs }}",
+                                "email": "{{ trainer.email|escapejs }}",
+                                "full_name": "{{ trainer.full_name|escapejs }}",
+                                "phone": "{{ trainer.phone|default:""|escapejs }}",
+                                "gender": "{{ trainer.gender|default:""|escapejs }}",
+                                "specialization": "{{ trainer.specialization|default:""|escapejs }}",
+                                "experience_years": "{{ trainer.experience_years|default:"" }}",
+                                "status": "{% if trainer.is_active %}Active{% else %}Inactive{% endif %}"
+                            }'
+                        >View</button>
+                        <button type="button" class="btn-sm btn-secondary editTrainerBtn"
+                            data-url="{% url 'edit_trainer' trainer.user_id %}"
+                            data-trainer='{
+                                "username": "{{ trainer.username|escapejs }}",
+                                "email": "{{ trainer.email|escapejs }}",
+                                "full_name": "{{ trainer.full_name|escapejs }}",
+                                "phone": "{{ trainer.phone|default:""|escapejs }}",
+                                "gender": "{{ trainer.gender|default:""|escapejs }}",
+                                "specialization": "{{ trainer.specialization|default:""|escapejs }}",
+                                "experience_years": "{{ trainer.experience_years|default:"" }}"
+                            }'
+                            onclick="openEditTrainerModal(this)"
+                        >Edit</button>
+                        <button class="btn-sm btn-danger">
+                            <a href="{% url 'toggle_trainer_status' trainer.user_id %}" style="text-decoration: none; color: white;"
+                            onclick="return confirm('Are you sure you want to {% if trainer.is_active %}deactivate{% else %}activate{% endif %} this trainer?');">
+                                {% if trainer.is_active %}Deactivate{% else %}Activate{% endif %}
+                            </a>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Trainer View Modal -->
+                <div id="trainerViewModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2 id="trainer_view_name">Trainer Details</h2>
+                            <span class="close" onclick="toggleModal('trainerViewModal')">&times;</span>
+                        </div>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Status</span>
+                                <span class="detail-value" id="trainer_view_status"></span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Email</span>
+                                <span class="detail-value" id="trainer_view_email"></span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Phone</span>
+                                <span class="detail-value" id="trainer_view_phone"></span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Gender</span>
+                                <span class="detail-value" id="trainer_view_gender"></span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Specialization</span>
+                                <span class="detail-value" id="trainer_view_specialization"></span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Experience</span>
+                                <span class="detail-value" id="trainer_view_experience"></span>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn-secondary" onclick="toggleModal('trainerViewModal')">Close</button>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-secondary);">No trainers found. Click "Add New Trainer" to create one.</p>
+                {% endfor %}
             </div>
         </div>
 

@@ -1,4 +1,64 @@
-/* Smooth fade-in + slide for modal */
+/* ------------------ CARDS ------------------ */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.class-card {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  padding: 1rem 1.2rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.class-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.class-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.class-card p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.class-status {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid #d9e2f2;
+  background: #f8fafc;
+  color: #475569;
+}
+
+.class-status.status-cancelled {
+  border-color: #f1d1d1;
+  background: #fff5f5;
+  color: #b91c1c;
+}
+
+.card-actions {
+  margin-top: 0.8rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ------------------ MODAL ------------------ */
 .modal {
   display: none;
   position: fixed;
@@ -19,22 +79,22 @@
 
 .modal-content {
   background-color: white;
-  margin: 3% auto; /* top margin */
+  margin: 3% auto;
   padding: 1.5rem;
   border-radius: 12px;
-  width: 95%; /* a bit wider */
-  max-width: 600px; /* slightly bigger than before */
+  width: 95%;
+  max-width: 600px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   transform: translateY(-40px);
   transition: transform 0.3s ease;
-  max-height: 90vh; /* bigger, but fits screen */
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal.show .modal-content {
   transform: translateY(0);
 }
 
-/* Modal header */
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -50,18 +110,17 @@
   color: var(--text-secondary);
 }
 
-/* Form grid */
+/* Modal form grid */
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem 1rem; /* vertical + horizontal spacing */
+  gap: 1rem 1rem;
 }
 
 .form-group.full-width {
   grid-column: span 2;
 }
 
-/* Labels and inputs */
 .modal-content label {
   display: block;
   font-weight: 600;
@@ -89,41 +148,30 @@
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
-/* Map + coordinates styling */
-#coordinates {
-  padding: 0.45rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.9rem;
-  width: 100%;
-  box-sizing: border-box;
-  margin-bottom: 0.25rem;
-  transition: border 0.2s ease, box-shadow 0.2s ease;
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  padding-top: 0.4rem;
+  grid-column: span 2;
 }
 
-#coordinates:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
-#map {
-  width: 100%;
-  height: 250px;/* smaller map */
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-top: 0.25rem;
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #2563eb;
 }
 
-/* Coordinate display text */
-.modal-content small {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-/* Modal footer buttons */
+/* Modal footer */
 .modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -139,8 +187,42 @@
   border-radius: 8px;
 }
 
-/* Responsive adjustments */
-@media (max-width: 600px) {
+/* VIEW MODAL GRID */
+.view-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 2rem;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem 1rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.detail-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.detail-value {
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+@media(max-width: 600px) {
   .form-grid {
     grid-template-columns: 1fr;
     gap: 0.8rem;
@@ -148,7 +230,11 @@
   .form-group.full-width {
     grid-column: span 1;
   }
-  #map {
-    height: 180px; /* smaller map on mobile */
+  .view-modal-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem 0;
+  }
+  .details-grid {
+    grid-template-columns: 1fr;
   }
 }

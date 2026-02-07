@@ -23,13 +23,6 @@
         <!-- Stats Cards -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon">🏢</div>
-                <div class="stat-content">
-                    <h3>{{ total_facilities }}</h3>
-                    <p>Total Facilities</p>
-                </div>
-            </div>
-            <div class="stat-card">
                 <div class="stat-icon">👥</div>
                 <div class="stat-content">
                     <h3>{{ total_users }}</h3>
@@ -56,87 +49,57 @@
         <section class="dashboard-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h2 style="margin-bottom: 0;">Role Requests & Instructor Applications</h2>
-                <div class="filter-controls">
-                    <select class="form-select-sm">
-                        <option value="all">All Requests</option>
-                        <option value="instructor">Instructor</option>
-                        <option value="admin">Admin</option>
-                    </select>
+            </div>
+            <div class="filter-bar">
+                <div class="filter-main">
+                    <div class="filter-search">
+                        <input type="text" class="filter-input" placeholder="Search requests...">
+                        <button type="button" class="btn-secondary">Search</button>
+                        <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-requests">Filters v</button>
+                    </div>
+                </div>
+                <div class="filter-advanced" id="filters-requests">
+                    <div class="filter-field">
+                        <label>Role</label>
+                        <select class="filter-select">
+                            <option value="all">All</option>
+                            <option value="instructor">Instructor</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
                 </div>
             </div>
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Email</th>
-                            <th>Requested Role</th>
-                            <th>Details/Certs</th>
-                            <th>Applied Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for application in pending_applications %}
-                        <tr>
-                            <td>{{ application.name }}</td>
-                            <td>{{ application.email }}</td>
-                            <td><span class="status-badge status-secondary">{{ application.requested_role|default:"Instructor" }}</span></td>
-                            <td>{{ application.certifications }}</td>
-                            <td>{{ application.applied_date|date:"M d, Y" }}</td>
-                            <td>
-                                <button class="btn-sm btn-success">Approve Role</button>
-                                <button class="btn-sm btn-danger">Reject</button>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" style="text-align: center;">No pending applications</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="data-card-grid">
+                {% for application in pending_applications %}
+                <div class="data-card">
+                    <h3 class="data-card-title">{{ application.name }}</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Email:</span>
+                        <span>{{ application.email }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Role:</span>
+                        <span class="status-badge status-secondary">{{ application.requested_role|default:"Instructor" }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Details:</span>
+                        <span>{{ application.certifications }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Applied:</span>
+                        <span>{{ application.applied_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="data-card-actions">
+                        <button class="btn-sm btn-success">Approve Role</button>
+                        <button class="btn-sm btn-danger">Reject</button>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-secondary);">No pending applications</p>
+                {% endfor %}
             </div>
         </section>
         
-        <!-- Facilities Overview -->
-        <section class="dashboard-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2 style="margin-bottom: 0;">Facilities Overview</h2>
-                <button class="btn-primary">Add Facility</button>
-            </div>
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Facility Name</th>
-                            <th>Location</th>
-                            <th>Pools</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for facility in facilities %}
-                        <tr>
-                            <td>{{ facility.name }}</td>
-                            <td>{{ facility.location }}</td>
-                            <td>{{ facility.pool_count }}</td>
-                            <td><span class="status-badge status-{{ facility.status|lower }}">{{ facility.status }}</span></td>
-                            <td>
-                                <button class="btn-sm btn-secondary">Edit</button>
-                                <button class="btn-sm btn-primary">View Details</button>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" style="text-align: center;">No facilities added</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </section>
         
         <!-- Water Quality Alerts -->
         <section class="dashboard-section">
@@ -161,35 +124,51 @@
         <!-- Recent Activity -->
         <section class="dashboard-section">
             <h2>Recent Bookings</h2>
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Member</th>
-                            <th>Class</th>
-                            <th>Instructor</th>
-                            <th>Facility</th>
-                            <th>Date & Time</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for booking in recent_bookings %}
-                        <tr>
-                            <td>{{ booking.member_name }}</td>
-                            <td>{{ booking.class_name }}</td>
-                            <td>{{ booking.instructor_name }}</td>
-                            <td>{{ booking.facility_name }}</td>
-                            <td>{{ booking.datetime|date:"M d, Y - h:i A" }}</td>
-                            <td><span class="status-badge status-{{ booking.status }}">{{ booking.status }}</span></td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" style="text-align: center;">No recent bookings</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="filter-bar">
+                <div class="filter-main">
+                    <div class="filter-search">
+                        <input type="text" class="filter-input" placeholder="Search bookings...">
+                        <button type="button" class="btn-secondary">Search</button>
+                        <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-bookings">Filters v</button>
+                    </div>
+                </div>
+                <div class="filter-advanced" id="filters-bookings">
+                    <div class="filter-field">
+                        <label>Status</label>
+                        <select class="filter-select">
+                            <option value="">All</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="data-card-grid">
+                {% for booking in recent_bookings %}
+                <div class="data-card">
+                    <span class="data-card-status">{{ booking.status }}</span>
+                    <h3 class="data-card-title">{{ booking.member_name }}</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Class:</span>
+                        <span>{{ booking.class_name }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Instructor:</span>
+                        <span>{{ booking.instructor_name }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Facility:</span>
+                        <span>{{ booking.facility_name }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Date:</span>
+                        <span>{{ booking.datetime|date:"M d, Y - h:i A" }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-secondary);">No recent bookings</p>
+                {% endfor %}
             </div>
         </section>
     </main>

@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
+from django.db.models import Q
 from .models import ClassSession, ClassType
 from pool.models import Pool
 from accounts.models import User
@@ -9,10 +10,34 @@ from datetime import datetime
 def manage_class_types(request, class_type_id=None):
     class_types = ClassType.objects.all()
 
+    q = (request.GET.get('q') or '').strip()
+    status = request.GET.get('status')
+    cost_min = request.GET.get('cost_min')
+    cost_max = request.GET.get('cost_max')
+
+    if q:
+        class_types = class_types.filter(Q(name__icontains=q) | Q(description__icontains=q))
+
+    if status == 'open':
+        class_types = class_types.filter(is_closed=False)
+    elif status == 'closed':
+        class_types = class_types.filter(is_closed=True)
+
+    if cost_min:
+        try:
+            class_types = class_types.filter(cost__gte=float(cost_min))
+        except ValueError:
+            pass
+    if cost_max:
+        try:
+            class_types = class_types.filter(cost__lte=float(cost_max))
+        except ValueError:
+            pass
+
     if class_type_id:
-        class_type = get_object_or_404(ClassType, pk=class_type_id)  # for editing the existing class type
+        class_type = get_object_or_404(ClassType, pk=class_type_id)
     else:
-        class_type = None  # for new class type creation
+        class_type = None
 
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -61,9 +86,9 @@ def close_class_type(request, class_type_id):
 
 def manage_class_sessions(request, class_id=None):
     if class_id:
-        class_session = get_object_or_404(ClassSession, pk=class_id) # for editing the existing class
+        class_session = get_object_or_404(ClassSession, pk=class_id)
     else:
-        class_session = None # for new class creation
+        class_session = None
     
     if request.method == 'POST':
         try:
@@ -73,6 +98,7 @@ def manage_class_sessions(request, class_id=None):
             class_name = request.POST.get('class_name')
             total_sessions = int(request.POST.get('total_sessions'))
             seats = int(request.POST.get('seats'))
+            is_cancelled = request.POST.get('is_cancelled') == 'on'
 
             start_date = datetime.strptime(request.POST.get('start_date'), '%Y-%m-%d').date()
             end_date = datetime.strptime(request.POST.get('end_date'), '%Y-%m-%d').date()
@@ -130,7 +156,6 @@ def manage_class_sessions(request, class_id=None):
                     return redirect('manage_classes')
 
         if class_session:
-            # Update existing class session
             class_session.user = trainer
             class_session.pool = pool
             class_session.class_type = class_type
@@ -141,12 +166,12 @@ def manage_class_sessions(request, class_id=None):
             class_session.end_date = end_date
             class_session.start_time = start_time
             class_session.end_time = end_time
+            class_session.is_cancelled = is_cancelled
             class_session.save()
             
             messages.success(request, 'Class session updated successfully.')
             return redirect('manage_classes')
         else:
-            # Create new class session
             ClassSession.objects.create(
                 user=trainer,
                 pool=pool,
@@ -157,12 +182,50 @@ def manage_class_sessions(request, class_id=None):
                 start_date=start_date,
                 end_date=end_date,
                 start_time=start_time,
-                end_time=end_time
+                end_time=end_time,
+                is_cancelled=is_cancelled
             )
             messages.success(request, 'Class session created successfully.')
             return redirect('manage_classes')
         
     class_sessions = ClassSession.objects.all()
+    q = (request.GET.get('q') or '').strip()
+    status = request.GET.get('status')
+    pool_filter = request.GET.get('pool')
+    trainer_filter = request.GET.get('trainer')
+    start_filter = request.GET.get('start')
+    end_filter = request.GET.get('end')
+
+    if q:
+        class_sessions = class_sessions.filter(
+            Q(class_name__icontains=q) |
+            Q(pool__name__icontains=q) |
+            Q(user__full_name__icontains=q) |
+            Q(user__username__icontains=q)
+        )
+
+    if status == 'open':
+        class_sessions = class_sessions.filter(is_cancelled=False)
+    elif status == 'cancelled':
+        class_sessions = class_sessions.filter(is_cancelled=True)
+
+    if pool_filter:
+        class_sessions = class_sessions.filter(pool_id=pool_filter)
+    if trainer_filter:
+        class_sessions = class_sessions.filter(user_id=trainer_filter)
+
+    if start_filter:
+        try:
+            start_date = datetime.strptime(start_filter, '%Y-%m-%d').date()
+            class_sessions = class_sessions.filter(start_date__gte=start_date)
+        except ValueError:
+            pass
+    if end_filter:
+        try:
+            end_date = datetime.strptime(end_filter, '%Y-%m-%d').date()
+            class_sessions = class_sessions.filter(end_date__lte=end_date)
+        except ValueError:
+            pass
     pools = Pool.objects.filter(is_closed=False).all()
     class_types = ClassType.objects.filter(is_closed=False).all()
     trainers = User.objects.filter(role='trainer')

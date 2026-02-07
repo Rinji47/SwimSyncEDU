@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Members - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "./components/admin_sidebar.html" %}
+
+    <main class="dashboard-main">
+        {% include "../../components/message.html" %}
+        <div class="dashboard-header">
+            <h1>Manage Members</h1>
+            <button class="btn-primary" type="button">Add Member</button>
+        </div>
+
+        <form class="filter-bar" method="GET">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search members..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-members">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced" id="filters-members">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>Joined From</label>
+                    <input type="date" class="filter-date" name="joined_from" value="{{ request.GET.joined_from|default_if_none:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>Joined To</label>
+                    <input type="date" class="filter-date" name="joined_to" value="{{ request.GET.joined_to|default_if_none:'' }}">
+                </div>
+            </div>
+        </form>
+
+        <div class="dashboard-section">
+            <div class="data-card-grid">
+                {% for member in members %}
+                <div class="data-card">
+                    <span class="data-card-status {% if member.is_active %}status-open{% else %}status-closed{% endif %}">
+                        {% if member.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                    <div class="data-card-header">
+                        {% if member.profile_picture %}
+                            <img src="{{ member.profile_picture.url }}" alt="{{ member.full_name }}" class="data-card-avatar">
+                        {% else %}
+                            <div class="data-card-avatar-placeholder">{{ member.username|slice:":1"|upper }}</div>
+                        {% endif %}
+                        <h3 class="data-card-title">{{ member.full_name|default:member.username }}</h3>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Email:</span>
+                        <span>{{ member.email }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Phone:</span>
+                        <span>{{ member.phone|default:"-" }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Joined:</span>
+                        <span>{{ member.created_at|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="data-card-actions">
+                        <button class="btn-sm btn-secondary" type="button"
+                            onclick="openMemberViewModal(this)"
+                            data-member='{
+                                "username": "{{ member.username|escapejs }}",
+                                "full_name": "{{ member.full_name|default:member.username|escapejs }}",
+                                "email": "{{ member.email|escapejs }}",
+                                "phone": "{{ member.phone|default:""|escapejs }}",
+                                "gender": "{{ member.gender|default:""|escapejs }}",
+                                "date_of_birth": "{{ member.date_of_birth|date:"M d, Y" }}",
+                                "joined": "{{ member.created_at|date:"M d, Y" }}",
+                                "status": "{% if member.is_active %}Active{% else %}Inactive{% endif %}"
+                            }'
+                        >View</button>
+                        <button class="btn-sm btn-primary" type="button">Edit</button>
+                        <button class="btn-sm btn-danger" type="button">Deactivate</button>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-secondary);">No members found.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Member View Modal -->
+<div id="memberViewModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="member_view_name">Member Details</h2>
+            <span class="close" onclick="toggleModal('memberViewModal')">&times;</span>
+        </div>
+        <div class="details-grid">
+            <div class="detail-item">
+                <span class="detail-label">Status</span>
+                <span class="detail-value" id="member_view_status"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Username</span>
+                <span class="detail-value" id="member_view_username"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Email</span>
+                <span class="detail-value" id="member_view_email"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Phone</span>
+                <span class="detail-value" id="member_view_phone"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Gender</span>
+                <span class="detail-value" id="member_view_gender"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Date of Birth</span>
+                <span class="detail-value" id="member_view_dob"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Joined</span>
+                <span class="detail-value" id="member_view_joined"></span>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="toggleModal('memberViewModal')">Close</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

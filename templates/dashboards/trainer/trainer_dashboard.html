@@ -92,38 +92,51 @@
         <!-- Today's Schedule -->
         <section class="dashboard-section">
             <h2>Today's Schedule</h2>
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Time</th>
-                            <th>Class Name</th>
-                            <th>Facility</th>
-                            <th>Students</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for class in todays_classes %}
-                        <tr>
-                            <td>{{ class.time }}</td>
-                            <td>{{ class.name }}</td>
-                            <td>{{ class.facility_name }}</td>
-                            <td>{{ class.enrolled }}/{{ class.capacity }}</td>
-                            <td><span class="status-badge status-{{ class.status }}">{{ class.status }}</span></td>
-                            <td>
-                                <button class="btn-sm btn-primary">View Details</button>
-                                <button class="btn-sm btn-secondary">Attendance</button>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" style="text-align: center;">No classes scheduled for today</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="filter-bar">
+                <div class="filter-main">
+                    <div class="filter-search">
+                        <input type="text" class="filter-input" placeholder="Search today's classes...">
+                        <button type="button" class="btn-secondary">Search</button>
+                        <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-trainer-today">Filters v</button>
+                    </div>
+                </div>
+                <div class="filter-advanced" id="filters-trainer-today">
+                    <div class="filter-field">
+                        <label>Status</label>
+                        <select class="filter-select">
+                            <option value="">All</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="data-card-grid">
+                {% for class in todays_classes %}
+                <div class="data-card">
+                    <span class="data-card-status">{{ class.status }}</span>
+                    <h3 class="data-card-title">{{ class.name }}</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Time:</span>
+                        <span>{{ class.time }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Facility:</span>
+                        <span>{{ class.facility_name }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Students:</span>
+                        <span>{{ class.enrolled }}/{{ class.capacity }}</span>
+                    </div>
+                    <div class="data-card-actions">
+                        <button class="btn-sm btn-primary">View Details</button>
+                        <button class="btn-sm btn-secondary">Attendance</button>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-secondary);">No classes scheduled for today</p>
+                {% endfor %}
             </div>
         </section>
         
@@ -156,38 +169,49 @@
         <!-- Upcoming Classes -->
         <section class="dashboard-section">
             <h2>Upcoming Classes This Week</h2>
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Class Name</th>
-                            <th>Date & Time</th>
-                            <th>Facility</th>
-                            <th>Enrolled</th>
-                            <th>Capacity</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for class in upcoming_classes %}
-                        <tr>
-                            <td>{{ class.name }}</td>
-                            <td>{{ class.datetime|date:"M d, Y - h:i A" }}</td>
-                            <td>{{ class.facility_name }}</td>
-                            <td>{{ class.enrolled }}</td>
-                            <td>{{ class.capacity }}</td>
-                            <td>
-                                <button class="btn-sm btn-primary">Edit</button>
-                                <button class="btn-sm btn-secondary">View</button>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" style="text-align: center;">No upcoming classes</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="filter-bar">
+                <div class="filter-main">
+                    <div class="filter-search">
+                        <input type="text" class="filter-input" placeholder="Search upcoming classes...">
+                        <button type="button" class="btn-secondary">Search</button>
+                        <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-trainer-upcoming">Filters v</button>
+                    </div>
+                </div>
+                <div class="filter-advanced" id="filters-trainer-upcoming">
+                    <div class="filter-field">
+                        <label>Facility</label>
+                        <input type="text" class="filter-input" placeholder="Facility name">
+                    </div>
+                </div>
+            </div>
+            <div class="data-card-grid">
+                {% for class in upcoming_classes %}
+                <div class="data-card">
+                    <h3 class="data-card-title">{{ class.name }}</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Date:</span>
+                        <span>{{ class.datetime|date:"M d, Y - h:i A" }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Facility:</span>
+                        <span>{{ class.facility_name }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Enrolled:</span>
+                        <span>{{ class.enrolled }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Capacity:</span>
+                        <span>{{ class.capacity }}</span>
+                    </div>
+                    <div class="data-card-actions">
+                        <button class="btn-sm btn-primary">Edit</button>
+                        <button class="btn-sm btn-secondary">View</button>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-secondary);">No upcoming classes</p>
+                {% endfor %}
             </div>
         </section>
     </main>

@@ -1,7 +1,7 @@
-// ---------------------- GLOBALS ----------------------
+// GLOBALS
 //const google = window.google; // Google Maps
 
-// ---------------------- MODAL UTILS ----------------------
+// MODAL UTILS
 function toggleModal(modalId) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
@@ -40,12 +40,10 @@ window.addEventListener("click", (event) => {
     }
 });
 
-// Generic function to reset any modal
 function resetModalFields(modal) {
     const form = modal.querySelector("form");
     if (form) form.reset();
 
-    // Reset marker and map only for Pool modal (Add Pool)
     if (modal.id === "poolModal") {
         const defaultLoc = { lat: 27.7172, lng: 85.3240 }; // Kathmandu default
         if (marker) marker.setPosition(defaultLoc);
@@ -54,16 +52,23 @@ function resetModalFields(modal) {
         document.getElementById("coordinates").value = "";
         document.getElementById("coordDisplay").innerText = "Click on the map to select location";
     }
+
+    if (modal.id === "classModal") {
+        const cancelGroup = modal.querySelector("#cancelled_group");
+        const cancelInput = modal.querySelector("#is_cancelled");
+        if (cancelGroup) cancelGroup.style.display = "none";
+        if (cancelInput) cancelInput.checked = false;
+    }
 }
 
 
-// ---------------------- GOOGLE MAPS ----------------------
+// GOOGLE MAPS
 let map = null;
 let marker = null;
 
 function initMap() {
     const mapDiv = document.getElementById("map");
-    if (!mapDiv) return; // Wait for the modal to open or map div to exist
+    if (!mapDiv) return;
 
     const defaultLoc = { lat: 27.7172, lng: 85.3240 }; // Kathmandu
 
@@ -116,41 +121,6 @@ function onPoolModalOpen() {
     }, 300);
 }
 
-// ---------------------- POOL MODAL ----------------------
-
-// function initMap() {
-//     const defaultLoc = { lat: 27.7172, lng: 85.3240 }; // default: Kathmandu
-
-//     map = new google.maps.Map(document.getElementById("map"), {
-//         zoom: 13,
-//         center: defaultLoc,
-//     });
-
-//     map.addListener("click", (e) => {
-//         const lat = e.latLng.lat().toFixed(6);
-//         const lng = e.latLng.lng().toFixed(6);
-
-//         if (marker) marker.setMap(null);
-
-//         marker = new google.maps.Marker({
-//             position: e.latLng,
-//             map: map
-//         });
-
-//         document.getElementById("coordinates").value = `${lat}, ${lng}`;
-//         document.getElementById("coordDisplay").innerText = `Selected: ${lat}, ${lng}`;
-//     });
-// }
-
-// function onPoolModalOpen() {
-//     setTimeout(() => {
-//         if (map) {
-//             google.maps.event.trigger(map, "resize");
-//             map.setCenter({ lat: 27.7172, lng: 85.3240 });
-//         }
-//     }, 200);
-// }
-
 function openEditPoolModal(btn) {
     const modal = document.getElementById('poolModal');
     const pool = JSON.parse(btn.dataset.pool);
@@ -201,21 +171,26 @@ function openEditPoolModal(btn) {
     toggleModal('poolModal');
 }
 
-// ---------------------- CLASS MODAL ----------------------
+// CLASS MODAL
 function openEditClassModal(btn) {
     const modal = document.getElementById("classModal");
-    const session = JSON.parse(btn.dataset.session);
+    if (!btn || !btn.dataset) return;
 
-    modal.querySelector("#class_name").value = session.class_name;
-    modal.querySelector("#pool_id").value = session.pool_id;
-    modal.querySelector("#class_type_id").value = session.class_type_id;
-    modal.querySelector("#user_id").value = session.user_id;
-    modal.querySelector("#start_date").value = session.start_date;
-    modal.querySelector("#end_date").value = session.end_date;
-    modal.querySelector("#start_time").value = session.start_time;
-    modal.querySelector("#end_time").value = session.end_time;
-    modal.querySelector("#seats").value = session.seats;
-    modal.querySelector("#total_sessions").value = session.total_sessions;
+    modal.querySelector("#class_name").value = btn.dataset.className || "";
+    modal.querySelector("#pool_id").value = btn.dataset.poolId || "";
+    modal.querySelector("#class_type_id").value = btn.dataset.classTypeId || "";
+    modal.querySelector("#user_id").value = btn.dataset.userId || "";
+    modal.querySelector("#start_date").value = btn.dataset.startDate || "";
+    modal.querySelector("#end_date").value = btn.dataset.endDate || "";
+    modal.querySelector("#start_time").value = btn.dataset.startTime || "";
+    modal.querySelector("#end_time").value = btn.dataset.endTime || "";
+    modal.querySelector("#seats").value = btn.dataset.seats || "";
+    modal.querySelector("#total_sessions").value = btn.dataset.totalSessions || "";
+
+    const cancelGroup = modal.querySelector("#cancelled_group");
+    const cancelInput = modal.querySelector("#is_cancelled");
+    if (cancelGroup) cancelGroup.style.display = "block";
+    if (cancelInput) cancelInput.checked = btn.dataset.isCancelled === "true";
 
     modal.querySelector("form").action = btn.dataset.url;
     modal.querySelector("h2").textContent = "Edit Class Session";
@@ -223,7 +198,7 @@ function openEditClassModal(btn) {
     toggleModal("classModal");
 }
 
-// ---------------------- CLASS TYPE MODAL ----------------------
+// CLASS TYPE MODAL
 function openEditClassTypeModal(btn) {
     const modal = document.getElementById("classTypeModal");
     const type = JSON.parse(btn.dataset.classType);
@@ -238,7 +213,7 @@ function openEditClassTypeModal(btn) {
     toggleModal("classTypeModal");
 }
 
-// ---------------------- POOL QUALITY MODAL ----------------------
+// POOL QUALITY MODAL
 function openEditQualityModal(btn) {
     const modal = document.getElementById("qualityModal");
     const quality = JSON.parse(btn.dataset.quality);
@@ -259,13 +234,12 @@ function openEditQualityModal(btn) {
 function openAddQualityModal() {
     const modal = document.getElementById("qualityModal");
     resetModalFields(modal);
-    // Use data attribute in HTML for URL instead of {% url %} in JS
     modal.querySelector("form").action = modal.querySelector("form").dataset.addUrl;
     modal.querySelector("h2").textContent = "Add Quality Record";
     toggleModal("qualityModal");
 }
 
-// ---------------------- TRAINER MODAL ----------------------
+// TRAINER MODAL
 
 // Open modal for editing an existing trainer
 function openEditTrainerModal(btn) {
@@ -314,4 +288,68 @@ function openAddTrainerModal() {
     modal.querySelector("h2").textContent = "Add New Trainer";
 
     toggleModal("trainerModal");
+}
+
+function openPoolViewModal(btn) {
+    if (!btn || !btn.dataset || !btn.dataset.pool) return;
+    const pool = JSON.parse(btn.dataset.pool);
+
+    document.getElementById("pool_view_name").textContent = pool.name || "Pool Details";
+    document.getElementById("pool_view_status").textContent = pool.status || "";
+    document.getElementById("pool_view_address").textContent = pool.address || "";
+    document.getElementById("pool_view_capacity").textContent = pool.capacity || "";
+    document.getElementById("pool_view_coordinates").textContent = pool.coordinates || "";
+
+    toggleModal("poolViewModal");
+}
+
+function openTrainerViewModal(btn) {
+    if (!btn || !btn.dataset || !btn.dataset.trainer) return;
+    const trainer = JSON.parse(btn.dataset.trainer);
+
+    document.getElementById("trainer_view_name").textContent = trainer.full_name || trainer.username || "Trainer Details";
+    document.getElementById("trainer_view_status").textContent = trainer.status || "";
+    document.getElementById("trainer_view_email").textContent = trainer.email || "";
+    document.getElementById("trainer_view_phone").textContent = trainer.phone || "-";
+    document.getElementById("trainer_view_gender").textContent = trainer.gender || "-";
+    document.getElementById("trainer_view_specialization").textContent = trainer.specialization || "-";
+    document.getElementById("trainer_view_experience").textContent = trainer.experience_years ? `${trainer.experience_years} years` : "-";
+
+    toggleModal("trainerViewModal");
+}
+
+function openMemberViewModal(btn) {
+    if (!btn || !btn.dataset || !btn.dataset.member) return;
+    const member = JSON.parse(btn.dataset.member);
+
+    document.getElementById("member_view_name").textContent = member.full_name || "Member Details";
+    document.getElementById("member_view_status").textContent = member.status || "";
+    document.getElementById("member_view_username").textContent = member.username || "";
+    document.getElementById("member_view_email").textContent = member.email || "";
+    document.getElementById("member_view_phone").textContent = member.phone || "-";
+    document.getElementById("member_view_gender").textContent = member.gender || "-";
+    document.getElementById("member_view_dob").textContent = member.date_of_birth || "-";
+    document.getElementById("member_view_joined").textContent = member.joined || "";
+
+    toggleModal("memberViewModal");
+}
+
+
+function openViewModal(btnOrId) {
+    if (!btnOrId || !btnOrId.dataset) return;
+
+    const isCancelled = btnOrId.dataset.isCancelled === "true";
+
+    document.getElementById('view_class_name').textContent = btnOrId.dataset.className || "";
+    document.getElementById('view_pool').textContent = btnOrId.dataset.poolName || "";
+    document.getElementById('view_trainer').textContent = btnOrId.dataset.trainerName || "";
+    document.getElementById('view_type').textContent = btnOrId.dataset.classType || "";
+    document.getElementById('view_dates').textContent = `${btnOrId.dataset.startDate || ""} - ${btnOrId.dataset.endDate || ""}`;
+    document.getElementById('view_time').textContent = `${btnOrId.dataset.startTime || ""} - ${btnOrId.dataset.endTime || ""}`;
+    document.getElementById('view_seats').textContent = btnOrId.dataset.seats || "";
+    document.getElementById('view_price').textContent = btnOrId.dataset.totalPrice || "";
+    document.getElementById('view_cancelled').textContent = isCancelled ? "Yes" : "No";
+    document.getElementById('view_total_sessions').textContent = btnOrId.dataset.totalSessions || "";
+
+    toggleModal('viewModal');
 }

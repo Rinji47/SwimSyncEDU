@@ -1,10 +1,35 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.db.models import Q
 from .models import Pool, PoolQuality
 
 # Create your views here.
 def manage_pools(request, pool_id=None):
     pools = Pool.objects.all()
+
+    q = (request.GET.get('q') or '').strip()
+    status = request.GET.get('status')
+    capacity_min = request.GET.get('capacity_min')
+    capacity_max = request.GET.get('capacity_max')
+
+    if q:
+        pools = pools.filter(Q(name__icontains=q) | Q(address__icontains=q))
+
+    if status == 'open':
+        pools = pools.filter(is_closed=False)
+    elif status == 'closed':
+        pools = pools.filter(is_closed=True)
+
+    if capacity_min:
+        try:
+            pools = pools.filter(capacity__gte=int(capacity_min))
+        except ValueError:
+            pass
+    if capacity_max:
+        try:
+            pools = pools.filter(capacity__lte=int(capacity_max))
+        except ValueError:
+            pass
 
     if pool_id:
         pool = Pool.objects.get(pk=pool_id)
@@ -80,11 +105,19 @@ def close_pool(request, pool_id):
 def manage_quality(request):
     pools = Pool.objects.all()
     pool_filter = request.GET.get('pool')
+    rating_filter = request.GET.get('rating')
+    q = (request.GET.get('q') or '').strip()
 
+    qualities = PoolQuality.objects.all()
+
+    if q:
+        qualities = qualities.filter(pool__name__icontains=q)
     if pool_filter:
-        qualities = PoolQuality.objects.filter(pool_id=pool_filter).order_by('-date')
-    else:
-        qualities = PoolQuality.objects.all().order_by('-date')
+        qualities = qualities.filter(pool_id=pool_filter)
+    if rating_filter:
+        qualities = qualities.filter(cleanliness_rating=rating_filter)
+
+    qualities = qualities.order_by('-date')
 
     context = {
         'pools': pools,

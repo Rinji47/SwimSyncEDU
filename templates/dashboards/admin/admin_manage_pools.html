@@ -27,53 +27,83 @@
             <button class="btn-primary" onclick="toggleModal('poolModal')">Add New Pool</button>
         </div>
 
+        <form class="filter-bar" method="GET">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search pools..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-pools">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced" id="filters-pools">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Open</option>
+                        <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>Closed</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>Capacity Min</label>
+                    <input type="number" class="filter-number" name="capacity_min" min="0" value="{{ request.GET.capacity_min|default_if_none:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>Capacity Max</label>
+                    <input type="number" class="filter-number" name="capacity_max" min="0" value="{{ request.GET.capacity_max|default_if_none:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Filter</button>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section">
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Address</th>
-                            <th>Capacity</th>
-                            <th>Coordinates</th>
-                            <th>Is Closed</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for pool in pools %}
-                        <tr>
-                            <td>{{ pool.name }}</td>
-                            <td>{{ pool.address }}</td>
-                            <td>{{ pool.capacity }}</td>
-                            <td>{{ pool.coordinates }}</td>
-                            <td>
-                                {% if pool.is_closed %}
-                                    <span class="status-closed">Closed</span>
-                                {% else %}
-                                    <span class="status-open">Open</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <button class="btn-sm btn-secondary"
-                                    onclick="openEditPoolModal(this)"
-                                    data-url="{% url 'edit_pool' pool.pool_id %}"
-                                    data-pool='{
-                                        "name": "{{ pool.name|escapejs }}",
-                                        "address": "{{ pool.address|escapejs }}",
-                                        "capacity": "{{ pool.capacity }}",
-                                        "coordinates": "{{ pool.coordinates|escapejs }}"
-                                    }'
-                                >Edit</button>
-                                <button class="btn-sm btn-danger">
-                                    <a href="{% url 'close_pool' pool.pool_id %}" style="text-decoration: none; color: white;"
-                                    onclick="return confirm('Are you sure you want to close this pool?');">Close</a>
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="data-card-grid">
+                {% for pool in pools %}
+                <div class="data-card">
+                    <span class="data-card-status {% if pool.is_closed %}status-closed{% else %}status-open{% endif %}">
+                        {% if pool.is_closed %}Closed{% else %}Open{% endif %}
+                    </span>
+                    <h3 class="data-card-title">{{ pool.name }}</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Address:</span>
+                        <span>{{ pool.address }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Capacity:</span>
+                        <span>{{ pool.capacity }}</span>
+                    </div>
+                    <div class="data-card-actions">
+                        <button class="btn-sm btn-primary" type="button"
+                            onclick="openPoolViewModal(this)"
+                            data-pool='{
+                                "name": "{{ pool.name|escapejs }}",
+                                "address": "{{ pool.address|escapejs }}",
+                                "capacity": "{{ pool.capacity }}",
+                                "coordinates": "{{ pool.coordinates|escapejs }}",
+                                "status": "{% if pool.is_closed %}Closed{% else %}Open{% endif %}"
+                            }'
+                        >View</button>
+                        <button class="btn-sm btn-secondary"
+                            onclick="openEditPoolModal(this)"
+                            data-url="{% url 'edit_pool' pool.pool_id %}"
+                            data-pool='{
+                                "name": "{{ pool.name|escapejs }}",
+                                "address": "{{ pool.address|escapejs }}",
+                                "capacity": "{{ pool.capacity }}",
+                                "coordinates": "{{ pool.coordinates|escapejs }}"
+                            }'
+                        >Edit</button>
+                        <button class="btn-sm btn-danger">
+                            <a href="{% url 'close_pool' pool.pool_id %}" style="text-decoration: none; color: white;"
+                            onclick="return confirm('Are you sure you want to close this pool?');">Close</a>
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-secondary);">No pools added yet.</p>
+                {% endfor %}
             </div>
         </div>
     </main>
@@ -117,6 +147,37 @@
                 <button type="submit" class="btn-primary">Save Pool</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Pool View Modal -->
+<div id="poolViewModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="pool_view_name">Pool Details</h2>
+            <span class="close" onclick="toggleModal('poolViewModal')">&times;</span>
+        </div>
+        <div class="details-grid">
+            <div class="detail-item">
+                <span class="detail-label">Status</span>
+                <span class="detail-value" id="pool_view_status"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Address</span>
+                <span class="detail-value" id="pool_view_address"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Capacity</span>
+                <span class="detail-value" id="pool_view_capacity"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Coordinates</span>
+                <span class="detail-value" id="pool_view_coordinates"></span>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="toggleModal('poolViewModal')">Close</button>
+        </div>
     </div>
 </div>
 {% endblock %}

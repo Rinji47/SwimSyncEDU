@@ -1,6 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
+from django.db.models import Q
 from .models import User
+from django.contrib.auth import logout
 
 # Create your views here.
 def index(request):
@@ -113,9 +115,60 @@ def trainer_dashboard(request):
 def admin_dashboard(request):
     return render(request, 'dashboards/admin/admin_dashboard.html')
 
+# Manage Members page (placeholder)
+def manage_members(request):
+    members = User.objects.filter(role='user').order_by('-created_at')
+    q = (request.GET.get('q') or '').strip()
+    status = request.GET.get('status')
+    joined_from = request.GET.get('joined_from')
+    joined_to = request.GET.get('joined_to')
+
+    if q:
+        members = members.filter(
+            Q(username__icontains=q) |
+            Q(full_name__icontains=q) |
+            Q(email__icontains=q) |
+            Q(phone__icontains=q)
+        )
+    if status == 'active':
+        members = members.filter(is_active=True)
+    elif status == 'inactive':
+        members = members.filter(is_active=False)
+
+    if joined_from:
+        members = members.filter(created_at__date__gte=joined_from)
+    if joined_to:
+        members = members.filter(created_at__date__lte=joined_to)
+    return render(request, 'dashboards/admin/admin_manage_members.html', {'members': members})
+
 # Manage Trainers page
 def manage_trainer(request):
     trainers = User.objects.filter(role='trainer').order_by('-created_at')
+    q = (request.GET.get('q') or '').strip()
+    status = request.GET.get('status')
+    specialization = (request.GET.get('specialization') or '').strip()
+    min_exp = request.GET.get('min_exp')
+
+    if q:
+        trainers = trainers.filter(
+            Q(username__icontains=q) |
+            Q(full_name__icontains=q) |
+            Q(email__icontains=q) |
+            Q(phone__icontains=q)
+        )
+    if specialization:
+        trainers = trainers.filter(specialization__icontains=specialization)
+
+    if status == 'active':
+        trainers = trainers.filter(is_active=True)
+    elif status == 'inactive':
+        trainers = trainers.filter(is_active=False)
+
+    if min_exp:
+        try:
+            trainers = trainers.filter(experience_years__gte=int(min_exp))
+        except ValueError:
+            pass
     return render(request, 'dashboards/admin/admin_manage_trainers.html', {'trainers': trainers})
 
 # Add Trainer

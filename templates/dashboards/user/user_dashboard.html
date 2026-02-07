@@ -29,10 +29,6 @@
                 My Bookings
             </a>
             <a href="#" class="nav-item">
-                <span class="nav-icon">🏢</span>
-                Facilities
-            </a>
-            <a href="#" class="nav-item">
                 <span class="nav-icon">⭐</span>
                 My Reviews
             </a>
@@ -89,38 +85,56 @@
         <!-- Upcoming Classes -->
         <section class="dashboard-section">
             <h2>Upcoming Classes</h2>
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Class Name</th>
-                            <th>Instructor</th>
-                            <th>Facility</th>
-                            <th>Date & Time</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for booking in upcoming_bookings %}
-                        <tr>
-                            <td>{{ booking.class_name }}</td>
-                            <td>{{ booking.instructor_name }}</td>
-                            <td>{{ booking.facility_name }}</td>
-                            <td>{{ booking.datetime|date:"M d, Y - h:i A" }}</td>
-                            <td><span class="status-badge status-{{ booking.status }}">{{ booking.status }}</span></td>
-                            <td>
-                                <button class="btn-sm btn-secondary">Reschedule</button>
-                                <button class="btn-sm btn-danger">Cancel</button>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" style="text-align: center;">No upcoming classes. <a href="#" class="link">Book a class</a></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="filter-bar">
+                <div class="filter-main">
+                    <div class="filter-search">
+                        <input type="text" class="filter-input" placeholder="Search bookings...">
+                        <button type="button" class="btn-secondary">Search</button>
+                        <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-user-upcoming">Filters v</button>
+                    </div>
+                </div>
+                <div class="filter-advanced" id="filters-user-upcoming">
+                    <div class="filter-field">
+                        <label>Status</label>
+                        <select class="filter-select">
+                            <option value="">All</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="filter-field">
+                        <label>Date</label>
+                        <input type="date" class="filter-date">
+                    </div>
+                </div>
+            </div>
+            <div class="data-card-grid">
+                {% for booking in upcoming_bookings %}
+                <div class="data-card">
+                    <span class="data-card-status">{{ booking.status }}</span>
+                    <h3 class="data-card-title">{{ booking.class_name }}</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Instructor:</span>
+                        <span>{{ booking.instructor_name }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Facility:</span>
+                        <span>{{ booking.facility_name }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Date:</span>
+                        <span>{{ booking.datetime|date:"M d, Y - h:i A" }}</span>
+                    </div>
+                    <div class="data-card-actions">
+                        <button class="btn-sm btn-primary">View</button>
+                        <button class="btn-sm btn-secondary">Reschedule</button>
+                        <button class="btn-sm btn-danger">Cancel</button>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-secondary);">No upcoming classes. <a href="#" class="link">Book a class</a></p>
+                {% endfor %}
             </div>
         </section>
         
