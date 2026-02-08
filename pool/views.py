@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from math import radians, sin, cos, sqrt, atan2
 from django.contrib import messages
 from django.db.models import Q
 from .models import Pool, PoolQuality
@@ -6,7 +7,64 @@ from .models import Pool, PoolQuality
 # Create your views here.
 def nearby_pools(request):
     pools = Pool.objects.all().order_by('name')
-    return render(request, 'pools/nearby_pools.html', {'pools': pools})
+    lat = request.GET.get('lat')
+    lng = request.GET.get('lng')
+
+    def parse_coordinates(raw):
+        if not raw:
+            return None
+        parts = raw.replace(' ', '').split(',')
+        if len(parts) != 2:
+            return None
+        try:
+            return float(parts[0]), float(parts[1])
+        except ValueError:
+            return None
+
+    def haversine_km(lat1, lon1, lat2, lon2):
+        r = 6371
+        d_lat = radians(lat2 - lat1)
+        d_lon = radians(lon2 - lon1)
+        a = sin(d_lat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(d_lon / 2) ** 2
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return r * c
+
+    status_message = "Use your location to find pools within 10 km."
+    nearby = []
+
+    if lat and lng:
+        try:
+            user_lat = float(lat)
+            user_lng = float(lng)
+        except ValueError:
+            user_lat = None
+            user_lng = None
+
+        if user_lat is not None and user_lng is not None:
+            for pool in pools:
+                coords = parse_coordinates(pool.coordinates)
+                if not coords:
+                    continue
+                distance = haversine_km(user_lat, user_lng, coords[0], coords[1])
+                if distance <= 10:
+                    nearby.append((distance, pool))
+
+            if nearby:
+                nearby.sort(key=lambda item: item[0])
+                pools = [item[1] for item in nearby]
+                status_message = f"Showing {len(pools)} pool{'s' if len(pools) != 1 else ''} within 10 km."
+            else:
+                status_message = "No pools within 10 km. Showing all pools instead."
+        else:
+            status_message = "We could not read your location. Showing all pools."
+    else:
+        status_message = "Use your location to find pools within 10 km. Showing all pools."
+
+    context = {
+        'pools': pools,
+        'status_message': status_message,
+    }
+    return render(request, 'pools/nearby_pools.html', context)
 
 def manage_pools(request, pool_id=None):
     pools = Pool.objects.all()

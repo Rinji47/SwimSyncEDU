@@ -42,9 +42,9 @@
             <p>We will use your location to find pools within 10 km. If none are nearby, we will show all pools.</p>
             <div class="pools-hero-actions">
                 <button class="btn-secondary" type="button" id="requestLocationBtn">Use My Location</button>
-                <button class="btn-secondary" type="button" id="showAllPoolsBtn">Show All Pools</button>
+                <a class="btn-secondary" href="{% url 'nearby_pools' %}">Show All Pools</a>
             </div>
-            <p class="pools-status" id="poolsStatus">Requesting your location...</p>
+            <p class="pools-status" id="poolsStatus">{{ status_message }}</p>
         </div>
     </div>
 </section>
@@ -53,7 +53,7 @@
     <div class="container">
         <div class="pools-grid" id="poolsGrid">
             {% for pool in pools %}
-            <div class="pool-card" data-coordinates="{{ pool.coordinates|default_if_none:'' }}">
+            <div class="pool-card">
                 <div class="pool-card-header">
                     <h3>{{ pool.name }}</h3>
                     {% if pool.is_closed %}
