@@ -25,7 +25,7 @@ function toggleModal(modalId) {
                     initMap();
                 } else {
                     google.maps.event.trigger(map, "resize");
-                    map.setCenter(marker?.getPosition() || { lat: 27.7172, lng: 85.3240 });
+                    map.setCenter(marker?.getPosition() || { lat: 28.2096, lng: 83.9856 });
                 }
             }
 
@@ -45,9 +45,9 @@ function resetModalFields(modal) {
     if (form) form.reset();
 
     if (modal.id === "poolModal") {
-        const defaultLoc = { lat: 27.7172, lng: 85.3240 }; // Kathmandu default
-        if (marker) marker.setPosition(defaultLoc);
-        if (map) map.setCenter(defaultLoc);
+        if (marker && map) {
+            setDefaultLocation();
+        }
 
         document.getElementById("coordinates").value = "";
         document.getElementById("coordDisplay").innerText = "Click on the map to select location";
@@ -70,15 +70,15 @@ function initMap() {
     const mapDiv = document.getElementById("map");
     if (!mapDiv) return;
 
-    const defaultLoc = { lat: 27.7172, lng: 85.3240 }; // Kathmandu
+    const fallbackLoc = { lat: 28.2096, lng: 83.9856 }; // Pokhara
 
     map = new google.maps.Map(mapDiv, {
         zoom: 13,
-        center: defaultLoc,
+        center: fallbackLoc,
     });
 
     marker = new google.maps.Marker({
-        position: defaultLoc,
+        position: fallbackLoc,
         map,
         draggable: true,
     });
@@ -90,6 +90,31 @@ function initMap() {
     marker.addListener("dragend", (e) => {
         setMarker(e.latLng.lat(), e.latLng.lng());
     });
+
+    setDefaultLocation();
+}
+
+function setDefaultLocation() {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const currentLoc = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+            };
+            map.setCenter(currentLoc);
+            marker.setPosition(currentLoc);
+        },
+        () => {
+            // Keep Pokhara fallback
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 0,
+        }
+    );
 }
 
 function setMarker(lat, lng) {
@@ -107,7 +132,7 @@ function onPoolModalOpen() {
 
         google.maps.event.trigger(map, "resize");
 
-        const pos = marker ? marker.getPosition() : { lat: 27.7172, lng: 85.3240 };
+        const pos = marker ? marker.getPosition() : { lat: 28.2096, lng: 83.9856 };
 
         map.setCenter(pos);
 
@@ -138,6 +163,9 @@ function openEditPoolModal(btn) {
         const parts = pool.coordinates.split(',');
         lat = parseFloat(parts[0]);
         lng = parseFloat(parts[1]);
+    } else {
+        lat = 28.2096;
+        lng = 83.9856;
     }
 
     // Initialize or update map
@@ -332,6 +360,24 @@ function openMemberViewModal(btn) {
     document.getElementById("member_view_joined").textContent = member.joined || "";
 
     toggleModal("memberViewModal");
+}
+
+function openEditMemberModal(btn) {
+    if (!btn || !btn.dataset || !btn.dataset.member) return;
+    const modal = document.getElementById("memberModal");
+    const member = JSON.parse(btn.dataset.member);
+
+    modal.querySelector("#member_username").value = member.username || "";
+    modal.querySelector("#member_full_name").value = member.full_name || "";
+    modal.querySelector("#member_email").value = member.email || "";
+    modal.querySelector("#member_phone").value = member.phone || "";
+    modal.querySelector("#member_gender").value = member.gender || "";
+    modal.querySelector("#member_dob").value = member.date_of_birth || "";
+
+    modal.querySelector("form").action = btn.dataset.url;
+    modal.querySelector("h2").textContent = "Edit Member";
+
+    toggleModal("memberModal");
 }
 
 

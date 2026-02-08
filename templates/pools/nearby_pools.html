@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pools Near You - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/landing.css' %}">
+<link rel="stylesheet" href="{% static 'css/pools.css' %}">
+{% endblock %}
+
+{% block content %}
+<nav class="navbar">
+    <div class="container">
+        <a class="nav-brand" href="{% url 'index' %}">SwimSync EDU</a>
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <ul class="nav-menu" id="navMenu">
+            <li><a href="{% url 'index' %}#features">Features</a></li>
+            <li><a href="{% url 'index' %}#roles">For You</a></li>
+            <li><a href="{% url 'index' %}#about">About</a></li>
+            <li><a href="{% url 'nearby_pools' %}" class="active-link">Pools</a></li>
+            {% if request.session.user_id %}
+                {% if request.session.role == 'admin' %}
+                    <li><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+                {% elif request.session.role == 'trainer' %}
+                    <li><a href="{% url 'trainer_dashboard' %}">Dashboard</a></li>
+                {% else %}
+                    <li><a href="{% url 'user_dashboard' %}">Dashboard</a></li>
+                {% endif %}
+                <li><a href="{% url 'logout' %}" class="btn-primary">Logout</a></li>
+            {% else %}
+                <li><a href="{% url 'login' %}">Login</a></li>
+                <li><a href="{% url 'signup' %}" class="btn-primary">Get Started</a></li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
+
+<section class="pools-hero">
+    <div class="container">
+        <div class="pools-hero-content">
+            <h1>Pools Near You</h1>
+            <p>We will use your location to find pools within 10 km. If none are nearby, we will show all pools.</p>
+            <div class="pools-hero-actions">
+                <button class="btn-secondary" type="button" id="requestLocationBtn">Use My Location</button>
+                <button class="btn-secondary" type="button" id="showAllPoolsBtn">Show All Pools</button>
+            </div>
+            <p class="pools-status" id="poolsStatus">Requesting your location...</p>
+        </div>
+    </div>
+</section>
+
+<section class="pools-list">
+    <div class="container">
+        <div class="pools-grid" id="poolsGrid">
+            {% for pool in pools %}
+            <div class="pool-card" data-coordinates="{{ pool.coordinates|default_if_none:'' }}">
+                <div class="pool-card-header">
+                    <h3>{{ pool.name }}</h3>
+                    {% if pool.is_closed %}
+                        <span class="pool-status closed">Closed</span>
+                    {% else %}
+                        <span class="pool-status open">Open</span>
+                    {% endif %}
+                </div>
+                <p class="pool-address">{{ pool.address }}</p>
+                <p class="pool-meta">Capacity: {{ pool.capacity }}</p>
+                {% if pool.image_url %}
+                    <img src="{{ pool.image_url }}" alt="{{ pool.name }}" class="pool-image">
+                {% else %}
+                    <div class="pool-image placeholder">No image</div>
+                {% endif %}
+            </div>
+            {% empty %}
+            <p class="pools-empty">No pools available.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/pools.js' %}"></script>
+{% endblock %}

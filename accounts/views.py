@@ -15,6 +15,10 @@ def login_view(request):
 
         user = User.objects.filter(username=username).first()
         if user and user.check_password(password):
+            request.session['user_id'] = user.user_id
+            request.session['role'] = user.role
+            request.session['username'] = user.username
+            request.session['full_name'] = user.full_name or user.username
             context = {
                 'messages': [
                     {'tags': 'success', 'message': 'Login successful.'}
@@ -260,3 +264,41 @@ def toggle_trainer_status(request, trainer_id):
     status = 'activated' if trainer.is_active else 'deactivated'
     messages.success(request, f'Trainer "{trainer.username}" has been {status}.')
     return redirect('manage_trainers')
+
+
+# Edit Member (placeholder)
+def edit_member(request, member_id):
+    user = get_object_or_404(User, pk=member_id, role='user')
+
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        full_name = request.POST.get('full_name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        gender = request.POST.get('gender')
+        date_of_birth = request.POST.get('date_of_birth')
+        profile_picture = request.FILES.get('profile_picture', None)
+        
+        if User.objects.filter(username=username).exclude(pk=member_id).exists():
+            messages.error(request, 'Username already exists.')
+            return redirect('manage_members')
+        if User.objects.filter(email=email).exclude(pk=member_id).exists():
+            messages.error(request, 'Email already registered.')
+            return redirect('manage_members')
+        
+        user.username = username
+        user.full_name = full_name
+        user.email = email
+        user.phone = phone
+        user.gender = gender
+        if date_of_birth == '':
+            date_of_birth = None
+        user.date_of_birth = date_of_birth
+        if profile_picture:
+            user.profile_picture = profile_picture 
+        user.save()
+        messages.success(request, f'Member "{user.username}" updated successfully.')
+        return redirect('manage_members')
+    
+    messages.error(request, 'Invalid request.')
+    return redirect('manage_members')

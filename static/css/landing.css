@@ -1,7 +1,8 @@
 /* Navigation */
 .navbar {
   background-color: white;
-  box-shadow: 0 2px 8px var(--shadow);
+  box-shadow: 0 1px 6px var(--shadow);
+  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -11,31 +12,52 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 0.65rem 1.5rem;
+  max-width: none;
+  width: 100%;
 }
 
 .nav-brand {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: var(--primary);
+  letter-spacing: 0.2px;
+  margin-right: auto;
+  text-decoration: none;
 }
 
 .nav-menu {
   display: flex;
   list-style: none;
-  gap: 2rem;
+  gap: 1.5rem;
   align-items: center;
+  margin-left: auto;
 }
 
 .nav-menu li a {
   text-decoration: none;
   color: var(--text-primary);
   font-weight: 500;
-  transition: color 0.3s;
+  font-size: 0.95rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 .nav-menu li a:hover {
   color: var(--primary);
+  background-color: #ecfeff;
+}
+
+.nav-menu li a.btn-primary {
+  color: white;
+  background-color: var(--primary);
+  border-radius: 10px;
+}
+
+.nav-menu li a.btn-primary:hover {
+  color: white;
+  background-color: var(--primary-dark);
 }
 
 @media (max-width: 768px) {

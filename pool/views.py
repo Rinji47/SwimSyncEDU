@@ -4,6 +4,10 @@ from django.db.models import Q
 from .models import Pool, PoolQuality
 
 # Create your views here.
+def nearby_pools(request):
+    pools = Pool.objects.all().order_by('name')
+    return render(request, 'pools/nearby_pools.html', {'pools': pools})
+
 def manage_pools(request, pool_id=None):
     pools = Pool.objects.all()
 

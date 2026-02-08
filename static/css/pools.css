@@ -1,0 +1,116 @@
+.pools-hero {
+  padding: 3rem 0 2rem;
+  background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
+}
+
+.pools-hero-content h1 {
+  font-size: 2.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.pools-hero-content p {
+  color: var(--text-secondary);
+}
+
+.pools-hero-actions {
+  margin-top: 1rem;
+}
+
+.pools-status {
+  margin-top: 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.pools-list {
+  padding: 3rem 0 4rem;
+  background-color: white;
+}
+
+.pools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.pool-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: 0 6px 18px var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pool-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pool-card-header h3 {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.pool-status {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.pool-status.open {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.pool-status.closed {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.pool-address {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.pool-meta {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.pool-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-top: 0.5rem;
+}
+
+.pool-image.placeholder {
+  background: linear-gradient(135deg, #e2e8f0 0%, #f8fafc 100%);
+  border: 1px dashed #cbd5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+.pools-empty {
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .pools-hero {
+    padding: 2.5rem 0 1.5rem;
+  }
+}

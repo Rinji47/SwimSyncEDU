@@ -75,7 +75,7 @@
                         <span>{{ member.created_at|date:"M d, Y" }}</span>
                     </div>
                     <div class="data-card-actions">
-                        <button class="btn-sm btn-secondary" type="button"
+                        <button class="btn-sm btn-primary" type="button"
                             onclick="openMemberViewModal(this)"
                             data-member='{
                                 "username": "{{ member.username|escapejs }}",
@@ -88,7 +88,18 @@
                                 "status": "{% if member.is_active %}Active{% else %}Inactive{% endif %}"
                             }'
                         >View</button>
-                        <button class="btn-sm btn-primary" type="button">Edit</button>
+                        <button class="btn-sm btn-secondary" type="button"
+                            onclick="openEditMemberModal(this)"
+                            data-url="{% url 'edit_member' member.user_id %}"
+                            data-member='{
+                                "username": "{{ member.username|escapejs }}",
+                                "full_name": "{{ member.full_name|default:member.username|escapejs }}",
+                                "email": "{{ member.email|escapejs }}",
+                                "phone": "{{ member.phone|default:""|escapejs }}",
+                                "gender": "{{ member.gender|default:""|escapejs }}",
+                                "date_of_birth": "{{ member.date_of_birth|date:"Y-m-d" }}"
+                            }'
+                        >Edit</button>
                         <button class="btn-sm btn-danger" type="button">Deactivate</button>
                     </div>
                 </div>
@@ -142,4 +153,60 @@
         </div>
     </div>
 </div>
+
+<!-- Member Edit Modal -->
+<div id="memberModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Member</h2>
+            <span class="close" onclick="toggleModal('memberModal')">&times;</span>
+        </div>
+        <form method="POST" enctype="multipart/form-data" id="memberForm">
+            {% csrf_token %}
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="member_username">Username</label>
+                    <input type="text" name="username" id="member_username" required>
+                </div>
+                <div class="form-group">
+                    <label for="member_full_name">Full Name</label>
+                    <input type="text" name="full_name" id="member_full_name">
+                </div>
+                <div class="form-group">
+                    <label for="member_email">Email</label>
+                    <input type="email" name="email" id="member_email" required>
+                </div>
+                <div class="form-group">
+                    <label for="member_phone">Phone</label>
+                    <input type="text" name="phone" id="member_phone">
+                </div>
+                <div class="form-group">
+                    <label for="member_gender">Gender</label>
+                    <select name="gender" id="member_gender">
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="member_dob">Date of Birth</label>
+                    <input type="date" name="date_of_birth" id="member_dob">
+                </div>
+                <div class="form-group full-width">
+                    <label for="member_profile_picture">Profile Picture</label>
+                    <input type="file" name="profile_picture" id="member_profile_picture" accept="image/*">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="toggleModal('memberModal')">Cancel</button>
+                <button type="submit" class="btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/admin_manage.js' %}"></script>
 {% endblock %}

@@ -17,8 +17,20 @@
             <li><a href="#features">Features</a></li>
             <li><a href="#roles">For You</a></li>
             <li><a href="#about">About</a></li>
-            <li><a href="{% url 'login' %}">Login</a></li>
-            <li><a href="{% url 'signup' %}" class="btn-primary">Get Started</a></li>
+            <li><a href="{% url 'nearby_pools' %}">Pools</a></li>
+            {% if request.session.user_id %}
+                {% if request.session.role == 'admin' %}
+                    <li><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+                {% elif request.session.role == 'trainer' %}
+                    <li><a href="{% url 'trainer_dashboard' %}">Dashboard</a></li>
+                {% else %}
+                    <li><a href="{% url 'user_dashboard' %}">Dashboard</a></li>
+                {% endif %}
+                <li><a href="{% url 'logout' %}" class="btn-primary">Logout</a></li>
+            {% else %}
+                <li><a href="{% url 'login' %}">Login</a></li>
+                <li><a href="{% url 'signup' %}" class="btn-primary">Get Started</a></li>
+            {% endif %}
         </ul>
     </div>
 </nav>
@@ -30,8 +42,19 @@
             <h1>Master Swimming with SwimSync EDU</h1>
             <p class="hero-subtitle">Connect with certified trainers, book classes, and dive into your swimming journey</p>
             <div class="hero-buttons">
-                <a href="{% url 'signup' %}" class="btn-primary btn-lg">Start Learning</a>
-                <a href="#features" class="btn-secondary btn-lg">Learn More</a>
+                {% if request.session.user_id %}
+                    {% if request.session.role == 'admin' %}
+                        <a href="{% url 'admin_dashboard' %}" class="btn-primary btn-lg">Go to Dashboard</a>
+                    {% elif request.session.role == 'trainer' %}
+                        <a href="{% url 'trainer_dashboard' %}" class="btn-primary btn-lg">Go to Dashboard</a>
+                    {% else %}
+                        <a href="{% url 'user_dashboard' %}" class="btn-primary btn-lg">Go to Dashboard</a>
+                    {% endif %}
+                    <a href="#features" class="btn-secondary btn-lg">Learn More</a>
+                {% else %}
+                    <a href="{% url 'signup' %}" class="btn-primary btn-lg">Start Learning</a>
+                    <a href="#features" class="btn-secondary btn-lg">Learn More</a>
+                {% endif %}
             </div>
         </div>
         <div class="hero-image">
@@ -91,7 +114,17 @@
                     <li>Browse and book swimming classes</li>
                     <li>Track your progress and bookings</li>
                 </ul>
-                <a href="{% url 'signup' %}" class="btn-primary">Join as Member</a>
+                {% if request.session.user_id %}
+                    {% if request.session.role == 'admin' %}
+                        <a href="{% url 'admin_dashboard' %}" class="btn-primary">Go to Dashboard</a>
+                    {% elif request.session.role == 'trainer' %}
+                        <a href="{% url 'trainer_dashboard' %}" class="btn-primary">Go to Dashboard</a>
+                    {% else %}
+                        <a href="{% url 'user_dashboard' %}" class="btn-primary">Go to Dashboard</a>
+                    {% endif %}
+                {% else %}
+                    <a href="{% url 'signup' %}" class="btn-primary">Join as Member</a>
+                {% endif %}
             </div>
             <div class="role-card">
                 <div class="role-icon">👨‍🏫</div>
