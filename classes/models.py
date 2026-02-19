@@ -8,6 +8,8 @@ class ClassType(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     cost = models.DecimalField(max_digits=8, decimal_places=2)
+    is_group = models.BooleanField(default=True)
+    duration_days = models.PositiveIntegerField(default=0)
     is_closed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -21,7 +23,7 @@ class ClassSession(models.Model):
     class_type = models.ForeignKey(ClassType, on_delete=models.CASCADE)
 
     class_name = models.CharField(max_length=100)
-    total_sessions = models.IntegerField()
+    total_sessions = models.IntegerField(null=True, blank=True)
     seats = models.IntegerField()
     start_date = models.DateField()
     end_date = models.DateField()
@@ -36,7 +38,16 @@ class ClassSession(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        self.total_price = self.class_type.cost * self.total_sessions
+        # Group classes: use fixed cost from class_type
+        # Private classes: multiply cost by total_sessions
+        if self.class_type.is_group:
+            self.total_price = self.class_type.cost
+        else:
+            # Private class - requires total_sessions
+            if self.total_sessions:
+                self.total_price = self.class_type.cost * self.total_sessions
+            else:
+                self.total_price = self.class_type.cost
         super().save(*args, **kwargs)
 
     def __str__(self):

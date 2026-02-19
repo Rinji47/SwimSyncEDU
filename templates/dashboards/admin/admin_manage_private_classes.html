@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Private Classes - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "./components/admin_sidebar.html" %}
+
+    <main class="dashboard-main">
+        {% include "../../components/message.html" %}
+        <div class="dashboard-header">
+            <div>
+                <h1>Manage Private Classes</h1>
+                <p style="color: var(--text-secondary);">View and manage pricing for private class sessions</p>
+            </div>
+            <button class="btn-primary" onclick="toggleModal('setPrivatePriceModal')">Set Private Class Price</button>
+        </div>
+
+        <form class="filter-bar" method="GET">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search private classes..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-private-classes">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced" id="filters-private-classes">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>Pool</label>
+                    <select class="filter-select" name="pool">
+                        <option value="">All Pools</option>
+                        {% for pool in pools %}
+                        <option value="{{ pool.pool_id }}" {% if request.GET.pool == pool.pool_id|stringformat:"i" %}selected{% endif %}>{{ pool.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>Trainer</label>
+                    <select class="filter-select" name="trainer">
+                        <option value="">All Trainers</option>
+                        {% for trainer in trainers %}
+                        <option value="{{ trainer.user_id }}" {% if request.GET.trainer == trainer.user_id|stringformat:"i" %}selected{% endif %}>{{ trainer.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </form>
+
+        <!-- CARD GRID -->
+        <div class="dashboard-section card-grid">
+            {% for session in private_classes %}
+            <div class="class-card">
+            <span class="class-status {% if session.is_cancelled %}status-cancelled{% else %}status-open{% endif %}">
+                {% if session.is_cancelled %}Cancelled{% else %}Active{% endif %}
+            </span>
+            <h3>{{ session.class_name }}</h3>
+            <p><strong>Pool:</strong> {{ session.pool.name }}</p>
+            <p><strong>Trainer:</strong> {{ session.user.full_name|default:session.user.username }}</p>
+            <p><strong>Dates:</strong> {{ session.start_date|date:"M d" }} - {{ session.end_date|date:"M d" }}</p>
+            <p><strong>Time:</strong> {{ session.start_time|time:"H:i" }} - {{ session.end_time|time:"H:i" }}</p>
+            <p><strong>Seats:</strong> {{ session.seats }}</p>
+            <p><strong>Total Sessions:</strong> {{ session.total_sessions|default:"N/A" }}</p>
+            <p><strong>Current Price:</strong> ${{ session.total_price }}</p>
+
+            <div class="card-actions">
+                <button type="button" class="btn-sm btn-primary"
+                    onclick="openViewPrivateModal(this)"
+                    data-class-name="{{ session.class_name|escape }}"
+                    data-pool-name="{{ session.pool.name|escape }}"
+                    data-trainer-name="{{ session.user.full_name|default:session.user.username|escape }}"
+                    data-class-type="{{ session.class_type.name|escape }}"
+                    data-start-date="{{ session.start_date|date:"Y-m-d" }}"
+                    data-end-date="{{ session.end_date|date:"Y-m-d" }}"
+                    data-start-time="{{ session.start_time|time:"H:i" }}"
+                    data-end-time="{{ session.end_time|time:"H:i" }}"
+                    data-seats="{{ session.seats }}"
+                    data-total-sessions="{{ session.total_sessions|default:'' }}"
+                    data-total-price="{{ session.total_price }}"
+                    data-is-cancelled="{% if session.is_cancelled %}true{% else %}false{% endif %}"
+                >View Details</button>
+
+                <button type="button" class="btn-sm btn-secondary"
+                        onclick="openEditPriceModal(this)"
+                        data-url="{% url 'edit_private_class_price' session.id %}"
+                        data-class-name="{{ session.class_name|escape }}"
+                        data-current-price="{{ session.total_price }}"
+                        data-class-id="{{ session.id }}">
+                    Edit Price
+                </button>
+            </div>
+
+        </div>
+        {% empty %}
+            <p>No private class sessions found.</p>
+        {% endfor %}
+        </div>
+    </main>
+</div>
+
+<!-- SET PRIVATE CLASS PRICE MODAL -->
+<div id="setPrivatePriceModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Set Private Class Price</h2>
+            <span class="close" onclick="toggleModal('setPrivatePriceModal')">&times;</span>
+        </div>
+        <form method="POST" action="{% url 'manage_private_classes' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="base_price">Base Price per Session ($)</label>
+                <input type="number" step="0.01" id="base_price" name="base_price" required placeholder="Enter default price">
+                <small style="color: var(--text-secondary);">This sets the default cost per session for private classes. Individual prices can still be edited.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="toggleModal('setPrivatePriceModal')">Cancel</button>
+                <button type="submit" class="btn-primary">Save Price</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- VIEW DETAILS MODAL -->
+<div id="viewPrivateModal" class="modal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h2 id="view_private_class_name">Private Class Details</h2>
+            <span class="close" onclick="toggleModal('viewPrivateModal')">&times;</span>
+        </div>
+        <div class="details-grid">
+            <div class="detail-item">
+                <span class="detail-label">Class Name</span>
+                <span class="detail-value" id="view_private_name"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Pool</span>
+                <span class="detail-value" id="view_private_pool"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Trainer</span>
+                <span class="detail-value" id="view_private_trainer"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Class Type</span>
+                <span class="detail-value" id="view_private_type"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Dates</span>
+                <span class="detail-value" id="view_private_dates"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Time</span>
+                <span class="detail-value" id="view_private_time"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Seats</span>
+                <span class="detail-value" id="view_private_seats"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Total Sessions</span>
+                <span class="detail-value" id="view_private_sessions"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Total Price</span>
+                <span class="detail-value">$<span id="view_private_price"></span></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Status</span>
+                <span class="detail-value" id="view_private_cancelled"></span>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="toggleModal('viewPrivateModal')">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT PRICE MODAL -->
+<div id="editPriceModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Private Class Price</h2>
+            <span class="close" onclick="toggleModal('editPriceModal')">&times;</span>
+        </div>
+        <form method="POST" id="editPriceForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Class Name</label>
+                <p id="edit_price_class_name" style="font-weight: 500; color: var(--text-primary);"></p>
+            </div>
+            <div class="form-group">
+                <label for="total_price">New Price ($)</label>
+                <input type="number" step="0.01" id="total_price" name="total_price" required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="toggleModal('editPriceModal')">Cancel</button>
+                <button type="submit" class="btn-primary">Update Price</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/admin_manage.js' %}"></script>
+<script>
+function openViewPrivateModal(btn) {
+    if (!btn || !btn.dataset) return;
+
+    const isCancelled = btn.dataset.isCancelled === "true";
+
+    document.getElementById('view_private_name').textContent = btn.dataset.className || "";
+    document.getElementById('view_private_pool').textContent = btn.dataset.poolName || "";
+    document.getElementById('view_private_trainer').textContent = btn.dataset.trainerName || "";
+    document.getElementById('view_private_type').textContent = btn.dataset.classType || "";
+    document.getElementById('view_private_dates').textContent = `${btn.dataset.startDate || ""} - ${btn.dataset.endDate || ""}`;
+    document.getElementById('view_private_time').textContent = `${btn.dataset.startTime || ""} - ${btn.dataset.endTime || ""}`;
+    document.getElementById('view_private_seats').textContent = btn.dataset.seats || "";
+    document.getElementById('view_private_sessions').textContent = btn.dataset.totalSessions || "N/A";
+    document.getElementById('view_private_price').textContent = btn.dataset.totalPrice || "";
+    document.getElementById('view_private_cancelled').textContent = isCancelled ? "Cancelled" : "Active";
+
+    toggleModal('viewPrivateModal');
+}
+
+function openEditPriceModal(btn) {
+    if (!btn || !btn.dataset) return;
+
+    const form = document.getElementById('editPriceForm');
+    form.action = btn.dataset.url;
+    
+    document.getElementById('edit_price_class_name').textContent = btn.dataset.className || "";
+    document.getElementById('total_price').value = btn.dataset.currentPrice || "";
+
+    toggleModal('editPriceModal');
+}
+</script>
+{% endblock %}

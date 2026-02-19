@@ -2,7 +2,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from math import radians, sin, cos, sqrt, atan2
 from django.contrib import messages
 from django.db.models import Q
-from .models import Pool, PoolQuality
+from classes.models import ClassSession, ClassType
+from .models import Pool, PoolQuality, TrainerPoolAssignment
+from django.utils import timezone
+from accounts.models import User
+from datetime import timedelta, datetime
 
 # Create your views here.
 def nearby_pools(request):
@@ -29,7 +33,7 @@ def nearby_pools(request):
         c = 2 * atan2(sqrt(a), sqrt(1 - a))
         return r * c
 
-    status_message = "Use your location to find pools within 10 km."
+    status_message = "Enable location to see pools within 10 km."
     nearby = []
 
     if lat and lng:
@@ -58,13 +62,48 @@ def nearby_pools(request):
         else:
             status_message = "We could not read your location. Showing all pools."
     else:
-        status_message = "Use your location to find pools within 10 km. Showing all pools."
+        status_message = "Enable location to see pools within 10 km. Showing all pools for now."
 
     context = {
         'pools': pools,
         'status_message': status_message,
     }
     return render(request, 'pools/nearby_pools.html', context)
+
+def pool_class_types(request, pool_id):
+    pool = get_object_or_404(Pool, pk=pool_id)
+
+    class_types = []
+    for types in ClassSession.objects.filter(pool=pool, 
+                                             is_cancelled=False, 
+                                             start_date__gte=timezone.now().date()
+                                             ).values('class_type').distinct():
+        for type in ClassType.objects.filter(pk=types['class_type'], is_closed=False):
+            class_types.append(type)
+
+    context = {
+        'pool': pool,
+        'class_types': class_types,
+    }
+    return render(request, 'pools/pool_classtypes.html', context)
+
+def pool_classes(request, class_type_id, pool_id):
+    pool = get_object_or_404(Pool, pk=pool_id)
+    class_type = get_object_or_404(ClassType, pk=class_type_id)
+
+    classes = ClassSession.objects.filter(pool=pool, 
+                                          class_type=class_type,
+                                          is_cancelled=False, 
+                                          start_date__gte=timezone.now().date()
+                                          ).order_by('start_date', 'start_time')
+
+    context = {
+        'pool': pool,
+        'class_type': class_type,
+        'classes': classes,
+    }
+    return render(request, 'pools/pool_classes.html', context)
+
 
 def manage_pools(request, pool_id=None):
     pools = Pool.objects.all()
@@ -249,3 +288,121 @@ def delete_quality(request, quality_id):
     quality.delete()
     messages.success(request, 'Quality record deleted successfully.')
     return redirect('manage_quality')
+
+def assign_trainer_manager(request):
+    assigned_trainers = TrainerPoolAssignment.objects.select_related('trainer', 'pool').all()
+    pools = Pool.objects.all()
+    pool_filter = request.GET.get('pool')
+    trainer_filter = (request.GET.get('trainer') or '').strip()
+    date_filter = request.GET.get('date')
+
+    if pool_filter:
+        assigned_trainers = assigned_trainers.filter(pool_id=pool_filter)
+    if trainer_filter:
+        assigned_trainers = assigned_trainers.filter(
+            Q(trainer__full_name__icontains=trainer_filter) |
+            Q(trainer__email__icontains=trainer_filter)
+        )
+    if date_filter:
+        assigned_trainers = assigned_trainers.filter(start_date__lte=date_filter).filter(Q(end_date__gte=date_filter) | Q(end_date__isnull=True))
+
+    context = {
+        'assigned_trainers': assigned_trainers,
+        'pools': pools
+    }
+    return render(request, 'dashboards/admin/trainer_assignment/assign_trainer_manager.html', context)
+
+def list_pools(request):
+    pools = Pool.objects.all().order_by('name')
+    q = (request.GET.get('q') or '').strip()
+    status = request.GET.get('status')
+    if q:
+        pools = pools.filter(Q(name__icontains=q) | Q(address__icontains=q))
+    if status == 'open':
+        pools = pools.filter(is_closed=False)
+    elif status == 'closed':
+        pools = pools.filter(is_closed=True)
+    context = {
+        'pools': pools
+    }
+    return render(request, 'dashboards/admin/trainer_assignment/list_pools.html', context)
+
+def list_trainers(request, pool_id):
+    pool = get_object_or_404(Pool, pk=pool_id)
+    trainers = User.objects.filter(role='trainer')
+    q = (request.GET.get('q') or '').strip()
+    assignment = request.GET.get('assignment')
+    trainers_assigned_id = TrainerPoolAssignment.objects.filter(is_active=True).values_list('trainer_id', flat=True).distinct()
+
+    if q:
+        trainers = trainers.filter(Q(full_name__icontains=q) | Q(email__icontains=q))
+    if assignment == 'assigned':
+        trainers = trainers.filter(user_id__in=trainers_assigned_id)
+    elif assignment == 'not_assigned':
+        trainers = trainers.exclude(user_id__in=trainers_assigned_id)
+
+    context = {
+        'pool': pool,
+        'trainers': trainers,
+        'trainers_assigned_id': trainers_assigned_id
+    }
+    return render(request, 'dashboards/admin/trainer_assignment/list_trainers.html', context)
+
+def assign_trainer(request, pool_id, trainer_id):
+    pool = get_object_or_404(Pool, pk=pool_id)
+    trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
+
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date') or None
+
+        if not start_date:
+            messages.error(request, 'Start date is required.')
+            return redirect('assign_trainer', pool_id=pool_id, trainer_id=trainer_id)
+        
+        trainer_assigned = TrainerPoolAssignment.objects.filter(trainer=trainer)
+    
+        if end_date:
+            overlapping_assignments = trainer_assigned.filter(
+                is_active=True
+            ).filter(
+                Q(end_date__isnull=True) | Q(start_date__lte=end_date, end_date__gte=start_date)
+            )
+        else:
+            overlapping_assignments = trainer_assigned.filter(
+                is_active=True
+            ).filter(
+                Q(end_date__isnull=True) | Q(end_date__gte=start_date)
+            )
+
+        if overlapping_assignments.exists():
+            messages.error(request, 'This trainer is already assigned to another pool during the selected period.')
+            return redirect('assign_trainer', pool_id=pool_id, trainer_id=trainer_id)
+
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        if end_date:
+            end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+            
+        TrainerPoolAssignment.objects.create(
+            trainer=trainer,
+            pool=pool,
+            start_date=start_date,
+            end_date=end_date,
+            is_active=True
+        )
+        messages.success(request, 'Trainer assigned successfully.')
+        return redirect('assign_trainer_manager')
+
+    context = {
+        'pool': pool,
+        'trainer': trainer
+    }
+    return render(request, 'dashboards/admin/trainer_assignment/assign_trainer.html', context)
+
+def unassign_trainer(request, assignment_id):
+    assignment = get_object_or_404(TrainerPoolAssignment, pk=assignment_id)
+    assignment.end_date = timezone.now().date()
+    assignment.is_active = False
+    assignment.save(update_fields=['end_date', 'is_active'])
+    messages.success(request, 'Trainer unassigned successfully.')
+    return redirect('assign_trainer_manager')

@@ -1,8 +1,13 @@
 const requestLocationBtn = document.getElementById("requestLocationBtn");
+const poolsStatus = document.getElementById("poolsStatus");
 function requestLocation() {
     if (!navigator.geolocation) {
         window.location.href = window.location.pathname;
         return;
+    }
+
+    if (poolsStatus) {
+        poolsStatus.textContent = "Finding pools near you...";
     }
     navigator.geolocation.getCurrentPosition(
         (position) => {

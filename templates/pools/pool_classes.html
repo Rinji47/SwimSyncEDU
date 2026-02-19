@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Pools Near You - SwimSync EDU{% endblock %}
+{% block title %}{{ class_type.name }} Classes at {{ pool.name }} - SwimSync EDU{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/landing.css' %}">
@@ -17,7 +17,7 @@
             <li><a href="{% url 'index' %}#features">Features</a></li>
             <li><a href="{% url 'index' %}#roles">For You</a></li>
             <li><a href="{% url 'index' %}#about">About</a></li>
-            <li><a href="{% url 'nearby_pools' %}" class="active-link">Pools</a></li>
+            <li><a href="{% url 'nearby_pools' %}">Pools</a></li>
             {% if request.session.user_id %}
                 {% if request.session.role == 'admin' %}
                     <li><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
@@ -38,41 +38,40 @@
 <section class="pools-hero">
     <div class="container">
         <div class="pools-hero-content">
-            <h1>Pools Near You</h1>
-            <p>We will use your location to find pools within 10 km. If none are nearby, we will show all pools.</p>
+            <h1>{{ class_type.name }} at {{ pool.name }}</h1>
+            <p>Browse scheduled classes for this class type. Sorting and filters will be added on the backend.</p>
             <div class="pools-hero-actions">
-                <button class="btn-secondary" type="button" id="requestLocationBtn">Use My Location</button>
-                <a class="btn-secondary" href="{% url 'nearby_pools' %}">Show All Pools</a>
+                <a class="btn-secondary" href="{% url 'pool_class_types' pool.pool_id %}">Back to Class Types</a>
+                <a class="btn-secondary" href="{% url 'nearby_pools' %}">Back to Pools</a>
             </div>
-            <p class="pools-status" id="poolsStatus">{{ status_message }}</p>
         </div>
     </div>
 </section>
 
 <section class="pools-list">
     <div class="container">
-        <div class="pools-grid" id="poolsGrid">
-            {% for pool in pools %}
+        <div class="pools-grid">
+            {% for class_item in classes %}
             <div class="pool-card">
                 <div class="pool-card-header">
-                    <h3>{{ pool.name }}</h3>
-                    {% if pool.is_closed %}
-                        <span class="pool-status closed">Closed</span>
+                    <h3>{{ class_item.class_name }}</h3>
+                    {% if class_item.is_cancelled %}
+                        <span class="pool-status closed">Cancelled</span>
                     {% else %}
                         <span class="pool-status open">Open</span>
                     {% endif %}
                 </div>
-                <p class="pool-address">{{ pool.address }}</p>
-                <p class="pool-meta">Capacity: {{ pool.capacity }}</p>
-                <a class="btn-secondary" href="{% url 'pool_class_types' pool.pool_id %}">View Classes</a>
-                {% if pool.image_url %}
-                    <img src="{{ pool.image_url }}" alt="{{ pool.name }}" class="pool-image">
-                {% else %}
-                    <div class="pool-image placeholder">No image</div>
+                <p class="pool-address">Trainer: {{ class_item.user.full_name|default:class_item.user.username }}</p>
+                <p class="pool-meta">Dates: {{ class_item.start_date|date:"M d, Y" }} - {{ class_item.end_date|date:"M d, Y" }}</p>
+                <p class="pool-meta">Time: {{ class_item.start_time|time:"H:i" }} - {{ class_item.end_time|time:"H:i" }}</p>
+                <p class="pool-meta">Seats: {{ class_item.seats }}</p>
+                {% if class_item.total_sessions %}
+                <p class="pool-meta">Total Sessions: {{ class_item.total_sessions }}</p>
                 {% endif %}
+                <p class="pool-meta">Total Price: ${{ class_item.total_price }}</p>
             </div>
             {% empty %}
-            <p class="pools-empty">No pools available.</p>
+            <p class="pools-empty">No classes scheduled for this class type yet.</p>
             {% endfor %}
         </div>
     </div>

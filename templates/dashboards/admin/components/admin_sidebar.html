@@ -41,6 +41,14 @@
             <span class="nav-icon">📚</span>
             Manage Classes
         </a>
+        <a href="{% url 'assign_trainer_manager' %}" class="nav-item {% if request.path == '/pool/admin/assign_trainer_manager/' %}active{% endif %}">
+            <span class="nav-icon">🧑‍🏫</span>
+            Trainer Assignments
+        </a>
+        <a href="{% url 'manage_private_classes' %}" class="nav-item {% if request.path == '/classes/manage_private_classes/' %}active{% endif %}">
+            <span class="nav-icon">🔒</span>
+            Private Classes
+        </a>
         <a href="#" class="nav-item">
             <span class="nav-icon">📈</span>
             Reports

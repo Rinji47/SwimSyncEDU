@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Assign Trainers to Pools - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "../components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "../../../components/message.html" %}
+        <div class="dashboard-header">
+            <h1>Trainer Assignments</h1>
+            <a href="{% url 'list_pools' %}" class="btn-primary">Assign New Trainer</a>
+        </div>
+        <form class="filter-bar" method="get">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <select name="pool" class="filter-select">
+                        <option value="">All Pools</option>
+                        {% for pool in pools %}
+                        <option value="{{ pool.id }}" {% if request.GET.pool == pool.id|stringformat:'s' %}selected{% endif %}>{{ pool.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="text" class="filter-input" name="trainer" placeholder="Trainer name/email" value="{{ request.GET.trainer|default:'' }}">
+                    <input type="date" class="filter-date" name="date" value="{{ request.GET.date|default:'' }}">
+                    <button type="submit" class="btn-secondary">Filter</button>
+                </div>
+            </div>
+        </form>
+        <div class="dashboard-section card-grid">
+            {% for assignment in assigned_trainers %}
+            <div class="class-card">
+                <span class="class-status {% if assignment.is_active %}status-open{% else %}status-cancelled{% endif %}">
+                    {% if assignment.is_active %}Active{% else %}Ended{% endif %}
+                </span>
+                <h3>{{ assignment.trainer.full_name }}</h3>
+                <p><strong>Pool:</strong> {{ assignment.pool.name }}</p>
+                <p><strong>Start Date:</strong> {{ assignment.start_date }}</p>
+                <p><strong>End Date:</strong> {{ assignment.end_date|default:'-' }}</p>
+                <div class="card-actions">
+                    {% if assignment.is_active %}
+                    <form method="post" action="{% url 'unassign_trainer' assignment.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-danger btn-sm">Unassign</button>
+                    </form>
+                    {% else %}
+                    <span class="btn btn-disabled btn-sm">Unassigned</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div class="class-card">
+                <p>No trainer assignments found.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

@@ -1,4 +1,6 @@
+from datetime import datetime, timedelta, timezone
 from django.db import models
+from accounts.models import User
 
 # Create your models here.
 class Pool(models.Model):
@@ -33,3 +35,17 @@ class PoolQuality(models.Model):
 
     def __str__(self):
         return f"{self.pool.name} Quality on {self.date}"
+
+class TrainerPoolAssignment(models.Model):
+    trainer = models.ForeignKey(User, on_delete=models.CASCADE)
+    pool = models.ForeignKey(Pool, on_delete=models.CASCADE)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    def update_status(self):
+        today = timezone.now().date()
+        if self.end_date and self.end_date < today:
+            if self.is_active:
+                self.is_active = False
+                self.save(update_fields=['is_active'])

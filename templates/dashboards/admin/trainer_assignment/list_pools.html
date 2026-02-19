@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Select Pool - Assign Trainer{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "../components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "../../../components/message.html" %}
+        <div class="dashboard-header">
+            <h1>Select Pool</h1>
+            <a href="{% url 'assign_trainer_manager' %}" class="btn-secondary">Back to Assignments</a>
+        </div>
+        <form class="filter-bar" method="get">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search by name or address" value="{{ request.GET.q|default:'' }}">
+                    <select name="status" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Open</option>
+                        <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>Closed</option>
+                    </select>
+                    <button type="submit" class="btn-secondary">Filter</button>
+                </div>
+            </div>
+        </form>
+        <div class="dashboard-section card-grid">
+            {% for pool in pools %}
+            <div class="class-card">
+                <span class="class-status {% if not pool.is_closed %}status-open{% else %}status-cancelled{% endif %}">
+                    {% if not pool.is_closed %}Open{% else %}Closed{% endif %}
+                </span>
+                <h3>{{ pool.name }}</h3>
+                <p><strong>Address:</strong> {{ pool.address }}</p>
+                <p><strong>Capacity:</strong> {{ pool.capacity }}</p>
+                <div class="card-actions">
+                    <a href="{% url 'list_trainers' pool.pool_id %}" class="btn-primary btn-sm">Select</a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="class-card">
+                <p>No pools found.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Pools Near You - SwimSync EDU{% endblock %}
+{% block title %}Classes at {{ pool.name }} - SwimSync EDU{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/landing.css' %}">
@@ -17,7 +17,7 @@
             <li><a href="{% url 'index' %}#features">Features</a></li>
             <li><a href="{% url 'index' %}#roles">For You</a></li>
             <li><a href="{% url 'index' %}#about">About</a></li>
-            <li><a href="{% url 'nearby_pools' %}" class="active-link">Pools</a></li>
+            <li><a href="{% url 'nearby_pools' %}">Pools</a></li>
             {% if request.session.user_id %}
                 {% if request.session.role == 'admin' %}
                     <li><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
@@ -38,41 +38,40 @@
 <section class="pools-hero">
     <div class="container">
         <div class="pools-hero-content">
-            <h1>Pools Near You</h1>
-            <p>We will use your location to find pools within 10 km. If none are nearby, we will show all pools.</p>
+            <h1>Classes at {{ pool.name }}</h1>
+            <p>Browse available class types for this pool. Sorting and filters will be added on the backend.</p>
             <div class="pools-hero-actions">
-                <button class="btn-secondary" type="button" id="requestLocationBtn">Use My Location</button>
-                <a class="btn-secondary" href="{% url 'nearby_pools' %}">Show All Pools</a>
+                <a class="btn-secondary" href="{% url 'nearby_pools' %}">Back to Pools</a>
             </div>
-            <p class="pools-status" id="poolsStatus">{{ status_message }}</p>
         </div>
     </div>
 </section>
 
 <section class="pools-list">
     <div class="container">
-        <div class="pools-grid" id="poolsGrid">
-            {% for pool in pools %}
+        <div class="pools-hero-content" style="margin-bottom: 24px;">
+            <h2>Private Class</h2>
+            <p>Start a private class for this pool. This is a placeholder until backend rules are wired.</p>
+            <button class="btn-secondary" type="button" disabled>Create Private Class (Coming Soon)</button>
+        </div>
+        <div class="pools-hero-content" style="margin-bottom: 24px;">
+            <h2>All Class Types</h2>
+        </div>
+        <div class="pools-grid">
+            {% for class_item in class_types %}
             <div class="pool-card">
                 <div class="pool-card-header">
-                    <h3>{{ pool.name }}</h3>
-                    {% if pool.is_closed %}
-                        <span class="pool-status closed">Closed</span>
-                    {% else %}
-                        <span class="pool-status open">Open</span>
-                    {% endif %}
+                    <h3>{{ class_item.name }}</h3>
+                    <span class="pool-status {% if class_item.is_closed %}closed{% else %}open{% endif %}">
+                        {% if class_item.is_closed %}Closed{% else %}Open{% endif %}
+                    </span>
                 </div>
-                <p class="pool-address">{{ pool.address }}</p>
-                <p class="pool-meta">Capacity: {{ pool.capacity }}</p>
-                <a class="btn-secondary" href="{% url 'pool_class_types' pool.pool_id %}">View Classes</a>
-                {% if pool.image_url %}
-                    <img src="{{ pool.image_url }}" alt="{{ pool.name }}" class="pool-image">
-                {% else %}
-                    <div class="pool-image placeholder">No image</div>
-                {% endif %}
+                <p class="pool-address">{{ class_item.description }}</p>
+                <p class="pool-meta">Price: ${{ class_item.cost }}</p>
+                <a class="btn-secondary" href="{% url 'pool_classes' pool.pool_id class_item.class_type_id %}">View Classes</a>
             </div>
             {% empty %}
-            <p class="pools-empty">No pools available.</p>
+            <p class="pools-empty">No class types to show yet. Backend hookup coming soon.</p>
             {% endfor %}
         </div>
     </div>

@@ -69,33 +69,33 @@
         <div class="dashboard-section card-grid">
             {% for session in classes %}
             <div class="class-card">
-            <span class="class-status {% if session.is_cancelled %}status-cancelled{% else %}status-open{% endif %}">
-                {% if session.is_cancelled %}Cancelled{% else %}Open{% endif %}
-            </span>
-            <h3>{{ session.class_name }}</h3>
-            <p><strong>Pool:</strong> {{ session.pool.name }}</p>
-            <p><strong>Trainer:</strong> {{ session.user.full_name|default:session.user.username }}</p>
-            <p><strong>Dates:</strong> {{ session.start_date|date:"M d" }} - {{ session.end_date|date:"M d" }}</p>
-            <p><strong>Total Price:</strong> ${{ session.total_price }}</p>
+                <span class="class-status {% if session.is_cancelled %}status-cancelled{% else %}status-open{% endif %}">
+                    {% if session.is_cancelled %}Cancelled{% else %}Open{% endif %}
+                </span>
+                <h3>{{ session.class_name }}</h3>
+                <p><strong>Pool:</strong> {{ session.pool.name }}</p>
+                <p><strong>Trainer:</strong> {{ session.user.full_name|default:session.user.username }}</p>
+                <p><strong>Dates:</strong> {{ session.start_date|date:"M d" }} - {{ session.end_date|date:"M d" }}</p>
+                <p><strong>Total Price:</strong> ${{ session.total_price }}</p>
 
-            <div class="card-actions">
-                <button type="button" class="btn-sm btn-primary"
-                    onclick="openViewModal(this)"
-                    data-class-name="{{ session.class_name|escape }}"
-                    data-pool-name="{{ session.pool.name|escape }}"
-                    data-trainer-name="{{ session.user.full_name|default:session.user.username|escape }}"
-                    data-class-type="{{ session.class_type.class_type_id }}"
-                    data-start-date="{{ session.start_date|date:"Y-m-d" }}"
-                    data-end-date="{{ session.end_date|date:"Y-m-d" }}"
-                    data-start-time="{{ session.start_time|time:"H:i" }}"
-                    data-end-time="{{ session.end_time|time:"H:i" }}"
-                    data-seats="{{ session.seats }}"
-                    data-total-sessions="{{ session.total_sessions }}"
-                    data-total-price="{{ session.total_price }}"
-                    data-is-cancelled="{% if session.is_cancelled %}true{% else %}false{% endif %}"
-                >View</button>
+                <div class="card-actions">
+                    <button type="button" class="btn-sm btn-primary"
+                        onclick="openViewModal(this)"
+                        data-class-name="{{ session.class_name|escape }}"
+                        data-pool-name="{{ session.pool.name|escape }}"
+                        data-trainer-name="{{ session.user.full_name|default:session.user.username|escape }}"
+                        data-class-type="{{ session.class_type.class_type_id }}"
+                        data-start-date="{{ session.start_date|date:"Y-m-d" }}"
+                        data-end-date="{{ session.end_date|date:"Y-m-d" }}"
+                        data-start-time="{{ session.start_time|time:"H:i" }}"
+                        data-end-time="{{ session.end_time|time:"H:i" }}"
+                        data-seats="{{ session.seats }}"
+                        data-total-price="{{ session.total_price }}"
+                        data-is-cancelled="{% if session.is_cancelled %}true{% else %}false{% endif %}">
+                        View
+                    </button>
 
-                <button type="button" class="btn-sm btn-secondary"
+                    <button type="button" class="btn-sm btn-secondary"
                         onclick="openEditClassModal(this)"
                         data-url="{% url 'edit_class' session.id %}"
                         data-class-name="{{ session.class_name|escape }}"
@@ -107,23 +107,21 @@
                         data-start-time="{{ session.start_time|time:"H:i" }}"
                         data-end-time="{{ session.end_time|time:"H:i" }}"
                         data-seats="{{ session.seats }}"
-                        data-total-sessions="{{ session.total_sessions }}"
                         data-is-cancelled="{% if session.is_cancelled %}true{% else %}false{% endif %}">
-                    Edit
-                </button>
+                        Edit
+                    </button>
 
-                <button class="btn-sm btn-danger">
-                    <a href="{% url 'close_class_session' session.id %}" style="color:white;text-decoration:none;"
-                    onclick="return confirm('Are you sure you want to cancel this class session?');">
-                    Cancel
-                    </a>
-                </button>
+                    <button class="btn-sm btn-danger">
+                        <a href="{% url 'close_class_session' session.id %}" style="color:white;text-decoration:none;"
+                        onclick="return confirm('Are you sure you want to cancel this class session?');">
+                        Cancel
+                        </a>
+                    </button>
+                </div>
             </div>
-
-        </div>
-        {% empty %}
-            <p>No class sessions scheduled. Click "Schedule New Class" to get started.</p>
-        {% endfor %}
+            {% empty %}
+                <p>No class sessions scheduled. Click "Schedule New Class" to get started.</p>
+            {% endfor %}
         </div>
     </main>
 </div>
@@ -168,17 +166,12 @@
                 <span class="detail-label">Cancelled</span>
                 <span class="detail-value" id="view_cancelled"></span>
             </div>
-            <div class="detail-item">
-                <span class="detail-label">Total Sessions</span>
-                <span class="detail-value" id="view_total_sessions"></span>
-            </div>
         </div>
         <div class="modal-footer">
             <button type="button" class="btn-secondary" onclick="toggleModal('viewModal')">Close</button>
         </div>
     </div>
 </div>
-
 <!-- CLASS MODAL -->
 <div id="classModal" class="modal">
     <div class="modal-content modal-lg">
@@ -207,7 +200,7 @@
                     <select id="class_type_id" name="class_type_id" required>
                         <option value="">Choose type...</option>
                         {% for type in class_types %}
-                        <option value="{{ type.class_type_id }}">{{ type.name }}</option>
+                        <option value="{{ type.class_type_id }}" data-duration="{{ type.duration_days }}">{{ type.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -226,7 +219,7 @@
                 </div>
                 <div class="form-group">
                     <label for="end_date">End Date</label>
-                    <input type="date" id="end_date" name="end_date" required>
+                    <input type="date" id="end_date" name="end_date" readonly>
                 </div>
                 <div class="form-group">
                     <label for="start_time">Start Time</label>
@@ -239,10 +232,6 @@
                 <div class="form-group">
                     <label for="seats">Available Seats</label>
                     <input type="number" id="seats" name="seats" required>
-                </div>
-                <div class="form-group">
-                    <label for="total_sessions">Total Sessions</label>
-                    <input type="number" id="total_sessions" name="total_sessions" required>
                 </div>
                 <div class="form-group checkbox-group" id="cancelled_group" style="display: none;">
                     <label class="checkbox-label" for="is_cancelled">
@@ -258,4 +247,31 @@
         </form>
     </div>
 </div>
+
+<!-- JS to auto-fill end date -->
+<script>
+const classTypeSelect = document.getElementById('class_type_id');
+const startDateInput = document.getElementById('start_date');
+const endDateInput = document.getElementById('end_date');
+
+function updateEndDate() {
+    const selectedOption = classTypeSelect.options[classTypeSelect.selectedIndex];
+    const duration = parseInt(selectedOption.dataset.duration || 0, 10);
+    const startDateValue = startDateInput.value;
+
+    if (startDateValue && duration > 0) {
+        const startDate = new Date(startDateValue);
+        startDate.setDate(startDate.getDate() + duration - 1); // duration includes start day
+        const yyyy = startDate.getFullYear();
+        const mm = String(startDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(startDate.getDate()).padStart(2, '0');
+        endDateInput.value = `${yyyy}-${mm}-${dd}`;
+    } else {
+        endDateInput.value = '';
+    }
+}
+
+startDateInput.addEventListener('change', updateEndDate);
+classTypeSelect.addEventListener('change', updateEndDate);
+</script>
 {% endblock %}

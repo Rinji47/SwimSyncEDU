@@ -56,6 +56,7 @@ function resetModalFields(modal) {
     if (modal.id === "classModal") {
         const cancelGroup = modal.querySelector("#cancelled_group");
         const cancelInput = modal.querySelector("#is_cancelled");
+        
         if (cancelGroup) cancelGroup.style.display = "none";
         if (cancelInput) cancelInput.checked = false;
     }
@@ -213,7 +214,6 @@ function openEditClassModal(btn) {
     modal.querySelector("#start_time").value = btn.dataset.startTime || "";
     modal.querySelector("#end_time").value = btn.dataset.endTime || "";
     modal.querySelector("#seats").value = btn.dataset.seats || "";
-    modal.querySelector("#total_sessions").value = btn.dataset.totalSessions || "";
 
     const cancelGroup = modal.querySelector("#cancelled_group");
     const cancelInput = modal.querySelector("#is_cancelled");
@@ -222,6 +222,9 @@ function openEditClassModal(btn) {
 
     modal.querySelector("form").action = btn.dataset.url;
     modal.querySelector("h2").textContent = "Edit Class Session";
+
+    // Recalculate end date based on class type
+    updateEndDateFromType();
 
     toggleModal("classModal");
 }
@@ -233,6 +236,8 @@ function openEditClassTypeModal(btn) {
 
     modal.querySelector("#type_name").value = type.name;
     modal.querySelector("#cost").value = type.cost;
+    // is_group is now a hidden field, always set to "group"
+    modal.querySelector("#duration_days").value = type.duration_days || 0;
     modal.querySelector("#description").value = type.description;
 
     modal.querySelector("form").action = btn.dataset.url;
@@ -240,6 +245,105 @@ function openEditClassTypeModal(btn) {
 
     toggleModal("classTypeModal");
 }
+
+function parseClassTypeMeta(selectEl) {
+    if (!selectEl) return { durationDays: 0, isGroup: false };
+    const option = selectEl.options[selectEl.selectedIndex];
+    if (!option) return { durationDays: 0, isGroup: false };
+
+    const durationDays = parseInt(option.dataset.durationDays || "0", 10);
+    const isGroup = option.dataset.isGroup === "true";
+
+    return {
+        durationDays: Number.isNaN(durationDays) ? 0 : durationDays,
+        isGroup,
+    };
+}
+
+function updateEndDateFromType() {
+    const classTypeSelect = document.getElementById("class_type_id");
+    const startDateInput = document.getElementById("start_date");
+    const endDateInput = document.getElementById("end_date");
+
+    if (!classTypeSelect || !startDateInput || !endDateInput) return;
+
+    const { durationDays, isGroup } = parseClassTypeMeta(classTypeSelect);
+    
+    // Auto-calculate end date for group classes
+    if (!isGroup || durationDays <= 0 || !startDateInput.value) return;
+
+    const startDate = new Date(`${startDateInput.value}T00:00:00`);
+    if (Number.isNaN(startDate.getTime())) return;
+
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + durationDays - 1);
+
+    const year = endDate.getFullYear();
+    const month = String(endDate.getMonth() + 1).padStart(2, "0");
+    const day = String(endDate.getDate()).padStart(2, "0");
+    endDateInput.value = `${year}-${month}-${day}`;
+}
+
+function validateClassTimes() {
+    const startTimeInput = document.getElementById("start_time");
+    const endTimeInput = document.getElementById("end_time");
+    
+    if (!startTimeInput || !endTimeInput) return true;
+    if (!startTimeInput.value || !endTimeInput.value) return true;
+    
+    const [startHour, startMin] = startTimeInput.value.split(':').map(Number);
+    const [endHour, endMin] = endTimeInput.value.split(':').map(Number);
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    const durationMinutes = endMinutes - startMinutes;
+    
+    if (durationMinutes <= 0) {
+        alert("End time must be after start time.");
+        endTimeInput.value = "";
+        return false;
+    }
+    
+    if (durationMinutes > 180) { // 3 hours = 180 minutes
+        alert("Class duration cannot exceed 3 hours.");
+        endTimeInput.value = "";
+        return false;
+    }
+    
+    return true;
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const classTypeSelect = document.getElementById("class_type_id");
+    const startDateInput = document.getElementById("start_date");
+    const startTimeInput = document.getElementById("start_time");
+    const endTimeInput = document.getElementById("end_time");
+    const classForm = document.querySelector("#classModal form");
+
+    if (classTypeSelect) {
+        classTypeSelect.addEventListener("change", updateEndDateFromType);
+    }
+
+    if (startDateInput) {
+        startDateInput.addEventListener("change", updateEndDateFromType);
+    }
+    
+    if (startTimeInput) {
+        startTimeInput.addEventListener("change", validateClassTimes);
+    }
+    
+    if (endTimeInput) {
+        endTimeInput.addEventListener("change", validateClassTimes);
+        endTimeInput.addEventListener("blur", validateClassTimes);
+    }
+    
+    if (classForm) {
+        classForm.addEventListener("submit", (e) => {
+            if (!validateClassTimes()) {
+                e.preventDefault();
+            }
+        });
+    }
+});
 
 // POOL QUALITY MODAL
 function openEditQualityModal(btn) {
@@ -395,7 +499,6 @@ function openViewModal(btnOrId) {
     document.getElementById('view_seats').textContent = btnOrId.dataset.seats || "";
     document.getElementById('view_price').textContent = btnOrId.dataset.totalPrice || "";
     document.getElementById('view_cancelled').textContent = isCancelled ? "Yes" : "No";
-    document.getElementById('view_total_sessions').textContent = btnOrId.dataset.totalSessions || "";
 
     toggleModal('viewModal');
 }

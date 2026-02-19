@@ -96,7 +96,6 @@ def manage_class_sessions(request, class_id=None):
             pool_id = int(request.POST.get('pool_id'))
             class_type_id = int(request.POST.get('class_type_id'))
             class_name = request.POST.get('class_name')
-            total_sessions = int(request.POST.get('total_sessions'))
             seats = int(request.POST.get('seats'))
             is_cancelled = request.POST.get('is_cancelled') == 'on'
 
@@ -104,11 +103,6 @@ def manage_class_sessions(request, class_id=None):
             end_date = datetime.strptime(request.POST.get('end_date'), '%Y-%m-%d').date()
             start_time = datetime.strptime(request.POST.get('start_time'), '%H:%M').time()
             end_time = datetime.strptime(request.POST.get('end_time'), '%H:%M').time()
-
-
-            if total_sessions <= 0:
-                messages.error(request, 'Total sessions must be greater than zero.')
-                return redirect('manage_classes')
             
             if seats <= 0:
                 messages.error(request, 'Seats must be greater than zero.')
@@ -160,7 +154,6 @@ def manage_class_sessions(request, class_id=None):
             class_session.pool = pool
             class_session.class_type = class_type
             class_session.class_name = class_name
-            class_session.total_sessions = total_sessions
             class_session.seats = seats
             class_session.start_date = start_date
             class_session.end_date = end_date
@@ -177,7 +170,6 @@ def manage_class_sessions(request, class_id=None):
                 pool=pool,
                 class_type=class_type,
                 class_name=class_name,
-                total_sessions=total_sessions,
                 seats=seats,
                 start_date=start_date,
                 end_date=end_date,
@@ -248,3 +240,58 @@ def close_class_session(request, class_id):
         
     class_session.save()
     return redirect('manage_classes')
+
+
+def manage_private_classes(request):
+    # Filter only private class sessions (where class_type.is_group = False)
+    private_classes = ClassSession.objects.filter(class_type__is_group=False).select_related('pool', 'user', 'class_type').order_by('-start_date')
+    
+    q = (request.GET.get('q') or '').strip()
+    status = request.GET.get('status')
+    pool_filter = request.GET.get('pool')
+    trainer_filter = request.GET.get('trainer')
+
+    if q:
+        private_classes = private_classes.filter(
+            Q(class_name__icontains=q) |
+            Q(pool__name__icontains=q) |
+            Q(user__full_name__icontains=q) |
+            Q(user__username__icontains=q)
+        )
+
+    if status == 'active':
+        private_classes = private_classes.filter(is_cancelled=False)
+    elif status == 'cancelled':
+        private_classes = private_classes.filter(is_cancelled=True)
+
+    if pool_filter:
+        private_classes = private_classes.filter(pool_id=pool_filter)
+    if trainer_filter:
+        private_classes = private_classes.filter(user_id=trainer_filter)
+
+    pools = Pool.objects.filter(is_closed=False).all()
+    trainers = User.objects.filter(role='trainer')
+
+    return render(request, 'dashboards/admin/admin_manage_private_classes.html', {
+        'private_classes': private_classes,
+        'pools': pools,
+        'trainers': trainers
+    })
+
+def edit_private_class_price(request, class_id):
+    class_session = get_object_or_404(ClassSession, pk=class_id, class_type__is_group=False)
+    
+    if request.method == 'POST':
+        try:
+            new_price = request.POST.get('total_price')
+            if not new_price:
+                messages.error(request, 'Price is required.')
+                return redirect('manage_private_classes')
+            
+            class_session.total_price = float(new_price)
+            class_session.save(update_fields=['total_price'])
+            messages.success(request, 'Private class price updated successfully.')
+        except (ValueError, TypeError):
+            messages.error(request, 'Invalid price value.')
+    
+    return redirect('manage_private_classes')

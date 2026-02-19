@@ -11,4 +11,9 @@ urlpatterns = [
     path('manage_classes/', views.manage_class_sessions, name='manage_classes'),
     path('edit_classes/<int:class_id>/', views.manage_class_sessions, name='edit_class'),
     path('close_class_session/<int:class_id>/', views.close_class_session, name='close_class_session'),
+
+    
+    # Manage Private Classes
+    path('manage_private_classes/', views.manage_private_classes, name='manage_private_classes'),
+    path('edit_private_class_price/<int:class_id>/', views.edit_private_class_price, name='edit_private_class_price'),
 ]
