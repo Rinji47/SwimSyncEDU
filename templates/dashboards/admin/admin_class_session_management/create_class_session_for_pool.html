@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Class Session{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "../components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "../../../components/message.html" %}
+        <div class="dashboard-header">
+            <h1>Schedule New Class Session</h1>
+            <a href="{% url 'select_trainer_for_class_session' pool.pool_id %}" class="btn-secondary">Back to Trainer Selection</a>
+        </div>
+        <div class="form-card">
+            <form method="POST" class="auth-form" style="max-width: 540px; margin: 0 auto;">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="class_name">Class Name <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="class_name" name="class_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="class_type_id">Class Type <span class="required">*</span></label>
+                    <select class="form-control" id="class_type_id" name="class_type_id" required>
+                        <option value="">Choose type...</option>
+                        {% for type in class_types %}
+                        <option value="{{ type.class_type_id }}">{{ type.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="seats">Available Seats <span class="required">*</span></label>
+                    <input type="number" class="form-control" id="seats" name="seats" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label for="start_date">Start Date <span class="required">*</span></label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" required>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label for="end_date">End Date <span class="required">*</span></label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" required readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label for="start_time">Start Time <span class="required">*</span></label>
+                        <input type="time" class="form-control" id="start_time" name="start_time" required>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label for="end_time">End Time <span class="required">*</span></label>
+                        <input type="time" class="form-control" id="end_time" name="end_time" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary btn-block mt-3">Create Class Session</button>
+                        </form>
+                    </div>
+                    <script>
+                    // Map class_type_id to duration_days from Django context
+                    const classTypeDurations = {
+                        {% for type in class_types %}
+                            '{{ type.class_type_id }}': {{ type.duration_days }},
+                        {% endfor %}
+                    };
+
+                    function updateEndDate() {
+                        const classTypeId = document.getElementById('class_type_id').value;
+                        const startDate = document.getElementById('start_date').value;
+                        const duration = classTypeDurations[classTypeId];
+                        if (classTypeId && startDate && duration !== undefined) {
+                            const start = new Date(startDate);
+                            // duration_days: if 1, end = start; if 2, end = start + 1 day, etc.
+                            start.setDate(start.getDate() + duration - 1);
+                            const yyyy = start.getFullYear();
+                            const mm = String(start.getMonth() + 1).padStart(2, '0');
+                            const dd = String(start.getDate()).padStart(2, '0');
+                            document.getElementById('end_date').value = `${yyyy}-${mm}-${dd}`;
+                        } else {
+                            document.getElementById('end_date').value = '';
+                        }
+                    }
+                    document.getElementById('class_type_id').addEventListener('change', updateEndDate);
+                    document.getElementById('start_date').addEventListener('change', updateEndDate);
+                    // Optionally, run on page load if values are prefilled
+                    window.addEventListener('DOMContentLoaded', updateEndDate);
+                    </script>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}

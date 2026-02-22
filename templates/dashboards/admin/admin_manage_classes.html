@@ -16,7 +16,7 @@
         {% include "../../components/message.html" %}
         <div class="dashboard-header">
             <h1>Manage Class Sessions</h1>
-            <button class="btn-primary" onclick="toggleModal('classModal')">Schedule New Class</button>
+            <a href="{% url 'select_pool_for_class_session' %}" class="btn-primary">Schedule New Class</a>
         </div>
 
         <form class="filter-bar" method="GET">
@@ -77,6 +77,7 @@
                 <p><strong>Trainer:</strong> {{ session.user.full_name|default:session.user.username }}</p>
                 <p><strong>Dates:</strong> {{ session.start_date|date:"M d" }} - {{ session.end_date|date:"M d" }}</p>
                 <p><strong>Total Price:</strong> ${{ session.total_price }}</p>
+                <p><strong>Total Bookings:</strong> {{ session.total_bookings|default:0 }}</p>
 
                 <div class="card-actions">
                     <button type="button" class="btn-sm btn-primary"
@@ -95,21 +96,7 @@
                         View
                     </button>
 
-                    <button type="button" class="btn-sm btn-secondary"
-                        onclick="openEditClassModal(this)"
-                        data-url="{% url 'edit_class' session.id %}"
-                        data-class-name="{{ session.class_name|escape }}"
-                        data-pool-id="{{ session.pool.pool_id }}"
-                        data-class-type-id="{{ session.class_type.class_type_id }}"
-                        data-user-id="{{ session.user.user_id }}"
-                        data-start-date="{{ session.start_date|date:"Y-m-d" }}"
-                        data-end-date="{{ session.end_date|date:"Y-m-d" }}"
-                        data-start-time="{{ session.start_time|time:"H:i" }}"
-                        data-end-time="{{ session.end_time|time:"H:i" }}"
-                        data-seats="{{ session.seats }}"
-                        data-is-cancelled="{% if session.is_cancelled %}true{% else %}false{% endif %}">
-                        Edit
-                    </button>
+                    <!-- Edit button removed: class session editing is not handled here -->
 
                     <button class="btn-sm btn-danger">
                         <a href="{% url 'close_class_session' session.id %}" style="color:white;text-decoration:none;"
@@ -163,6 +150,10 @@
                 <span class="detail-value">$<span id="view_price"></span></span>
             </div>
             <div class="detail-item">
+                <span class="detail-label">Total Bookings</span>
+                <span class="detail-value" id="view_bookings"></span>
+            </div>
+            <div class="detail-item">
                 <span class="detail-label">Cancelled</span>
                 <span class="detail-value" id="view_cancelled"></span>
             </div>
@@ -172,106 +163,7 @@
         </div>
     </div>
 </div>
-<!-- CLASS MODAL -->
-<div id="classModal" class="modal">
-    <div class="modal-content modal-lg">
-        <div class="modal-header">
-            <h2>Schedule New Class Session</h2>
-            <span class="close" onclick="toggleModal('classModal')">&times;</span>
-        </div>
-        <form method="POST">
-            {% csrf_token %}
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="class_name">Class Name</label>
-                    <input type="text" id="class_name" name="class_name" required>
-                </div>
-                <div class="form-group">
-                    <label for="pool_id">Select Pool</label>
-                    <select id="pool_id" name="pool_id" required>
-                        <option value="">Choose a pool...</option>
-                        {% for pool in pools %}
-                        <option value="{{ pool.pool_id }}">{{ pool.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="class_type_id">Class Type</label>
-                    <select id="class_type_id" name="class_type_id" required>
-                        <option value="">Choose type...</option>
-                        {% for type in class_types %}
-                        <option value="{{ type.class_type_id }}" data-duration="{{ type.duration_days }}">{{ type.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="user_id">Assign Trainer</label>
-                    <select id="user_id" name="user_id" required>
-                        <option value="">Choose trainer...</option>
-                        {% for trainer in trainers %}
-                        <option value="{{ trainer.user_id }}">{{ trainer.full_name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="start_date">Start Date</label>
-                    <input type="date" id="start_date" name="start_date" required>
-                </div>
-                <div class="form-group">
-                    <label for="end_date">End Date</label>
-                    <input type="date" id="end_date" name="end_date" readonly>
-                </div>
-                <div class="form-group">
-                    <label for="start_time">Start Time</label>
-                    <input type="time" id="start_time" name="start_time" required>
-                </div>
-                <div class="form-group">
-                    <label for="end_time">End Time</label>
-                    <input type="time" id="end_time" name="end_time" required>
-                </div>
-                <div class="form-group">
-                    <label for="seats">Available Seats</label>
-                    <input type="number" id="seats" name="seats" required>
-                </div>
-                <div class="form-group checkbox-group" id="cancelled_group" style="display: none;">
-                    <label class="checkbox-label" for="is_cancelled">
-                        <input type="checkbox" id="is_cancelled" name="is_cancelled">
-                        Cancelled
-                    </label>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="toggleModal('classModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Schedule Class</button>
-            </div>
-        </form>
-    </div>
-</div>
+<!-- Class session creation modal removed: creation is not handled here -->
 
-<!-- JS to auto-fill end date -->
-<script>
-const classTypeSelect = document.getElementById('class_type_id');
-const startDateInput = document.getElementById('start_date');
-const endDateInput = document.getElementById('end_date');
-
-function updateEndDate() {
-    const selectedOption = classTypeSelect.options[classTypeSelect.selectedIndex];
-    const duration = parseInt(selectedOption.dataset.duration || 0, 10);
-    const startDateValue = startDateInput.value;
-
-    if (startDateValue && duration > 0) {
-        const startDate = new Date(startDateValue);
-        startDate.setDate(startDate.getDate() + duration - 1); // duration includes start day
-        const yyyy = startDate.getFullYear();
-        const mm = String(startDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(startDate.getDate()).padStart(2, '0');
-        endDateInput.value = `${yyyy}-${mm}-${dd}`;
-    } else {
-        endDateInput.value = '';
-    }
-}
-
-startDateInput.addEventListener('change', updateEndDate);
-classTypeSelect.addEventListener('change', updateEndDate);
-</script>
+<!-- JS for class session creation removed -->
 {% endblock %}

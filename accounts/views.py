@@ -2,10 +2,13 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Q
 from .models import User
-from django.contrib.auth import logout
+from django.contrib.auth import login, logout, authenticate
 
 # Create your views here.
 def index(request):
+    print("is_authenticated:", request.user.is_authenticated)
+    print("is_superuser:", request.user.is_superuser)
+    print("role:", getattr(request.user, 'role', None))
     return render(request, 'index.html')
 
 def login_view(request):
@@ -13,12 +16,9 @@ def login_view(request):
         username = request.POST.get('username')
         password = request.POST.get('password')
 
-        user = User.objects.filter(username=username).first()
+        user = authenticate(request, username=username, password=password)
         if user and user.check_password(password):
-            request.session['user_id'] = user.user_id
-            request.session['role'] = user.role
-            request.session['username'] = user.username
-            request.session['full_name'] = user.full_name or user.username
+            login(request, user)
             context = {
                 'messages': [
                     {'tags': 'success', 'message': 'Login successful.'}

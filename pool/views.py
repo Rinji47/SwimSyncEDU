@@ -290,7 +290,7 @@ def delete_quality(request, quality_id):
     return redirect('manage_quality')
 
 def assign_trainer_manager(request):
-    assigned_trainers = TrainerPoolAssignment.objects.select_related('trainer', 'pool').all()
+    assigned_trainers = TrainerPoolAssignment.objects.select_related('trainer', 'pool').all().order_by('-start_date')
     pools = Pool.objects.all()
     pool_filter = request.GET.get('pool')
     trainer_filter = (request.GET.get('trainer') or '').strip()
@@ -354,40 +354,21 @@ def assign_trainer(request, pool_id, trainer_id):
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
-        end_date = request.POST.get('end_date') or None
-
         if not start_date:
             messages.error(request, 'Start date is required.')
             return redirect('assign_trainer', pool_id=pool_id, trainer_id=trainer_id)
         
-        trainer_assigned = TrainerPoolAssignment.objects.filter(trainer=trainer)
-    
-        if end_date:
-            overlapping_assignments = trainer_assigned.filter(
-                is_active=True
-            ).filter(
-                Q(end_date__isnull=True) | Q(start_date__lte=end_date, end_date__gte=start_date)
-            )
-        else:
-            overlapping_assignments = trainer_assigned.filter(
-                is_active=True
-            ).filter(
-                Q(end_date__isnull=True) | Q(end_date__gte=start_date)
-            )
-
+        trainer_assigned = TrainerPoolAssignment.objects.filter(trainer=trainer, is_active=True)
+        overlapping_assignments = trainer_assigned.filter(Q(end_date__isnull=True) | Q(end_date__gte=start_date))
         if overlapping_assignments.exists():
             messages.error(request, 'This trainer is already assigned to another pool during the selected period.')
             return redirect('assign_trainer', pool_id=pool_id, trainer_id=trainer_id)
-
         start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
-        if end_date:
-            end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
-            
         TrainerPoolAssignment.objects.create(
             trainer=trainer,
             pool=pool,
             start_date=start_date,
-            end_date=end_date,
+            end_date=None,
             is_active=True
         )
         messages.success(request, 'Trainer assigned successfully.')

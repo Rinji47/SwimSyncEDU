@@ -49,6 +49,10 @@
             <span class="nav-icon">🔒</span>
             Private Classes
         </a>
+        <a href="{% url 'manage_private_class_prices' %}" class="nav-item {% if request.path == '/classes/manage_private_class_prices/' %}active{% endif %}">
+            <span class="nav-icon">💲</span>
+            Private Class Prices
+        </a>
         <a href="#" class="nav-item">
             <span class="nav-icon">📈</span>
             Reports

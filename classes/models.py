@@ -40,11 +40,7 @@ class ClassSession(models.Model):
     total_bookings = models.IntegerField(default=0)
 
     def save(self, *args, **kwargs):
-        # Removed reliance on is_group. Adjust logic as needed.
-        if self.total_sessions:
-            self.total_price = self.class_type.cost * self.total_sessions
-        else:
-            self.total_price = self.class_type.cost
+        self.total_price = self.class_type.cost
         super().save(*args, **kwargs)
 
     def __str__(self):

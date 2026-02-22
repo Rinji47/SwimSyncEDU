@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Private Class Prices - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "./components/admin_sidebar.html" %}
+
+    <main class="dashboard-main">
+        {% include "../../components/message.html" %}
+        <div class="dashboard-header">
+            <div>
+                <h1>Manage Private Class Prices</h1>
+                <p style="color: var(--text-secondary);">View and manage the default price for private class sessions</p>
+            </div>
+            <button class="btn-primary" onclick="toggleModal('setPrivatePriceModal')">Set Private Class Price</button>
+        </div>
+
+        <div class="dashboard-section">
+            <h2>Current Private Class Price</h2>
+            <p><strong>Current Price Per Day:</strong> ${{ private_class_price_per_day }}</p>
+        </div>
+
+        <div class="dashboard-section">
+            <h2>Private Class Price History</h2>
+            <div class="card-grid">
+                {% for price in price_history %}
+                <div class="class-card">
+                    {% if not price.end_date %}
+                        <span class="class-status status-open">Active</span>
+                    {% else %}
+                        <span class="class-status status-cancelled">Ended</span>
+                    {% endif %}
+                    <h3>Private Class Price</h3>
+                    <p><strong>Price Per Day:</strong> ${{ price.private_class_price_per_day }}</p>
+                    <p><strong>Set On:</strong> {{ price.created_at|date:"M d, Y H:i" }}</p>
+                    <p><strong>Ended On:</strong>
+                        {% if price.end_date %}
+                            {{ price.end_date|date:"M d, Y H:i" }}
+                        {% else %}
+                            <span style="color: green;">Active</span>
+                        {% endif %}
+                    </p>
+                </div>
+                {% empty %}
+                    <p>No price history found.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- SET PRIVATE CLASS PRICE MODAL -->
+        <div id="setPrivatePriceModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Set Private Class Price</h2>
+                    <span class="close" onclick="toggleModal('setPrivatePriceModal')">&times;</span>
+                </div>
+                <form method="POST" action="{% url 'new_private_class_price' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="private_class_price_per_day">New Price ($)</label>
+                        <input type="number" step="0.01" id="private_class_price_per_day" name="private_class_price_per_day" required placeholder="Enter new price">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary" onclick="toggleModal('setPrivatePriceModal')">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Price</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/admin_manage.js' %}"></script>
+{% endblock %}

@@ -201,33 +201,7 @@ function openEditPoolModal(btn) {
 }
 
 // CLASS MODAL
-function openEditClassModal(btn) {
-    const modal = document.getElementById("classModal");
-    if (!btn || !btn.dataset) return;
-
-    modal.querySelector("#class_name").value = btn.dataset.className || "";
-    modal.querySelector("#pool_id").value = btn.dataset.poolId || "";
-    modal.querySelector("#class_type_id").value = btn.dataset.classTypeId || "";
-    modal.querySelector("#user_id").value = btn.dataset.userId || "";
-    modal.querySelector("#start_date").value = btn.dataset.startDate || "";
-    modal.querySelector("#end_date").value = btn.dataset.endDate || "";
-    modal.querySelector("#start_time").value = btn.dataset.startTime || "";
-    modal.querySelector("#end_time").value = btn.dataset.endTime || "";
-    modal.querySelector("#seats").value = btn.dataset.seats || "";
-
-    const cancelGroup = modal.querySelector("#cancelled_group");
-    const cancelInput = modal.querySelector("#is_cancelled");
-    if (cancelGroup) cancelGroup.style.display = "block";
-    if (cancelInput) cancelInput.checked = btn.dataset.isCancelled === "true";
-
-    modal.querySelector("form").action = btn.dataset.url;
-    modal.querySelector("h2").textContent = "Edit Class Session";
-
-    // Recalculate end date based on class type
-    updateEndDateFromType();
-
-    toggleModal("classModal");
-}
+// openEditClassModal removed: class session editing is not handled here
 
 // CLASS TYPE MODAL
 function openEditClassTypeModal(btn) {
@@ -497,6 +471,7 @@ function openViewModal(btnOrId) {
     document.getElementById('view_time').textContent = `${btnOrId.dataset.startTime || ""} - ${btnOrId.dataset.endTime || ""}`;
     document.getElementById('view_seats').textContent = btnOrId.dataset.seats || "";
     document.getElementById('view_price').textContent = btnOrId.dataset.totalPrice || "";
+    document.getElementById('view_bookings').textContent = btnOrId.dataset.totalBookings || "0";
     document.getElementById('view_cancelled').textContent = isCancelled ? "Yes" : "No";
 
     toggleModal('viewModal');

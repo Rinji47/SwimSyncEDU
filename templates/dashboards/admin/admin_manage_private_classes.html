@@ -19,7 +19,6 @@
                 <h1>Manage Private Classes</h1>
                 <p style="color: var(--text-secondary);">View and manage pricing for private class sessions</p>
             </div>
-            <button class="btn-primary" onclick="toggleModal('setPrivatePriceModal')">Set Private Class Price</button>
         </div>
 
         <form class="filter-bar" method="GET">
@@ -111,27 +110,7 @@
     </main>
 </div>
 
-<!-- SET PRIVATE CLASS PRICE MODAL -->
-<div id="setPrivatePriceModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Set Private Class Price</h2>
-            <span class="close" onclick="toggleModal('setPrivatePriceModal')">&times;</span>
-        </div>
-        <form method="POST" action="{% url 'manage_private_classes' %}">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="base_price">Base Price per Session ($)</label>
-                <input type="number" step="0.01" id="base_price" name="base_price" required placeholder="Enter default price">
-                <small style="color: var(--text-secondary);">This sets the default cost per session for private classes. Individual prices can still be edited.</small>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="toggleModal('setPrivatePriceModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Save Price</button>
-            </div>
-        </form>
-    </div>
-</div>
+<!-- Removed Set Private Class Price Modal; price management is now on a separate page -->
 
 <!-- VIEW DETAILS MODAL -->
 <div id="viewPrivateModal" class="modal">

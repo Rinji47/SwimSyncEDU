@@ -85,102 +85,17 @@ def close_class_type(request, class_type_id):
     class_type.save()
     return redirect('manage_class_types')
 
-def manage_class_sessions(request, class_id=None):
-    if class_id:
-        class_session = get_object_or_404(ClassSession, pk=class_id)
-    else:
-        class_session = None
-    
-    if request.method == 'POST':
-        try:
-            user_id = int(request.POST.get('user_id'))
-            pool_id = int(request.POST.get('pool_id'))
-            class_type_id = int(request.POST.get('class_type_id'))
-            class_name = request.POST.get('class_name')
-            seats = int(request.POST.get('seats'))
-            is_cancelled = request.POST.get('is_cancelled') == 'on'
 
-            start_date = datetime.strptime(request.POST.get('start_date'), '%Y-%m-%d').date()
-            end_date = datetime.strptime(request.POST.get('end_date'), '%Y-%m-%d').date()
-            start_time = datetime.strptime(request.POST.get('start_time'), '%H:%M').time()
-            end_time = datetime.strptime(request.POST.get('end_time'), '%H:%M').time()
-            
-            if seats <= 0:
-                messages.error(request, 'Seats must be greater than zero.')
-                return redirect('manage_classes')
-            
-            if start_date > end_date:
-                messages.error(request, 'Start date cannot be after end date.')
-                return redirect('manage_classes')
-            
-            if start_time >= end_time:
-                messages.error(request, 'Start time must be before end time.')
-                return redirect('manage_classes')
-            
 
-        except (ValueError, TypeError):
-            messages.error(request, 'Invalid input. Please check your data and try again.')
-            return redirect('manage_classes')
 
-        pool = get_object_or_404(Pool, pk=pool_id)
-        class_type = get_object_or_404(ClassType, pk=class_type_id, is_closed=False)
-        trainer = get_object_or_404(User, pk=user_id, role='trainer')
-        
-        if seats > pool.capacity:
-            messages.error(request, f'Seats cannot exceed pool capacity. The pool capacity is {pool.capacity}.')
-            return redirect('manage_classes')
-        
-        today = datetime.now().date()
-        upcoming_classes = ClassSession.objects.filter(
-            pool=pool,
-            is_cancelled=False,
-            end_date__gte=today
-        )
-        
-        if class_session:
-            upcoming_classes = upcoming_classes.exclude(pk=class_session.id)
 
-        for existing_class in upcoming_classes:
-            if start_date <= existing_class.end_date and end_date >= existing_class.start_date:
-                if start_time < existing_class.end_time and end_time > existing_class.start_time:
-                    messages.error(request, 
-                                    f"Class session overlaps with existing class '{existing_class.class_name}' "
-                                    f"scheduled from {existing_class.start_date} to {existing_class.end_date} "
-                                    f"between {existing_class.start_time} and {existing_class.end_time}. "
-                                    "Please choose a different time or date range.")
-                    return redirect('manage_classes')
 
-        if class_session:
-            class_session.user = trainer
-            class_session.pool = pool
-            class_session.class_type = class_type
-            class_session.class_name = class_name
-            class_session.seats = seats
-            class_session.start_date = start_date
-            class_session.end_date = end_date
-            class_session.start_time = start_time
-            class_session.end_time = end_time
-            class_session.is_cancelled = is_cancelled
-            class_session.save()
-            
-            messages.success(request, 'Class session updated successfully.')
-            return redirect('manage_classes')
-        else:
-            ClassSession.objects.create(
-                user=trainer,
-                pool=pool,
-                class_type=class_type,
-                class_name=class_name,
-                seats=seats,
-                start_date=start_date,
-                end_date=end_date,
-                start_time=start_time,
-                end_time=end_time,
-                is_cancelled=is_cancelled
-            )
-            messages.success(request, 'Class session created successfully.')
-            return redirect('manage_classes')
-        
+
+
+############################
+# Class Session management #
+############################
+def manage_class_sessions(request):
     class_sessions = ClassSession.objects.all()
     q = (request.GET.get('q') or '').strip()
     status = request.GET.get('status')
@@ -189,6 +104,7 @@ def manage_class_sessions(request, class_id=None):
     start_filter = request.GET.get('start')
     end_filter = request.GET.get('end')
 
+    # Only list and filter sessions, no edit logic
     if q:
         class_sessions = class_sessions.filter(
             Q(class_name__icontains=q) |
@@ -230,6 +146,139 @@ def manage_class_sessions(request, class_id=None):
         'trainers': trainers
     })
 
+
+
+def select_pool_for_class_session(request):
+    if not request.user.is_authenticated or request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('home')
+    
+    pools = Pool.objects.filter(is_closed=False).all()
+    return render(request, 'dashboards/admin/admin_class_session_management/select_pool_for_class_session.html', {'pools': pools})
+
+def select_trainer_for_class_session(request, pool_id):
+    if not request.user.is_authenticated or request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('home')
+    
+    pool = get_object_or_404(Pool, pk=pool_id, is_closed=False)
+    trainers = User.objects.filter(role='trainer', trainerpoolassignment__pool=pool, trainerpoolassignment__is_active=True).distinct()
+    return render(request, 'dashboards/admin/admin_class_session_management/select_trainer_for_class_session.html', {
+        'pool': pool,
+        'trainers': trainers
+    })
+
+def create_class_session_for_pool(request, pool_id, trainer_id):
+    if not request.user.is_authenticated or request.user.is_superuser == False:
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('home')
+    pool = get_object_or_404(Pool, pk=pool_id, is_closed=False)
+    trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
+    
+    
+    if request.method == 'POST':
+        try:
+            trainer = trainer
+            class_type_id = int(request.POST.get('class_type_id'))
+            class_name = request.POST.get('class_name')
+            seats = int(request.POST.get('seats'))
+
+
+            class_type = get_object_or_404(ClassType, pk=class_type_id, is_closed=False)
+            start_date = datetime.strptime(request.POST.get('start_date'), '%Y-%m-%d').date()
+            end_date = start_date + timedelta(days=class_type.duration_days)
+            start_time = datetime.strptime(request.POST.get('start_time'), '%H:%M').time()
+            end_time = datetime.strptime(request.POST.get('end_time'), '%H:%M').time()
+
+            if seats <= 0:
+                messages.error(request, 'Seats must be greater than zero.')
+                return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
+
+            if start_date > end_date:
+                messages.error(request, 'Start date cannot be after end date.')
+                return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
+            
+            if start_time >= end_time:
+                messages.error(request, 'Start time must be before end time. Overnight sessions are not allowed.')
+                return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
+
+            duration = (datetime.combine(datetime.today(), end_time) - datetime.combine(datetime.today(), start_time))
+            if duration > timedelta(hours=4):
+                messages.error(request, 'Class session duration cannot exceed 4 hours.')
+                return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
+
+            class_types = ClassType.objects.filter(is_closed=False).all()
+            trainers = User.objects.filter(role='trainer')
+            if TrainerPoolAssignment.objects.filter(trainer=trainer, pool_id=pool_id, is_active=True).exists() == False:
+                messages.error(request, 'Selected trainer is not assigned to the selected pool. Please choose a different trainer or pool.')
+                return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
+            
+            overlapping_classes = ClassSession.objects.filter(
+                    pool=pool,
+                    is_cancelled=False,
+                    start_date__lte=end_date,
+                    end_date__gte=start_date,
+                    start_time__lt=end_time,
+                    end_time__gt=start_time
+                )
+            if overlapping_classes.exists():
+                messages.error(request, 'The selected time overlaps with an existing class session in the same pool. Please choose a different time or pool.')
+                return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
+                    
+            if TrainerPoolAssignment.objects.filter(trainer=trainer, pool_id=pool_id, is_active=True).exists():
+                overlapping_private_classes = PrivateClass.objects.filter(
+                    trainer=trainer,
+                    pool_id=pool_id,
+                    start_date__lte=end_date,
+                    end_date__gte=start_date, 
+                    start_time__lt=end_time,
+                    end_time__gt=start_time,
+                    is_cancelled=False
+                )
+            else:
+                overlapping_private_classes = PrivateClass.objects.none()
+            if overlapping_private_classes.exists():
+                messages.error(request, 'The selected trainer has another private class during this time. Please choose a different time or trainer.')
+                return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
+            
+            assignment = TrainerPoolAssignment.objects.filter(trainer=trainer, pool_id=pool_id, is_active=True).first()
+            if not assignment or (assignment.end_date is not None and assignment.end_date < end_date):
+                end_date_str = assignment.end_date.strftime('%Y-%m-%d') if assignment and assignment.end_date else 'N/A'
+                messages.error(
+                    request,
+                    f'Trainer assignment to this pool ends on {end_date_str}, before the private class ends. Please choose a different trainer, pool, or date.'
+                )
+                return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
+            
+            ClassSession.objects.create(
+                user=trainer,
+                pool=pool,
+                class_type=class_type,
+                class_name=class_name,
+                seats=seats,
+                start_date=start_date,
+                end_date=end_date,
+                start_time=start_time,
+                end_time=end_time
+            )
+            messages.success(request, 'Class session created successfully.')
+            return redirect('manage_classes')
+
+        except (ValueError, TypeError) as e:
+            print(e)
+            messages.error(request, 'Invalid input. Please check your data and try again.')
+            return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
+
+    # For GET requests, just render the form
+    class_types = ClassType.objects.filter(is_closed=False).all()
+    trainers = User.objects.filter(role='trainer')
+    return render(request, 'dashboards/admin/admin_class_session_management/create_class_session_for_pool.html', {
+        'pool': pool,
+        'class_types': class_types,
+        'trainers': trainers
+    })
+
+
 def close_class_session(request, class_id):
     class_session = get_object_or_404(ClassSession, pk=class_id)
     if class_session.is_cancelled == True:
@@ -243,8 +292,88 @@ def close_class_session(request, class_id):
     return redirect('manage_classes')
 
 
+@login_required
+def book_class(request, class_id):
+    class_session = get_object_or_404(ClassSession, pk=class_id)
+    if class_session.is_cancelled:
+        messages.error(request, 'Cannot book a cancelled class session.')
+        return redirect('class_list')
+    
+    if ClassBooking.objects.filter(user=request.user, class_session=class_session, is_active=True).exists():
+        messages.error(request, 'You have already booked this class session.')
+    elif class_session.total_bookings >= class_session.seats:
+        messages.error(request, 'No seats available for this class session.')
+    else:
+        ClassBooking.objects.create(user=request.user, class_session=class_session)
+        class_session.total_bookings += 1
+        class_session.save(update_fields=['total_bookings'])
+        messages.success(request, 'Class session booked successfully.')
+    return redirect('class_list')
+
+def cancel_booked_class(request, booking_id):
+    booking = get_object_or_404(ClassBooking, pk=booking_id, user=request.user, is_active=True)
+    
+    class_session = booking.class_session
+
+    if class_session.end_date is not None and class_session.end_date < datetime.now().date():
+        messages.error(request, 'Cannot cancel booking for a past class session.')
+        return redirect('my_bookings')
+
+    if class_session.total_bookings > 0:
+        class_session.total_bookings -= 1
+        class_session.save(update_fields=['total_bookings'])
+
+    booking.is_active = False
+    booking.save(update_fields=['is_active'])
+    
+    messages.success(request, 'Class session booking cancelled successfully.')
+    return redirect('my_bookings')
+
+
+
+
+###########################
+# Private Class Management#
+###########################
+
+def manage_private_class_prices(request):
+    private_class_details = PrivateClassDetails.objects.order_by('-created_at').first()
+    price_history = PrivateClassDetails.objects.order_by('-created_at')
+
+    context = {
+        'private_class_price_per_day': private_class_details.private_class_price_per_day if private_class_details else None,
+        'price_history': price_history
+    }
+
+    return render(request, 'dashboards/admin/admin_manage_private_class_prices.html', context)
+
+def new_private_class_price(request):
+    if not request.user.is_authenticated or request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('home')
+    
+    if request.method == 'POST':
+        try:
+            new_price = request.POST.get('private_class_price_per_day')
+            if not new_price:
+                messages.error(request, 'Price is required.')
+                return redirect('manage_private_class_prices')
+
+            last_details = PrivateClassDetails.objects.order_by('-created_at').first()
+            if last_details:
+                last_details.end_date = datetime.now(timezone.utc)
+                last_details.save(update_fields=['end_date'])
+
+            PrivateClassDetails.objects.create(private_class_price_per_day=float(new_price))
+            messages.success(request, 'New private class price created successfully.')
+
+        except (ValueError, TypeError):
+            messages.error(request, 'Invalid price value.')
+            return redirect('manage_private_class_prices')
+
+    return redirect('manage_private_class_prices')
+
 def manage_private_classes(request):
-    # Filter only private class sessions (where duration_days == 0)
     private_classes = ClassSession.objects.filter(class_type__duration_days=0).select_related('pool', 'user', 'class_type').order_by('-start_date')
     
     q = (request.GET.get('q') or '').strip()
@@ -296,81 +425,6 @@ def edit_private_class_price(request, class_id):
             messages.error(request, 'Invalid price value.')
     
     return redirect('manage_private_classes')
-
-@login_required
-def book_class(request, class_id):
-    class_session = get_object_or_404(ClassSession, pk=class_id)
-    if class_session.is_cancelled:
-        messages.error(request, 'Cannot book a cancelled class session.')
-        return redirect('class_list')
-    
-    if ClassBooking.objects.filter(user=request.user, class_session=class_session, is_active=True).exists():
-        messages.error(request, 'You have already booked this class session.')
-    elif class_session.total_bookings >= class_session.seats:
-        messages.error(request, 'No seats available for this class session.')
-    else:
-        ClassBooking.objects.create(user=request.user, class_session=class_session)
-        class_session.total_bookings += 1
-        class_session.save(update_fields=['total_bookings'])
-        messages.success(request, 'Class session booked successfully.')
-    return redirect('class_list')
-
-def cancel_booked_class(request, booking_id):
-    booking = get_object_or_404(ClassBooking, pk=booking_id, user=request.user, is_active=True)
-    
-    
-    class_session = booking.class_session
-
-
-    if class_session.end_date < datetime.now().date():
-        messages.error(request, 'Cannot cancel booking for a past class session.')
-        return redirect('my_bookings')
-
-    if class_session.total_bookings > 0:
-        class_session.total_bookings -= 1
-        class_session.save(update_fields=['total_bookings'])
-
-    booking.is_active = False
-    booking.save(update_fields=['is_active'])
-    
-    messages.success(request, 'Class session booking cancelled successfully.')
-    return redirect('my_bookings')
-
-def manage_private_class_prices(request):
-    private_class_details = PrivateClassDetails.objects.order_by('-created_at').first()
-    
-    context = {
-        'private_class_price_per_day': private_class_details.private_class_price_per_day,
-        'private_class_details': private_class_details
-    }
-
-    return render(request, 'dashboards/admin/admin_manage_private_class_prices.html', context)
-
-def new_private_class_price(request):
-    if not request.user.is_authenticated or request.user.role != 'admin':
-        messages.error(request, 'You do not have permission to perform this action.')
-        return redirect('home')
-    
-    if request.method == 'POST':
-        try:
-            new_price = request.POST.get('private_class_price_per_day')
-            if not new_price:
-                messages.error(request, 'Price is required.')
-                return redirect('manage_private_class_prices')
-
-            last_details = PrivateClassDetails.objects.order_by('-created_at').first()
-            if last_details:
-                last_details.end_date = timezone.now()
-                last_details.save(update_fields=['end_date'])
-
-            PrivateClassDetails.objects.create(private_class_price_per_day=float(new_price))
-            messages.success(request, 'New private class price created successfully.')
-
-        except (ValueError, TypeError):
-            messages.error(request, 'Invalid price value.')
-            return redirect('manage_private_class_prices')
-
-    return redirect('manage_private_class_prices')
 
 def book_private_class(request):
     if not request.user.is_authenticated:

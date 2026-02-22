@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Select Pool for Class Session{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "../components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "../../../components/message.html" %}
+        <div class="dashboard-header">
+            <h1>Select Pool</h1>
+            <a href="{% url 'manage_classes' %}" class="btn-secondary">Back to Class Sessions</a>
+        </div>
+        <form class="filter-bar" method="get">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search by name or address" value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Filter</button>
+                </div>
+            </div>
+        </form>
+        <div class="dashboard-section card-grid">
+            {% for pool in pools %}
+            <div class="class-card">
+                <span class="class-status {% if not pool.is_closed %}status-open{% else %}status-cancelled{% endif %}">
+                    {% if not pool.is_closed %}Open{% else %}Closed{% endif %}
+                </span>
+                <h3>{{ pool.name }}</h3>
+                <p><strong>Address:</strong> {{ pool.address }}</p>
+                <p><strong>Capacity:</strong> {{ pool.capacity }}</p>
+                <div class="card-actions">
+                    <a href="{% url 'select_trainer_for_class_session' pool.pool_id %}" class="btn-primary btn-sm">Select</a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="class-card">
+                <p>No pools found.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}
