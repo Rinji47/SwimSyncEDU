@@ -66,17 +66,9 @@
                         <span>${{ type.cost }}</span>
                     </div>
                     <div class="data-card-row">
-                        <span class="data-card-label">Type:</span>
-                        <span>{% if type.is_group %}Group{% else %}Private{% endif %}</span>
-                    </div>
-                    <div class="data-card-row">
                         <span class="data-card-label">Duration:</span>
                         <span>
-                            {% if type.is_group %}
-                                {{ type.duration_days }} day{% if type.duration_days != 1 %}s{% endif %}
-                            {% else %}
-                                Per-session
-                            {% endif %}
+                            {{ type.duration_days }} day{% if type.duration_days != 1 %}s{% endif %}
                         </span>
                     </div>
                     <div class="data-card-actions">
@@ -88,7 +80,6 @@
                                 "description": "{{ type.description|escapejs }}",
                                 "cost": "{{ type.cost }}",
                                 "is_closed": "{{ type.is_closed }}",
-                                "is_group": "{{ type.is_group }}",
                                 "duration_days": "{{ type.duration_days }}"
                             }'
                         >Edit</button>
@@ -123,11 +114,7 @@
                 <label for="cost">Cost ($)</label>
                 <input type="number" step="0.01" id="cost" name="cost" required>
             </div>
-            <div class="form-group">
-                <label>Type</label>
-                <p style="margin: 0; font-weight: 500; color: var(--text-primary);">Group</p>
-                <input type="hidden" id="is_group" name="is_group" value="group">
-            </div>
+            <!-- Removed is_group field -->
             <div class="form-group">
                 <label for="duration_days">Duration (days)</label>
                 <input type="number" id="duration_days" name="duration_days" min="0" step="1" value="0">

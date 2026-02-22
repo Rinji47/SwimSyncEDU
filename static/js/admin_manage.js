@@ -236,7 +236,6 @@ function openEditClassTypeModal(btn) {
 
     modal.querySelector("#type_name").value = type.name;
     modal.querySelector("#cost").value = type.cost;
-    // is_group is now a hidden field, always set to "group"
     modal.querySelector("#duration_days").value = type.duration_days || 0;
     modal.querySelector("#description").value = type.description;
 
