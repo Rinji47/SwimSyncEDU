@@ -9,39 +9,7 @@
 
 {% block content %}
 <div class="dashboard-layout">
-    <!-- Sidebar -->
-    <aside class="dashboard-sidebar">
-        <div class="sidebar-header">
-                <h2><a href="{% url 'index' %}">SwimSync EDU</a></h2>
-            <p class="user-role">User</p>
-        </div>
-        <nav class="sidebar-nav">
-            <a href="#" class="nav-item active">
-                <span class="nav-icon">📊</span>
-                Dashboard
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">🏊</span>
-                Browse Classes
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">📅</span>
-                My Bookings
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">⭐</span>
-                My Reviews
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">👤</span>
-                Profile
-            </a>
-            <a href="{% url 'logout' %}" class="nav-item">
-                <span class="nav-icon">🚪</span>
-                Logout
-            </a>
-        </nav>
-    </aside>
+    {% include "dashboards/user/components/user_sidebar.html" %}
     
     <!-- Main Content -->
     <main class="dashboard-main">

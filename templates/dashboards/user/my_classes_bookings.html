@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Booked Classes - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "./components/user_sidebar.html" %}
+
+    <main class="dashboard-main">
+        {% include "../../components/message.html" %}
+        <div class="dashboard-header">
+            <h1>My Booked Classes</h1>
+        </div>
+
+        <div class="dashboard-section card-grid">
+            {% for booking in bookings %}
+            <div class="class-card compact">
+                <span class="class-status {% if booking.class_session.is_cancelled %}status-cancelled{% else %}status-open{% endif %}">
+                    {% if booking.class_session.is_cancelled %}Cancelled{% else %}Open{% endif %}
+                </span>
+
+                <h3 style="font-size:1rem;margin-bottom:0.3rem;">
+                    {{ booking.class_session.class_name }}
+                </h3>
+
+                <div style="font-size:0.92rem;line-height:1.3;">
+                    <strong>Pool:</strong> {{ booking.class_session.pool.name }}<br>
+                    <strong>Trainer:</strong> {{ booking.class_session.user.full_name|default:booking.class_session.user.username }}<br>
+                    <strong>Dates:</strong> {{ booking.class_session.start_date|date:"M d" }} - {{ booking.class_session.end_date|date:"M d" }}<br>
+                    <strong>Price:</strong> ${{ booking.class_session.total_price }}<br>
+                </div>
+
+                <div class="card-actions" style="margin-top:0.5rem;">
+                    <button type="button"
+                            class="btn-sm btn-primary"
+                            onclick="openUserBookingModal(this)"
+                            data-class-name="{{ booking.class_session.class_name|escape }}"
+                            data-pool-name="{{ booking.class_session.pool.name|escape }}"
+                            data-trainer-name="{{ booking.class_session.user.full_name|default:booking.class_session.user.username|escape }}"
+                            data-dates="{{ booking.class_session.start_date|date:'M d' }} - {{ booking.class_session.end_date|date:'M d' }}"
+                            data-price="${{ booking.class_session.total_price }}"
+                            data-booking-date="{{ booking.booking_date|date:'M d, Y H:i' }}"
+                            data-status="{% if booking.class_session.is_cancelled %}Cancelled{% else %}Open{% endif %}">
+                        View
+                    </button>
+
+                    {% if not booking.is_cancelled and not booking.class_session.is_cancelled and booking.class_session.end_date >= today %}
+                        <a href="{% url 'cancel_booked_class' booking.id %}"
+                           class="btn-sm btn-danger"
+                           style="color:white;text-decoration:none;"
+                           onclick="return confirm('Are you sure you want to cancel this booking?');">
+                            Cancel
+                        </a>
+                    {% else %}
+                        <span class="btn-sm btn-secondary"
+                              style="background:#ccc;cursor:default;">
+                            Cancelled
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+                <p>You have no booked classes.</p>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+
+<!-- ✅ SINGLE USER BOOKING MODAL (OUTSIDE LOOP) -->
+<div id="userBookingModal" class="modal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h2 id="modal_class_name">Class Name</h2>
+            <span class="close" onclick="toggleUserBookingModal()">&times;</span>
+        </div>
+
+        <div class="details-grid">
+            <div class="detail-item">
+                <span class="detail-label">Pool</span>
+                <span class="detail-value" id="modal_pool"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Trainer</span>
+                <span class="detail-value" id="modal_trainer"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Dates</span>
+                <span class="detail-value" id="modal_dates"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Price</span>
+                <span class="detail-value" id="modal_price"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Booking Date</span>
+                <span class="detail-value" id="modal_booking_date"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Status</span>
+                <span class="detail-value" id="modal_status"></span>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button"
+                    class="btn-secondary"
+                    onclick="toggleUserBookingModal()">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const userModal = document.getElementById('userBookingModal');
+
+function openUserBookingModal(btn) {
+    document.getElementById('modal_class_name').innerText = btn.getAttribute('data-class-name');
+    document.getElementById('modal_pool').innerText = btn.getAttribute('data-pool-name');
+    document.getElementById('modal_trainer').innerText = btn.getAttribute('data-trainer-name');
+    document.getElementById('modal_dates').innerText = btn.getAttribute('data-dates');
+    document.getElementById('modal_price').innerText = btn.getAttribute('data-price');
+    document.getElementById('modal_booking_date').innerText = btn.getAttribute('data-booking-date');
+    document.getElementById('modal_status').innerText = btn.getAttribute('data-status');
+    userModal.classList.add('show');
+}
+
+function toggleUserBookingModal() {
+    userModal.classList.remove('show');
+    document.getElementById('modal_class_name').innerText = '';
+    document.getElementById('modal_pool').innerText = '';
+    document.getElementById('modal_trainer').innerText = '';
+    document.getElementById('modal_dates').innerText = '';
+    document.getElementById('modal_price').innerText = '';
+    document.getElementById('modal_booking_date').innerText = '';
+    document.getElementById('modal_status').innerText = '';
+}
+
+window.addEventListener('mousedown', function(event) {
+    if (userModal.classList.contains('show') && event.target === userModal) {
+        toggleUserBookingModal();
+    }
+});
+</script>
+{% endblock %}

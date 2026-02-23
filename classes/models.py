@@ -50,7 +50,7 @@ class ClassBooking(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     class_session = models.ForeignKey(ClassSession, on_delete=models.CASCADE)
     booking_date = models.DateTimeField(auto_now_add=True)
-    is_active = models.BooleanField(default=True)
+    is_cancelled = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username} booked {self.class_session.class_name}"

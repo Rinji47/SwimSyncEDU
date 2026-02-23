@@ -51,8 +51,12 @@
     <div class="container">
         <div class="pools-hero-content" style="margin-bottom: 24px;">
             <h2>Private Class</h2>
-            <p>Start a private class for this pool. This is a placeholder until backend rules are wired.</p>
-            <button class="btn-secondary" type="button" disabled>Create Private Class (Coming Soon)</button>
+            <p>Start a private class for this pool.</p>
+            {% if request.user.is_authenticated and request.user.role == 'user' %}
+                <a class="btn-secondary" href="{% url 'select_trainer_for_private_class' pool.pool_id %}">Create Private Class</a>
+            {% else %}
+                <button class="btn-secondary" type="button" disabled>Create Private Class (Login as User)</button>
+            {% endif %}
         </div>
         <div class="pools-hero-content" style="margin-bottom: 24px;">
             <h2>All Class Types</h2>

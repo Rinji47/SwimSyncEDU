@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Select Trainer for Private Class - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pools.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="pools-hero">
+    <div class="container">
+        <h1>Select a Trainer for Private Class at {{ pool.name }}</h1>
+        <p>Choose a trainer assigned to this pool to start your private class booking.</p>
+        
+        {% include "../components/message.html" %}
+
+        <div class="pools-grid">
+            {% for trainer in trainers %}
+            <div class="pool-card">
+                <div class="pool-card-header">
+                    <h3>{{ trainer.full_name|default:trainer.username }}</h3>
+                </div>
+                {% if trainer.user_id and pool.pool_id %}
+                    <a class="btn-primary" href="{% url 'book_private_class' pool.pool_id trainer.user_id %}">Select Trainer</a>
+                {% else %}
+                    <button class="btn-primary" disabled>Invalid Trainer</button>
+                {% endif %}
+            </div>
+            {% empty %}
+            <p class="pools-empty">No trainers available for this pool.</p>
+            {% endfor %}
+        </div>
+        <a class="btn-secondary" href="{% url 'pool_class_types' pool.pool_id %}">Back to Class Types</a>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/pools.js' %}"></script>
+{% endblock %}

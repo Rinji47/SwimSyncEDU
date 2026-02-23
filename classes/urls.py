@@ -19,9 +19,20 @@ urlpatterns = [
 
     # Manage Private Classes
     path('manage_private_classes/', views.manage_private_classes, name='manage_private_classes'),
-    path('edit_private_class_price/<int:class_id>/', views.edit_private_class_price, name='edit_private_class_price'),
+    # path('edit_private_class_price/<int:class_id>/', views.edit_private_class_price, name='edit_private_class_price'),
 
     # Manage Private Class Prices
     path('manage_private_class_prices/', views.manage_private_class_prices, name='manage_private_class_prices'),
     path('new_private_class_price/', views.new_private_class_price, name='new_private_class_price'),
+    
+    # User booking URLs
+    path('book_class/<int:class_id>/', views.book_class, name='book_class'),
+    path('cancel_booked_class/<int:booking_id>/', views.cancel_booked_class, name='cancel_booked_class'),
+    path('my_bookings/', views.my_bookings, name='my_bookings'),
+
+    # User Private class booking flow
+    path('select_trainer_for_private_class/<int:pool_id>/', views.select_trainer_for_private_class, name='select_trainer_for_private_class'),
+    path('book_private_class/<int:pool_id>/<int:trainer_id>/', views.book_private_class, name='book_private_class'),
+    path('my_private_classes/', views.my_private_classes, name='my_private_classes'),\
+    path('cancel_private_class/<int:private_class_id>/', views.cancel_private_class, name='cancel_private_class'),
 ]

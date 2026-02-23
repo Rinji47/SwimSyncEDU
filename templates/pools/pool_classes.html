@@ -69,6 +69,9 @@
                 <p class="pool-meta">Total Sessions: {{ class_item.total_sessions }}</p>
                 {% endif %}
                 <p class="pool-meta">Total Price: ${{ class_item.total_price }}</p>
+                <div class="pool-card-actions">
+                    <a href="{% url 'book_class' class_item.id %}" class="btn-primary auth-btn" style="margin-top:0.5rem;">Book Now</a>
+                </div>
             </div>
             {% empty %}
             <p class="pools-empty">No classes scheduled for this class type yet.</p>
