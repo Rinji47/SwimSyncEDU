@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Update Today's Pool Quality - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "../components/admin_sidebar.html" %}
+
+    <main class="dashboard-main">
+        {% include "../../../components/message.html" %}
+
+        <div class="dashboard-header">
+            <h1>Update Today's Pool Quality</h1>
+            <p style="color: var(--text-secondary); margin: 0;">Date: {{ today|date:"M d, Y" }}</p>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="data-card-grid">
+                {% for card in pool_cards %}
+                <div class="data-card">
+                    <h3 class="data-card-title">{{ card.pool.name }}</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Address:</span>
+                        <span>{{ card.pool.address }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Today's Record:</span>
+                        <span>
+                            {% if card.today_quality %}
+                                Added ({{ card.today_quality.cleanliness_rating }}/5)
+                            {% else %}
+                                Not Added
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="data-card-actions">
+                        {% if card.today_quality %}
+                        <a class="btn-sm btn-secondary" href="{% url 'edit_quality' card.today_quality.quality_id %}">Update Today's Entry</a>
+                        {% else %}
+                        <a class="btn-sm btn-primary" href="{% url 'add_quality' card.pool.pool_id %}">Add Today's Entry</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-secondary);">No pools found.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

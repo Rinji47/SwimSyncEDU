@@ -31,7 +31,7 @@
 
                 <div style="font-size:0.92rem;line-height:1.3;">
                     <strong>Pool:</strong> {{ booking.class_session.pool.name }}<br>
-                    <strong>Trainer:</strong> {{ booking.class_session.user.full_name|default:booking.class_session.user.username }}<br>
+                    <strong>Trainer:</strong> {{ booking.class_session.trainer.full_name|default:booking.class_session.trainer.username }}<br>
                     <strong>Dates:</strong> {{ booking.class_session.start_date|date:"M d" }} - {{ booking.class_session.end_date|date:"M d" }}<br>
                     <strong>Price:</strong> ${{ booking.class_session.total_price }}<br>
                 </div>
@@ -42,7 +42,7 @@
                             onclick="openUserBookingModal(this)"
                             data-class-name="{{ booking.class_session.class_name|escape }}"
                             data-pool-name="{{ booking.class_session.pool.name|escape }}"
-                            data-trainer-name="{{ booking.class_session.user.full_name|default:booking.class_session.user.username|escape }}"
+                            data-trainer-name="{{ booking.class_session.trainer.full_name|default:booking.class_session.trainer.username|escape }}"
                             data-dates="{{ booking.class_session.start_date|date:'M d' }} - {{ booking.class_session.end_date|date:'M d' }}"
                             data-price="${{ booking.class_session.total_price }}"
                             data-booking-date="{{ booking.booking_date|date:'M d, Y H:i' }}"

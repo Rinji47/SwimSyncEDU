@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mark Trainer Attendance{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/admin_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="dashboard-header">
+            <h1>Mark Attendance: {{ trainer.full_name|default:trainer.username }}</h1>
+            <a href="{% url 'select_trainer_for_attendance' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="attendance-form-row">
+                <form method="post" class="attendance-form-row">
+                    {% csrf_token %}
+                    <div class="attendance-form-group">
+                        <label>Date</label>
+                        <input type="date" name="date" value="{{ today|date:'Y-m-d' }}" required>
+                    </div>
+                    <div class="attendance-form-group">
+                        <label>Status</label>
+                        <select name="status" required>
+                            <option value="present" {% if today_record and today_record.status == 'present' %}selected{% endif %}>Present</option>
+                            <option value="absent" {% if today_record and today_record.status == 'absent' %}selected{% endif %}>Absent</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary">Save Attendance</button>
+                </form>
+            </div>
+
+            <div style="margin-top: 1rem;">
+                <strong>Current status for {{ today }}:</strong>
+                {% if today_record %}
+                <span class="attendance-status {% if today_record.status == 'present' %}present{% else %}absent{% endif %}">{{ today_record.get_status_display }}</span>
+                {% else %}
+                <span class="attendance-status pending">Not Marked</span>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

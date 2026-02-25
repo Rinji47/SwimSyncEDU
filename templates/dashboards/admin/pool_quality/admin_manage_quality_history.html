@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pool Quality History - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "../components/admin_sidebar.html" %}
+
+    <main class="dashboard-main">
+        {% include "../../../components/message.html" %}
+
+        <div class="dashboard-header">
+            <h1>Pool Quality History</h1>
+        </div>
+
+        <form class="filter-bar" method="GET">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search pool..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-quality">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced" id="filters-quality">
+                <div class="filter-field">
+                    <label for="pool_filter">Pool</label>
+                    <select name="pool" id="pool_filter" class="filter-select">
+                        <option value="">All Pools</option>
+                        {% for pool in pools %}
+                        <option value="{{ pool.pool_id }}" {% if request.GET.pool == pool.pool_id|stringformat:"i" %}selected{% endif %}>{{ pool.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="rating_filter">Rating</label>
+                    <select name="rating" id="rating_filter" class="filter-select">
+                        <option value="">Any</option>
+                        <option value="5" {% if request.GET.rating == '5' %}selected{% endif %}>5</option>
+                        <option value="4" {% if request.GET.rating == '4' %}selected{% endif %}>4</option>
+                        <option value="3" {% if request.GET.rating == '3' %}selected{% endif %}>3</option>
+                        <option value="2" {% if request.GET.rating == '2' %}selected{% endif %}>2</option>
+                        <option value="1" {% if request.GET.rating == '1' %}selected{% endif %}>1</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+
+        <div class="dashboard-section">
+            <div class="data-card-grid">
+                {% for quality in qualities %}
+                <div class="data-card">
+                    <span class="data-card-status">
+                        {% if quality.cleanliness_rating >= 4 %}Excellent{% elif quality.cleanliness_rating >= 3 %}Good{% else %}Needs Attention{% endif %}
+                    </span>
+                    <h3 class="data-card-title">{{ quality.pool.name }}</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Date:</span>
+                        <span>{{ quality.date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Rating:</span>
+                        <span>{{ quality.cleanliness_rating }}/5</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">pH:</span>
+                        <span>{% if quality.pH_level %}{{ quality.pH_level }}{% else %}N/A{% endif %}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Temp:</span>
+                        <span>{% if quality.water_temperature %}{{ quality.water_temperature }} C{% else %}N/A{% endif %}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Chlorine:</span>
+                        <span>{% if quality.chlorine_level %}{{ quality.chlorine_level }} ppm{% else %}N/A{% endif %}</span>
+                    </div>
+                    <div class="data-card-actions">
+                        {% if quality.date == today %}
+                        <a class="btn-sm btn-secondary" href="{% url 'edit_quality' quality.quality_id %}">Edit</a>
+                        <form method="POST" action="{% url 'delete_quality' quality.quality_id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-sm btn-danger" onclick="return confirm('Delete this quality record?');">Delete</button>
+                        </form>
+                        {% else %}
+                        <span class="btn-sm btn-secondary" style="opacity:.7; cursor:not-allowed;">Past Record</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-secondary);">No quality records found.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

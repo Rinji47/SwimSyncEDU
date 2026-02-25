@@ -1,0 +1,48 @@
+<aside class="dashboard-sidebar">
+    <div class="sidebar-header">
+        <h2><a href="{% url 'index' %}">SwimSync EDU</a></h2>
+        <p class="user-role">Trainer</p>
+    </div>
+    <nav class="sidebar-nav">
+        {% url 'trainer_dashboard' as trainer_dashboard_url %}
+        {% url 'manage_trainer_class_session' as manage_trainer_class_session_url %}
+        {% url 'manage_trainer_private_classes' as manage_trainer_private_classes_url %}
+        {% url 'select_class_for_attendance' as select_class_for_attendance_url %}
+        {% url 'select_private_class_for_attendance' as select_private_class_for_attendance_url %}
+        {% url 'trainer_susitute_class_sessions_list' as trainer_substitute_group_url %}
+        {% url 'trainer_susitute_private_classes_list' as trainer_substitute_private_url %}
+
+        <a href="{{ trainer_dashboard_url }}" class="nav-item {% if request.path == trainer_dashboard_url %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
+            Dashboard
+        </a>
+        <a href="{{ manage_trainer_class_session_url }}" class="nav-item {% if request.path == manage_trainer_class_session_url %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-book-open"></i></span>
+            Group Classes
+        </a>
+        <a href="{{ manage_trainer_private_classes_url }}" class="nav-item {% if request.path == manage_trainer_private_classes_url %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-lock"></i></span>
+            Private Classes
+        </a>
+        <a href="{{ select_class_for_attendance_url }}" class="nav-item {% if request.path == select_class_for_attendance_url %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+            Group Attendance
+        </a>
+        <a href="{{ select_private_class_for_attendance_url }}" class="nav-item {% if request.path == select_private_class_for_attendance_url %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-user-check"></i></span>
+            Private Attendance
+        </a>
+        <a href="{{ trainer_substitute_group_url }}" class="nav-item {% if request.path == trainer_substitute_group_url %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-user-group"></i></span>
+            Sub Group Classes
+        </a>
+        <a href="{{ trainer_substitute_private_url }}" class="nav-item {% if request.path == trainer_substitute_private_url %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-user-shield"></i></span>
+            Sub Private Classes
+        </a>
+        <a href="{% url 'logout' %}" class="nav-item">
+            <span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+            Logout
+        </a>
+    </nav>
+</aside>

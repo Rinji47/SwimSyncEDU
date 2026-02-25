@@ -1,18 +1,97 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from math import radians, sin, cos, sqrt, atan2
 from django.contrib import messages
 from django.db.models import Q
-from classes.models import ClassSession, ClassType
+from classes.models import ClassSession, ClassType, PrivateClass
 from .models import Pool, PoolQuality, TrainerPoolAssignment
 from django.utils import timezone
 from accounts.models import User
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
+from math import radians, sin, cos, sqrt, atan2
+
+try:
+    from geopy.distance import geodesic
+except ImportError:
+    geodesic = None
 
 # Create your views here.
+def _parse_busy_range(raw_from, raw_to):
+    busy_from = None
+    busy_to = None
+
+    if raw_from:
+        try:
+            busy_from = datetime.strptime(raw_from, '%Y-%m-%d').date()
+        except ValueError:
+            busy_from = None
+
+    if raw_to:
+        try:
+            busy_to = datetime.strptime(raw_to, '%Y-%m-%d').date()
+        except ValueError:
+            busy_to = None
+
+    if busy_from and busy_to and busy_from > busy_to:
+        busy_from, busy_to = busy_to, busy_from
+
+    return busy_from, busy_to
+
+
+def _build_trainer_unavailability(trainers, busy_from=None, busy_to=None, max_items=None):
+    trainer_ids = [trainer.pk for trainer in trainers]
+    if not trainer_ids:
+        return {}
+
+    today = date.today()
+    busy = {}
+
+    group_sessions = ClassSession.objects.filter(
+        Q(trainer_id__in=trainer_ids) | Q(substitute_trainer_id__in=trainer_ids),
+        end_date__gte=today,
+        is_cancelled=False,
+    ).order_by('start_date', 'start_time')
+
+    private_sessions = PrivateClass.objects.filter(
+        Q(trainer_id__in=trainer_ids) | Q(substitute_trainer_id__in=trainer_ids),
+        end_date__gte=today,
+        is_cancelled=False,
+    ).order_by('start_date', 'start_time')
+
+    if busy_from:
+        group_sessions = group_sessions.filter(end_date__gte=busy_from)
+        private_sessions = private_sessions.filter(end_date__gte=busy_from)
+    if busy_to:
+        group_sessions = group_sessions.filter(start_date__lte=busy_to)
+        private_sessions = private_sessions.filter(start_date__lte=busy_to)
+
+    for session in group_sessions:
+        label = f"{session.start_date:%b %d}-{session.end_date:%b %d} | {session.start_time:%H:%M}-{session.end_time:%H:%M} | Group"
+        if session.trainer_id in trainer_ids:
+            busy.setdefault(session.trainer_id, []).append(label)
+        if session.substitute_trainer_id in trainer_ids:
+            busy.setdefault(session.substitute_trainer_id, []).append(label)
+
+    for private in private_sessions:
+        label = f"{private.start_date:%b %d}-{private.end_date:%b %d} | {private.start_time:%H:%M}-{private.end_time:%H:%M} | Private"
+        if private.trainer_id in trainer_ids:
+            busy.setdefault(private.trainer_id, []).append(label)
+        if private.substitute_trainer_id in trainer_ids:
+            busy.setdefault(private.substitute_trainer_id, []).append(label)
+
+    totals = {}
+    visible = {}
+    for trainer_id in list(busy.keys()):
+        deduped = list(dict.fromkeys(busy[trainer_id]))
+        totals[trainer_id] = len(deduped)
+        visible[trainer_id] = deduped[:max_items] if max_items else deduped
+
+    return visible, totals
+
+
 def nearby_pools(request):
     pools = Pool.objects.all().order_by('name')
     lat = request.GET.get('lat')
     lng = request.GET.get('lng')
+    raw_radius = request.GET.get('radius', '10')
 
     def parse_coordinates(raw):
         if not raw:
@@ -25,7 +104,7 @@ def nearby_pools(request):
         except ValueError:
             return None
 
-    def haversine_km(lat1, lon1, lat2, lon2):
+    def fallback_haversine_km(lat1, lon1, lat2, lon2):
         r = 6371
         d_lat = radians(lat2 - lat1)
         d_lon = radians(lon2 - lon1)
@@ -33,7 +112,13 @@ def nearby_pools(request):
         c = 2 * atan2(sqrt(a), sqrt(1 - a))
         return r * c
 
-    status_message = "Enable location to see pools within 10 km."
+    try:
+        radius_km = float(raw_radius)
+    except (TypeError, ValueError):
+        radius_km = 10.0
+    radius_km = min(max(radius_km, 1.0), 100.0)
+
+    status_message = f"Enable location to see pools within {radius_km:g} km."
     nearby = []
 
     if lat and lng:
@@ -49,24 +134,32 @@ def nearby_pools(request):
                 coords = parse_coordinates(pool.coordinates)
                 if not coords:
                     continue
-                distance = haversine_km(user_lat, user_lng, coords[0], coords[1])
-                if distance <= 10:
+                distance = geodesic((user_lat, user_lng), coords).km if geodesic else fallback_haversine_km(
+                    user_lat,
+                    user_lng,
+                    coords[0],
+                    coords[1],
+                )
+                if distance <= radius_km:
+                    pool.distance_km = round(distance, 1)
                     nearby.append((distance, pool))
 
             if nearby:
                 nearby.sort(key=lambda item: item[0])
                 pools = [item[1] for item in nearby]
-                status_message = f"Showing {len(pools)} pool{'s' if len(pools) != 1 else ''} within 10 km."
+                status_message = f"Showing {len(pools)} pool{'s' if len(pools) != 1 else ''} within {radius_km:g} km."
             else:
-                status_message = "No pools within 10 km. Showing all pools instead."
+                status_message = f"No pools within {radius_km:g} km. Showing all pools instead."
         else:
             status_message = "We could not read your location. Showing all pools."
     else:
-        status_message = "Enable location to see pools within 10 km. Showing all pools for now."
+        status_message = f"Enable location to see pools within {radius_km:g} km. Showing all pools for now."
 
     context = {
         'pools': pools,
         'status_message': status_message,
+        'radius_km': int(radius_km) if radius_km.is_integer() else radius_km,
+        'is_geopy_installed': geodesic is not None,
     }
     return render(request, 'pools/nearby_pools.html', context)
 
@@ -203,14 +296,14 @@ def close_pool(request, pool_id):
     messages.success(request, 'Pool has been closed successfully.')
     return redirect('manage_pools')
 
-def manage_quality(request):
+def manage_quality_history(request):
     pools = Pool.objects.all()
     pool_filter = request.GET.get('pool')
     rating_filter = request.GET.get('rating')
     q = (request.GET.get('q') or '').strip()
+    today = timezone.localdate()
 
     qualities = PoolQuality.objects.all()
-
     if q:
         qualities = qualities.filter(pool__name__icontains=q)
     if pool_filter:
@@ -222,72 +315,108 @@ def manage_quality(request):
 
     context = {
         'pools': pools,
-        'qualities': qualities
+        'qualities': qualities,
+        'today': today,
     }
-    return render(request, 'dashboards/admin/admin_manage_quality.html', context)
+    return render(request, 'dashboards/admin/pool_quality/admin_manage_quality_history.html', context)
 
-def add_quality(request):
+
+def select_pool_quality(request):
+    today = timezone.localdate()
+    pools = Pool.objects.all().order_by('name')
+    today_qualities = PoolQuality.objects.filter(date=today).select_related('pool')
+    quality_by_pool_id = {quality.pool_id: quality for quality in today_qualities}
+    pool_cards = [
+        {
+            'pool': pool,
+            'today_quality': quality_by_pool_id.get(pool.pool_id),
+        }
+        for pool in pools
+    ]
+
+    context = {
+        'today': today,
+        'pool_cards': pool_cards,
+    }
+    return render(request, 'dashboards/admin/pool_quality/select_pool_quality.html', context)
+
+
+def add_quality(request, pool_id=None):
+    if pool_id is None:
+        pool_id = request.GET.get('pool_id')
+    pool = get_object_or_404(Pool, pk=pool_id)
+    today = timezone.localdate()
+
     if request.method == 'POST':
-        pool_id = request.POST.get('pool_id')
-        date = request.POST.get('date')
         cleanliness_rating = request.POST.get('cleanliness_rating')
         pH_level = request.POST.get('pH_level') or None
         water_temperature = request.POST.get('water_temperature') or None
         chlorine_level = request.POST.get('chlorine_level') or None
 
-        # Check for existing record for the same pool & date
-        if PoolQuality.objects.filter(pool_id=pool_id, date=date).exists():
-            messages.error(request, 'A quality record for this pool on this date already exists.')
-            return redirect('manage_quality')
-        
+        if PoolQuality.objects.filter(pool=pool, date=today).exists():
+            messages.error(request, "Today's quality record for this pool already exists.")
+            return redirect('select_pool_quality')
+
         PoolQuality.objects.create(
-            pool_id=pool_id,
-            date=date,
+            pool=pool,
+            date=today,
             cleanliness_rating=cleanliness_rating,
             pH_level=pH_level,
             water_temperature=water_temperature,
-            chlorine_level=chlorine_level
+            chlorine_level=chlorine_level,
         )
-        messages.success(request, 'Quality record added successfully.')
-        return redirect('manage_quality')
+        messages.success(request, "Today's quality record added successfully.")
+        return redirect('select_pool_quality')
 
-    messages.error(request, 'Invalid request.')
-    return redirect('manage_quality')
+    context = {
+        'pool': pool,
+        'today': today,
+        'is_edit': False,
+        'quality': None,
+    }
+    return render(request, 'dashboards/admin/pool_quality/pool_quality_form.html', context)
+
 
 def edit_quality(request, quality_id):
     quality = get_object_or_404(PoolQuality, pk=quality_id)
+    today = timezone.localdate()
+
+    if quality.date != today:
+        messages.error(request, 'You can only edit quality records for today.')
+        return redirect('manage_quality_history')
 
     if request.method == 'POST':
-        pool_id = request.POST.get('pool_id')
-        date = request.POST.get('date')
-        cleanliness_rating = request.POST.get('cleanliness_rating')
-        pH_level = request.POST.get('pH_level') or None
-        water_temperature = request.POST.get('water_temperature') or None
-        chlorine_level = request.POST.get('chlorine_level') or None
-
-        if PoolQuality.objects.filter(pool_id=pool_id, date=date).exclude(pk=quality_id).exists():
-            messages.error(request, 'A quality record for this pool on this date already exists.')
-            return redirect('manage_quality')
-
-        quality.pool_id = pool_id
-        quality.date = date
-        quality.cleanliness_rating = cleanliness_rating
-        quality.pH_level = pH_level
-        quality.water_temperature = water_temperature
-        quality.chlorine_level = chlorine_level
+        quality.cleanliness_rating = request.POST.get('cleanliness_rating')
+        quality.pH_level = request.POST.get('pH_level') or None
+        quality.water_temperature = request.POST.get('water_temperature') or None
+        quality.chlorine_level = request.POST.get('chlorine_level') or None
         quality.save()
 
-        messages.success(request, 'Quality record updated successfully.')
-        return redirect('manage_quality')
+        messages.success(request, "Today's quality record updated successfully.")
+        return redirect('select_pool_quality')
 
-    messages.error(request, 'Invalid request.')
-    return redirect('manage_quality')
+    context = {
+        'pool': quality.pool,
+        'today': today,
+        'is_edit': True,
+        'quality': quality,
+    }
+    return render(request, 'dashboards/admin/pool_quality/pool_quality_form.html', context)
+
 
 def delete_quality(request, quality_id):
     quality = get_object_or_404(PoolQuality, pk=quality_id)
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request.')
+        return redirect('manage_quality_history')
+
+    if quality.date != timezone.localdate():
+        messages.error(request, 'You can only delete quality records for today.')
+        return redirect('manage_quality_history')
+
     quality.delete()
-    messages.success(request, 'Quality record deleted successfully.')
-    return redirect('manage_quality')
+    messages.success(request, "Today's quality record deleted successfully.")
+    return redirect('manage_quality_history')
 
 def assign_trainer_manager(request):
     assigned_trainers = TrainerPoolAssignment.objects.select_related('trainer', 'pool').all().order_by('-start_date')
@@ -341,10 +470,24 @@ def list_trainers(request, pool_id):
     elif assignment == 'not_assigned':
         trainers = trainers.exclude(user_id__in=trainers_assigned_id)
 
+    busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
+    unavailability_map, total_map = _build_trainer_unavailability(trainers, busy_from=busy_from, busy_to=busy_to)
+    trainer_cards = [
+        {
+            'trainer': trainer,
+            'unavailable_slots': unavailability_map.get(trainer.pk, []),
+            'unavailable_total': total_map.get(trainer.pk, 0),
+            'unavailable_more': max(total_map.get(trainer.pk, 0) - len(unavailability_map.get(trainer.pk, [])), 0),
+        }
+        for trainer in trainers
+    ]
+
     context = {
         'pool': pool,
-        'trainers': trainers,
-        'trainers_assigned_id': trainers_assigned_id
+        'trainer_cards': trainer_cards,
+        'trainers_assigned_id': trainers_assigned_id,
+        'busy_from': busy_from,
+        'busy_to': busy_to,
     }
     return render(request, 'dashboards/admin/trainer_assignment/list_trainers.html', context)
 
@@ -374,10 +517,22 @@ def assign_trainer(request, pool_id, trainer_id):
         messages.success(request, 'Trainer assigned successfully.')
         return redirect('assign_trainer_manager')
 
+    busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
     context = {
         'pool': pool,
-        'trainer': trainer
+        'trainer': trainer,
+        'trainer_unavailable_slots': [],
+        'trainer_unavailable_total': 0,
+        'trainer_unavailable_more': 0,
+        'busy_from': busy_from,
+        'busy_to': busy_to,
     }
+    slots_map, total_map = _build_trainer_unavailability([trainer], busy_from=context['busy_from'], busy_to=context['busy_to'])
+    shown_slots = slots_map.get(trainer.pk, [])
+    total_slots = total_map.get(trainer.pk, 0)
+    context['trainer_unavailable_slots'] = shown_slots
+    context['trainer_unavailable_total'] = total_slots
+    context['trainer_unavailable_more'] = max(total_slots - len(shown_slots), 0)
     return render(request, 'dashboards/admin/trainer_assignment/assign_trainer.html', context)
 
 def unassign_trainer(request, assignment_id):
@@ -387,3 +542,4 @@ def unassign_trainer(request, assignment_id):
     assignment.save(update_fields=['end_date', 'is_active'])
     messages.success(request, 'Trainer unassigned successfully.')
     return redirect('assign_trainer_manager')
+

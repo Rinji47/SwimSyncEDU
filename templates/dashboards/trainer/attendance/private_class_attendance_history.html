@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Private Class Attendance History{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/trainer_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="dashboard-header">
+            <h1>Private Class - Attendance History</h1>
+            <a href="{% url 'select_private_class_for_attendance' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="dashboard-section">
+            <p><strong>Student:</strong> {{ private_class.user.full_name|default:private_class.user.username }}</p>
+            <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
+            <p><strong>Trainer:</strong> {{ private_class.trainer.full_name|default:private_class.trainer.username }}</p>
+        </div>
+
+        <div class="dashboard-section history-table-wrap">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Marked By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in attendance_records %}
+                    <tr>
+                        <td>{{ record.date }}</td>
+                        <td>
+                            <span class="attendance-status {% if record.status == 'present' %}present{% elif record.status == 'absent' %}absent{% else %}pending{% endif %}">
+                                {{ record.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ record.marked_by.full_name|default:record.marked_by.username|default:'-' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">No attendance records found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+{% endblock %}

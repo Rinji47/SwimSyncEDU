@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Choose Substitute - Group Class{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/admin_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="page-head">
+            <div>
+                <h1>Choose Substitute Trainer</h1>
+                <p class="subtitle">{{ class_session.class_name }} | {{ class_session.start_time }} - {{ class_session.end_time }}</p>
+            </div>
+            <a href="{% url 'assign_substitute_trainer_for_class_session' class_session.id %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="dashboard-section card-grid">
+            {% for row in candidate_rows %}
+            <article class="class-card">
+                <span class="class-status {% if row.is_available %}status-open{% else %}status-cancelled{% endif %}">
+                    {{ row.conflict_label }}
+                </span>
+                <h3>{{ row.trainer.full_name|default:row.trainer.username }}</h3>
+                <p><strong>Email:</strong> {{ row.trainer.email }}</p>
+
+                <div class="card-actions">
+                    {% if row.is_available %}
+                    <a href="{% url 'assign_substitute_trainer_for_class_session' class_session.id %}?selected_trainer_id={{ row.trainer.pk }}" class="btn-primary btn-sm">Select</a>
+                    {% else %}
+                    <button type="button" class="btn-secondary btn-sm" disabled>Busy</button>
+                    {% endif %}
+                </div>
+            </article>
+            {% empty %}
+            <article class="class-card"><p>No present trainers assigned to this pool.</p></article>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

@@ -1,45 +1,82 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Book Private Class - SwimSync EDU{% endblock %}
+{% block title %}Book Private Class{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/pools.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
 {% endblock %}
 
 {% block content %}
-<section class="pools-hero">
-    <div class="container">
-        
-        {% include "../components/message.html" %}
-        <h1>Book Private Class</h1>
-        <form method="post">
-            {% csrf_token %}
-            <input type="hidden" name="trainer_id" value="{{ trainer_id }}">
-            <input type="hidden" name="pool_id" value="{{ pool_id }}">
-            <div class="form-group">
-                <label for="start_date">Start Date</label>
-                <input type="date" id="start_date" name="start_date" required>
+<section class="page-shell">
+    <div class="container two-col">
+        <div>
+            {% include "components/message.html" %}
+            <div class="page-head">
+                <div>
+                    <h1>Book Private Class</h1>
+                    <p class="subtitle">Choose dates and a time window (max 4 hours).</p>
+                </div>
+                <a class="btn-secondary" href="{% url 'select_trainer_for_private_class' pool_id %}"><i class="fa-solid fa-arrow-left"></i> Back</a>
             </div>
-            <div class="form-group">
-                <label for="end_date">End Date</label>
-                <input type="date" id="end_date" name="end_date" required>
+
+            <div class="info-card">
+                <form method="post" class="split-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="trainer_id" value="{{ trainer_id }}">
+                    <input type="hidden" name="pool_id" value="{{ pool_id }}">
+
+                    <div>
+                        <label for="start_date">Start Date</label>
+                        <input type="date" id="start_date" name="start_date" required>
+                    </div>
+                    <div>
+                        <label for="end_date">End Date</label>
+                        <input type="date" id="end_date" name="end_date" required>
+                    </div>
+                    <div>
+                        <label for="start_time">Start Time</label>
+                        <input type="time" id="start_time" name="start_time" required>
+                    </div>
+                    <div>
+                        <label for="end_time">End Time</label>
+                        <input type="time" id="end_time" name="end_time" required>
+                    </div>
+                    <div class="full-span">
+                        <button class="btn-primary" type="submit">Confirm Booking</button>
+                    </div>
+                </form>
             </div>
-            <div class="form-group">
-                <label for="start_time">Start Time</label>
-                <input type="time" id="start_time" name="start_time" required>
-            </div>
-            <div class="form-group">
-                <label for="end_time">End Time</label>
-                <input type="time" id="end_time" name="end_time" required>
-            </div>
-            <button class="btn-primary" type="submit">Book Private Class</button>
-        </form>
-        <a class="btn-secondary" href="{% url 'select_trainer_for_private_class' pool_id %}">Back to Trainer Selection</a>
+        </div>
+
+        <aside class="side-panel">
+            <h3><i class="fa-solid fa-clipboard-list"></i> Selection Summary</h3>
+            <ul class="side-list">
+                <li><strong>Pool:</strong> {{ pool.name }}</li>
+                <li><strong>Address:</strong> {{ pool.address }}</li>
+                <li><strong>Trainer:</strong> {{ trainer.full_name|default:trainer.username }}</li>
+                <li><strong>Email:</strong> {{ trainer.email }}</li>
+            </ul>
+
+            <form method="get" class="quick-filter range-filter" style="margin-top:0.9rem;">
+                <label><strong>Busy Range:</strong></label>
+                <input class="compact-input" type="date" name="busy_from" value="{% if busy_from %}{{ busy_from|date:'Y-m-d' }}{% endif %}">
+                <input class="compact-input" type="date" name="busy_to" value="{% if busy_to %}{{ busy_to|date:'Y-m-d' }}{% endif %}">
+                <button type="submit" class="btn-secondary">Apply</button>
+            </form>
+
+            <h3 style="margin-top:0.6rem;"><i class="fa-solid fa-calendar-xmark"></i> Trainer Busy Slots</h3>
+            <div class="slot-list">
+                {% for slot in trainer_unavailable_slots %}
+                <span class="slot-chip" title="{{ slot }}">{{ slot }}</span>
+                {% empty %}
+                <span class="slot-chip slot-empty">No conflicts for selected scope</span>
+                {% endfor %}
+</div>
+        </aside>
     </div>
 </section>
 {% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'js/pools.js' %}"></script>
-{% endblock %}

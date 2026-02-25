@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Class Session{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Schedule Class Session</h1>
+                <p class="subtitle">Step 3 of 3: fill details and confirm.</p>
+            </div>
+            <a href="{% url 'select_trainer_for_class_session' pool.pool_id %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="two-col">
+            <div class="info-card">
+                <form method="POST" class="split-form">
+                    {% csrf_token %}
+
+                    <div class="full-span">
+                        <label for="class_name">Class Name</label>
+                        <input type="text" id="class_name" name="class_name" required>
+                    </div>
+
+                    <div class="full-span">
+                        <label for="class_type_id">Class Type</label>
+                        <select id="class_type_id" name="class_type_id" required>
+                            <option value="">Choose type...</option>
+                            {% for type in class_types %}
+                            <option value="{{ type.class_type_id }}" data-duration="{{ type.duration_days }}">{{ type.name }} ({{ type.duration_days }} days)</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="seats">Available Seats</label>
+                        <input type="number" id="seats" name="seats" min="1" required>
+                    </div>
+                    <div></div>
+
+                    <div>
+                        <label for="start_date">Start Date</label>
+                        <input type="date" id="start_date" name="start_date" required>
+                    </div>
+                    <div>
+                        <label for="end_date">End Date</label>
+                        <input type="date" id="end_date" name="end_date" readonly required>
+                    </div>
+
+                    <div>
+                        <label for="start_time">Start Time</label>
+                        <input type="time" id="start_time" name="start_time" required>
+                    </div>
+                    <div>
+                        <label for="end_time">End Time</label>
+                        <input type="time" id="end_time" name="end_time" required>
+                    </div>
+
+                    <div class="full-span">
+                        <button type="submit" class="btn-primary">Create Session</button>
+                    </div>
+                </form>
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-clipboard-list"></i> Selected Context</h3>
+                <ul class="side-list">
+                    <li><strong>Pool:</strong> {{ pool.name }}</li>
+                    <li><strong>Address:</strong> {{ pool.address }}</li>
+                    <li><strong>Trainer:</strong> {{ trainer.full_name|default:trainer.username }}</li>
+                    <li><strong>Email:</strong> {{ trainer.email }}</li>
+                </ul>
+
+                <form method="get" class="quick-filter range-filter" style="margin-top:0.9rem;">
+                    <label><strong>Busy Range:</strong></label>
+                    <input class="compact-input" type="date" name="busy_from" value="{% if busy_from %}{{ busy_from|date:'Y-m-d' }}{% endif %}">
+                    <input class="compact-input" type="date" name="busy_to" value="{% if busy_to %}{{ busy_to|date:'Y-m-d' }}{% endif %}">
+                    <button type="submit" class="btn-secondary">Apply</button>
+                </form>
+
+                <h3 style="margin-top:0.6rem;"><i class="fa-solid fa-calendar-xmark"></i> Trainer Busy Slots</h3>
+                <div class="slot-list">
+                    {% for slot in trainer_unavailable_slots %}
+                    <span class="slot-chip" title="{{ slot }}">{{ slot }}</span>
+                    {% empty %}
+                    <span class="slot-chip slot-empty">No conflicts for selected scope</span>
+                    {% endfor %}
+</div>
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(() => {
+  const typeInput = document.getElementById('class_type_id');
+  const startDateInput = document.getElementById('start_date');
+  const endDateInput = document.getElementById('end_date');
+
+  const updateEndDate = () => {
+    const selected = typeInput.options[typeInput.selectedIndex];
+    const duration = parseInt(selected?.dataset?.duration || '0', 10);
+    const startDate = startDateInput.value;
+    if (!duration || !startDate) {
+      endDateInput.value = '';
+      return;
+    }
+
+    const d = new Date(startDate + 'T00:00:00');
+    d.setDate(d.getDate() + duration - 1);
+    endDateInput.value = d.toISOString().slice(0, 10);
+  };
+
+  typeInput.addEventListener('change', updateEndDate);
+  startDateInput.addEventListener('change', updateEndDate);
+})();
+</script>
+{% endblock %}
+

@@ -1,11 +1,13 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Select Trainer - Assign Trainer{% endblock %}
+{% block title %}Select Trainer - {{ pool.name }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 <link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -13,40 +15,53 @@
     {% include "../components/admin_sidebar.html" %}
     <main class="dashboard-main">
         {% include "../../../components/message.html" %}
-        <div class="dashboard-header">
-            <h1>Select Trainer for {{ pool.name }}</h1>
-            <a href="{% url 'list_pools' %}" class="btn-secondary">Back to Pools</a>
+
+        <div class="page-head">
+            <div>
+                <h1>Select Trainer</h1>
+                <p class="subtitle">Pool: {{ pool.name }}. Filter by date to check exact busy windows.</p>
+            </div>
+            <a href="{% url 'list_pools' %}" class="btn-secondary">Back</a>
         </div>
-        <form class="filter-bar" method="get" style="background: #fff; border-radius: 18px; box-shadow: 0 2px 8px 0 rgba(16,30,54,.06); padding: 18px 24px; display: flex; gap: 1rem; align-items: center; margin-bottom: 2rem;">
-            <input type="text" name="q" class="filter-input" placeholder="Search trainers..." value="{{ request.GET.q|default_if_none:'' }}" style="flex:1; min-width:180px; border-radius: 8px; border: 1px solid #e5e7eb; padding: 8px 14px; font-size: 1rem;">
-            <select name="assignment" class="filter-select" style="min-width: 160px; border-radius: 8px; border: 1px solid #e5e7eb; padding: 8px 14px; font-size: 1rem;">
+
+        <form class="quick-filter range-filter" method="get">
+            <input type="text" name="q" class="filter-input" placeholder="Search trainers" value="{{ request.GET.q|default_if_none:'' }}">
+            <select name="assignment" class="filter-select">
                 <option value="">All Assignment Status</option>
                 <option value="assigned" {% if request.GET.assignment == 'assigned' %}selected{% endif %}>Assigned</option>
                 <option value="not_assigned" {% if request.GET.assignment == 'not_assigned' %}selected{% endif %}>Not Assigned</option>
             </select>
-            <button type="submit" class="btn-secondary" style="border-radius: 12px; font-size: 1.08rem; padding: 8px 28px;">Filter</button>
+            <input class="compact-input" type="date" name="busy_from" value="{% if busy_from %}{{ busy_from|date:'Y-m-d' }}{% endif %}">
+            <input class="compact-input" type="date" name="busy_to" value="{% if busy_to %}{{ busy_to|date:'Y-m-d' }}{% endif %}">
+            <button type="submit" class="btn-secondary">Apply</button>
+            <a href="{% url 'list_trainers' pool.pool_id %}" class="btn-secondary">Clear</a>
         </form>
-        <div class="dashboard-section">
-            <div class="data-card-grid">
-                {% for trainer in trainers %}
-                <div class="data-card">
-                    <span class="data-card-status {% if trainer.is_active %}status-open{% else %}status-closed{% endif %}">
-                        {% if trainer.is_active %}Active{% else %}Inactive{% endif %}
-                        {% if trainer.user_id in trainers_assigned_id %} | Assigned{% else %} | Not Assigned{% endif %}
-                    </span>
-                    <h3 class="data-card-title">{{ trainer.full_name }}</h3>
-                    <div class="data-card-row"><strong>Email:</strong> {{ trainer.email }}</div>
-                    <div class="data-card-row">
-                        <a href="{% url 'assign_trainer' pool.pool_id trainer.user_id %}" class="btn-primary btn-sm">Select</a>
-                    </div>
+
+        <div class="dashboard-section card-grid">
+            {% for row in trainer_cards %}
+            <article class="class-card">
+                <span class="class-status {% if row.trainer.is_active %}status-open{% else %}status-cancelled{% endif %}">
+                    {% if row.trainer.is_active %}Active{% else %}Inactive{% endif %}
+                    {% if row.trainer.user_id in trainers_assigned_id %} | Assigned{% else %} | Not Assigned{% endif %}
+                </span>
+                <h3>{{ row.trainer.full_name|default:row.trainer.username }}</h3>
+                <p><strong>Email:</strong> {{ row.trainer.email }}</p>
+                <div class="slot-list">
+                    {% for slot in row.unavailable_slots %}
+                    <span class="slot-chip" title="{{ slot }}">{{ slot }}</span>
+                    {% empty %}
+                    <span class="slot-chip slot-empty">No conflicts for selected scope</span>
+                    {% endfor %}
+</div>
+                <div class="card-actions">
+                    <a href="{% url 'assign_trainer' pool.pool_id row.trainer.pk %}{% if busy_from or busy_to %}?{% endif %}{% if busy_from %}busy_from={{ busy_from|date:'Y-m-d' }}{% endif %}{% if busy_from and busy_to %}&{% endif %}{% if busy_to %}busy_to={{ busy_to|date:'Y-m-d' }}{% endif %}" class="btn-primary btn-sm">Select Trainer</a>
                 </div>
-                {% empty %}
-                <div class="data-card">
-                    <p>No trainers found.</p>
-                </div>
-                {% endfor %}
-            </div>
+            </article>
+            {% empty %}
+            <article class="class-card"><p>No trainers found.</p></article>
+            {% endfor %}
         </div>
     </main>
 </div>
 {% endblock %}
+

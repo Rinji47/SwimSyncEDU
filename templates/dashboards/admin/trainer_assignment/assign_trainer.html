@@ -1,11 +1,13 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Assign Trainer - SwimSync EDU{% endblock %}
+{% block title %}Assign Trainer{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 <link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -13,26 +15,59 @@
     {% include "../components/admin_sidebar.html" %}
     <main class="dashboard-main">
         {% include "../../../components/message.html" %}
-        <div class="dashboard-header">
-            <h1>Assign {{ trainer.full_name }} to {{ pool.name }}</h1>
-            <a href="{% url 'list_trainers' pool.pool_id %}" class="btn-secondary">Back to Trainers</a>
+
+        <div class="page-head">
+            <div>
+                <h1>Assign Trainer To Pool</h1>
+                <p class="subtitle">Confirm trainer and pool details, then set assignment start date.</p>
+            </div>
+            <a href="{% url 'list_trainers' pool.pool_id %}" class="btn-secondary">Back</a>
         </div>
-        <!-- No filter bar needed for single trainer assignment form -->
-        <div class="dashboard-section">
-            <div class="data-card" style="max-width: 420px; margin: 0 auto;">
-                <div class="info-message" style="margin-bottom: 1rem; background: #e6f4ff; color: #2563eb; padding: 0.7rem 1rem; border-radius: 8px; font-size: 0.97rem;">
-                    <strong>Note:</strong> End Date is optional and can be left blank if the assignment is ongoing.
+
+        <div class="two-col">
+            <div class="info-card">
+                <div class="info-card" style="margin:0 0 1rem; background:#fffbeb; border-color:#fde68a;">
+                    <p style="margin:0; color:#92400e;"><strong>Note:</strong> End date stays open until manual unassignment.</p>
                 </div>
-                <form method="post" class="admin-form">
+                <form method="post" class="split-form">
                     {% csrf_token %}
-                    <div class="form-group">
-                        <label for="start_date">Start Date<span class="required">*</span></label>
-                        <input type="date" id="start_date" name="start_date" class="form-control" required>
+                    <div class="full-span">
+                        <label for="start_date">Start Date</label>
+                        <input type="date" id="start_date" name="start_date" required>
                     </div>
-                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">Assign Trainer</button>
+                    <div class="full-span">
+                        <button type="submit" class="btn-primary">Assign Trainer</button>
+                    </div>
                 </form>
             </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-clipboard-list"></i> Selected Context</h3>
+                <ul class="side-list">
+                    <li><strong>Pool:</strong> {{ pool.name }}</li>
+                    <li><strong>Address:</strong> {{ pool.address }}</li>
+                    <li><strong>Trainer:</strong> {{ trainer.full_name|default:trainer.username }}</li>
+                    <li><strong>Email:</strong> {{ trainer.email }}</li>
+                </ul>
+
+                <form method="get" class="quick-filter range-filter" style="margin-top:0.9rem;">
+                    <label><strong>Busy Range:</strong></label>
+                    <input class="compact-input" type="date" name="busy_from" value="{% if busy_from %}{{ busy_from|date:'Y-m-d' }}{% endif %}">
+                    <input class="compact-input" type="date" name="busy_to" value="{% if busy_to %}{{ busy_to|date:'Y-m-d' }}{% endif %}">
+                    <button type="submit" class="btn-secondary">Apply</button>
+                </form>
+
+                <h3 style="margin-top:0.6rem;"><i class="fa-solid fa-calendar-xmark"></i> Trainer Busy Slots</h3>
+                <div class="slot-list">
+                    {% for slot in trainer_unavailable_slots %}
+                    <span class="slot-chip" title="{{ slot }}">{{ slot }}</span>
+                    {% empty %}
+                    <span class="slot-chip slot-empty">No conflicts for selected scope</span>
+                    {% endfor %}
+</div>
+            </aside>
         </div>
     </main>
 </div>
 {% endblock %}
+

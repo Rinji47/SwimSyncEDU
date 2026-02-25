@@ -33,6 +33,14 @@ urlpatterns = [
     # User Private class booking flow
     path('select_trainer_for_private_class/<int:pool_id>/', views.select_trainer_for_private_class, name='select_trainer_for_private_class'),
     path('book_private_class/<int:pool_id>/<int:trainer_id>/', views.book_private_class, name='book_private_class'),
-    path('my_private_classes/', views.my_private_classes, name='my_private_classes'),\
+    path('my_private_classes/', views.my_private_classes, name='my_private_classes'),
     path('cancel_private_class/<int:private_class_id>/', views.cancel_private_class, name='cancel_private_class'),
+
+    # Trainer attendance management helpers
+    path('trainer/manage/group-classes/', views.manage_trainer_class_session, name='manage_trainer_class_session'),
+    path('trainer/manage/private-classes/', views.manage_trainer_private_classes, name='manage_trainer_private_classes'),
+    path('trainer/manage/group-class/<int:class_session_id>/attendance-history/', views.select_class_sessions_for_attendance_history, name='select_class_sessions_for_attendance_history'),
+    path('trainer/manage/private-class/<int:private_class_id>/attendance-history/', views.select_private_classes_for_attendance_history, name='select_private_classes_for_attendance_history'),
+    path('trainer/manage/substitute-group-classes/', views.trainer_susitute_class_sessions_list, name='trainer_susitute_class_sessions_list'),
+    path('trainer/manage/substitute-private-classes/', views.trainer_susitute_private_classes_list, name='trainer_susitute_private_classes_list'),
 ]

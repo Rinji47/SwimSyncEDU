@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Assign Substitute - Group Class{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/admin_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="two-col">
+            <div class="dashboard-section">
+                <h2>Assign Substitute Trainer (Group Class)</h2>
+                <p><strong>Class:</strong> {{ class_session.class_name }}</p>
+                <p><strong>Pool:</strong> {{ class_session.pool.name }}</p>
+                <p><strong>Original Trainer:</strong> {{ class_session.trainer.full_name|default:class_session.trainer.username }}</p>
+                <p><strong>Date:</strong> {{ today }}</p>
+
+                <div class="attendance-actions" style="margin-top:1rem;">
+                    {% if selected_trainer %}
+                        <span class="attendance-status present">Selected: {{ selected_trainer.full_name|default:selected_trainer.username }}</span>
+                    {% else %}
+                        <span class="attendance-status pending">No trainer selected yet</span>
+                    {% endif %}
+                </div>
+
+                <div class="attendance-actions" style="margin-top:1rem;">
+                    <a href="{% url 'choose_substitute_trainer_for_class_session' class_session.id %}" class="btn-secondary">{% if selected_trainer %}Change Trainer{% else %}Assign Trainer{% endif %}</a>
+
+                    <form method="post" style="display:inline-flex;">
+                        {% csrf_token %}
+                        <input type="hidden" name="selected_trainer_id" value="{% if selected_trainer %}{{ selected_trainer.pk }}{% endif %}">
+                        <button type="submit" class="btn-primary" {% if not selected_trainer %}disabled{% endif %}>Confirm Assign</button>
+                    </form>
+
+                    <a href="{% url 'list_ongoing_classes_of_absent_trainer' %}" class="btn-secondary">Cancel</a>
+                </div>
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-user-check"></i> Availability</h3>
+                <p class="subtitle" style="margin:0;">Present and pool-assigned trainers available now: <strong>{{ available_count }}</strong></p>
+                <p class="subtitle" style="margin-top:0.5rem;">You can change the selected trainer any time before confirming.</p>
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}

@@ -13,8 +13,13 @@ function requestLocation() {
         (position) => {
             const { latitude, longitude } = position.coords;
             const url = new URL(window.location.href);
+            const radiusInput = document.getElementById("radiusInput");
+            const radiusValue = radiusInput ? radiusInput.value : "";
             url.searchParams.set("lat", latitude.toFixed(6));
             url.searchParams.set("lng", longitude.toFixed(6));
+            if (radiusValue) {
+                url.searchParams.set("radius", radiusValue);
+            }
             window.location.href = url.toString();
         },
         () => {

@@ -71,6 +71,16 @@
   font-size: 1.25rem;
 }
 
+.nav-icon i {
+  color: #0284c7;
+  transition: color 0.2s ease;
+}
+
+.nav-item:hover .nav-icon i,
+.nav-item.active .nav-icon i {
+  color: var(--primary);
+}
+
 /* Main Content */
 .dashboard-main {
   margin-left: 260px;
@@ -117,6 +127,14 @@
   justify-content: center;
   background-color: var(--surface);
   border-radius: 12px;
+}
+
+.stat-icon i {
+  color: #0284c7;
+}
+
+.alert-icon i {
+  color: #f59e0b;
 }
 
 .stat-content h3 {

@@ -1,82 +1,71 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ class_type.name }} Classes at {{ pool.name }} - SwimSync EDU{% endblock %}
+{% block title %}{{ class_type.name }} At {{ pool.name }} - SwimSync EDU{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/landing.css' %}">
 <link rel="stylesheet" href="{% static 'css/pools.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
 {% endblock %}
 
 {% block content %}
 <nav class="navbar">
     <div class="container">
         <a class="nav-brand" href="{% url 'index' %}">SwimSync EDU</a>
-        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
         <ul class="nav-menu" id="navMenu">
-            <li><a href="{% url 'index' %}#features">Features</a></li>
-            <li><a href="{% url 'index' %}#roles">For You</a></li>
+            <li><a href="{% url 'nearby_pools' %}" class="active-link">Pools</a></li>
             <li><a href="{% url 'index' %}#about">About</a></li>
-            <li><a href="{% url 'nearby_pools' %}">Pools</a></li>
-            {% if request.user.is_authenticated %}
-                {% if request.user.role == 'admin' %}
-                    <li><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
-                {% elif request.user.role == 'trainer' %}
-                    <li><a href="{% url 'trainer_dashboard' %}">Dashboard</a></li>
-                {% else %}
-                    <li><a href="{% url 'user_dashboard' %}">Dashboard</a></li>
-                {% endif %}
-                <li><a href="{% url 'logout' %}" class="btn-primary">Logout</a></li>
-            {% else %}
-                <li><a href="{% url 'login' %}">Login</a></li>
-                <li><a href="{% url 'signup' %}" class="btn-primary">Get Started</a></li>
-            {% endif %}
         </ul>
     </div>
 </nav>
 
-<section class="pools-hero">
-    <div class="container">
-        <div class="pools-hero-content">
-            <h1>{{ class_type.name }} at {{ pool.name }}</h1>
-            <p>Browse scheduled classes for this class type. Sorting and filters will be added on the backend.</p>
-            <div class="pools-hero-actions">
-                <a class="btn-secondary" href="{% url 'pool_class_types' pool.pool_id %}">Back to Class Types</a>
-                <a class="btn-secondary" href="{% url 'nearby_pools' %}">Back to Pools</a>
+<section class="page-shell">
+    <div class="container two-col">
+        <div>
+            <div class="page-head">
+                <div>
+                    <h1>{{ class_type.name }}</h1>
+                    <p class="subtitle">Choose an available session and book instantly.</p>
+                </div>
+                <div class="inline-actions">
+                    <a class="btn-secondary" href="{% url 'pool_class_types' pool.pool_id %}"><i class="fa-solid fa-arrow-left"></i> Class Types</a>
+                    <a class="btn-secondary" href="{% url 'nearby_pools' %}">All Pools</a>
+                </div>
             </div>
-        </div>
-    </div>
-</section>
 
-<section class="pools-list">
-    <div class="container">
-        <div class="pools-grid">
-            {% for class_item in classes %}
-            <div class="pool-card">
-                <div class="pool-card-header">
-                    <h3>{{ class_item.class_name }}</h3>
-                    {% if class_item.is_cancelled %}
-                        <span class="pool-status closed">Cancelled</span>
-                    {% else %}
-                        <span class="pool-status open">Open</span>
-                    {% endif %}
-                </div>
-                <p class="pool-address">Trainer: {{ class_item.user.full_name|default:class_item.user.username }}</p>
-                <p class="pool-meta">Dates: {{ class_item.start_date|date:"M d, Y" }} - {{ class_item.end_date|date:"M d, Y" }}</p>
-                <p class="pool-meta">Time: {{ class_item.start_time|time:"H:i" }} - {{ class_item.end_time|time:"H:i" }}</p>
-                <p class="pool-meta">Seats: {{ class_item.seats }}</p>
-                {% if class_item.total_sessions %}
-                <p class="pool-meta">Total Sessions: {{ class_item.total_sessions }}</p>
-                {% endif %}
-                <p class="pool-meta">Total Price: ${{ class_item.total_price }}</p>
-                <div class="pool-card-actions">
-                    <a href="{% url 'book_class' class_item.id %}" class="btn-primary auth-btn" style="margin-top:0.5rem;">Book Now</a>
-                </div>
+            <div class="pools-grid">
+                {% for class_item in classes %}
+                <article class="pool-card">
+                    <div class="pool-card-header">
+                        <h3>{{ class_item.class_name }}</h3>
+                        <span class="pool-status {% if class_item.is_cancelled %}closed{% else %}open{% endif %}">
+                            {% if class_item.is_cancelled %}Cancelled{% else %}Open{% endif %}
+                        </span>
+                    </div>
+                    <p class="pool-address"><strong>Trainer:</strong> {{ class_item.trainer.full_name|default:class_item.trainer.username }}</p>
+                    <p class="pool-meta"><strong>Dates:</strong> {{ class_item.start_date|date:"M d, Y" }} - {{ class_item.end_date|date:"M d, Y" }}</p>
+                    <p class="pool-meta"><strong>Time:</strong> {{ class_item.start_time|time:"H:i" }} - {{ class_item.end_time|time:"H:i" }}</p>
+                    <p class="pool-meta"><strong>Seats:</strong> {{ class_item.total_bookings }}/{{ class_item.seats }}</p>
+                    <p class="pool-meta"><strong>Total Price:</strong> ${{ class_item.total_price }}</p>
+                    <a href="{% url 'book_class' class_item.id %}" class="btn-primary">Book Now</a>
+                </article>
+                {% empty %}
+                <p class="pools-empty">No scheduled sessions for this class type yet.</p>
+                {% endfor %}
             </div>
-            {% empty %}
-            <p class="pools-empty">No classes scheduled for this class type yet.</p>
-            {% endfor %}
         </div>
+
+        <aside class="side-panel">
+            <h3><i class="fa-solid fa-circle-info"></i> Session Context</h3>
+            <ul class="side-list">
+                <li><strong>Pool:</strong> {{ pool.name }}</li>
+                <li><strong>Class Type:</strong> {{ class_type.name }}</li>
+                <li><strong>Base Price:</strong> ${{ class_type.cost }}</li>
+                <li><strong>Duration:</strong> {{ class_type.duration_days }} day(s)</li>
+            </ul>
+        </aside>
     </div>
 </section>
 {% endblock %}

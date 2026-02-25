@@ -12,10 +12,10 @@
 
 
 <div class="dashboard-layout">
-    {% include "./components/admin_sidebar.html" %}
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
 
     <main class="dashboard-main">
-        {% include "../../components/message.html" %}
+        {% include "components/message.html" %}
         <div class="dashboard-header">
             <h1>Class Types</h1>
             <button class="btn-primary" onclick="toggleModal('classTypeModal')">Add Class Type</button>

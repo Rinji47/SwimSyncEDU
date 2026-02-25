@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if is_edit %}Edit{% else %}Add{% endif %} Today's Pool Quality - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "../components/admin_sidebar.html" %}
+
+    <main class="dashboard-main">
+        {% include "../../../components/message.html" %}
+
+        <div class="dashboard-header">
+            <h1>{% if is_edit %}Update{% else %}Add{% endif %} Today's Quality</h1>
+            <a class="btn-secondary" href="{% url 'select_pool_quality' %}">Back to Pool Selection</a>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="modal-content" style="position: static; transform: none; max-width: 720px; margin: 0;">
+                <form method="POST" action="{% if is_edit %}{% url 'edit_quality' quality.quality_id %}{% else %}{% url 'add_quality' pool.pool_id %}{% endif %}">
+                    {% csrf_token %}
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Pool</label>
+                            <input type="text" value="{{ pool.name }}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="text" value="{{ today|date:'M d, Y' }}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="cleanliness_rating">Cleanliness Rating (1-5)</label>
+                            <select id="cleanliness_rating" name="cleanliness_rating" required>
+                                <option value="">Select Rating</option>
+                                <option value="1" {% if quality and quality.cleanliness_rating == 1 %}selected{% endif %}>1 - Poor</option>
+                                <option value="2" {% if quality and quality.cleanliness_rating == 2 %}selected{% endif %}>2 - Fair</option>
+                                <option value="3" {% if quality and quality.cleanliness_rating == 3 %}selected{% endif %}>3 - Good</option>
+                                <option value="4" {% if quality and quality.cleanliness_rating == 4 %}selected{% endif %}>4 - Very Good</option>
+                                <option value="5" {% if quality and quality.cleanliness_rating == 5 %}selected{% endif %}>5 - Excellent</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="pH_level">pH Level</label>
+                            <input type="number" id="pH_level" name="pH_level" step="0.01" min="0" max="14" value="{% if quality and quality.pH_level %}{{ quality.pH_level }}{% endif %}" placeholder="e.g., 7.40">
+                        </div>
+                        <div class="form-group">
+                            <label for="water_temperature">Water Temperature (C)</label>
+                            <input type="number" id="water_temperature" name="water_temperature" step="0.1" value="{% if quality and quality.water_temperature %}{{ quality.water_temperature }}{% endif %}" placeholder="e.g., 27.5">
+                        </div>
+                        <div class="form-group">
+                            <label for="chlorine_level">Chlorine Level (ppm)</label>
+                            <input type="number" id="chlorine_level" name="chlorine_level" step="0.01" min="0" value="{% if quality and quality.chlorine_level %}{{ quality.chlorine_level }}{% endif %}" placeholder="e.g., 2.00">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a class="btn-secondary" href="{% url 'select_pool_quality' %}">Cancel</a>
+                        <button type="submit" class="btn-primary">{% if is_edit %}Update{% else %}Save{% endif %} Record</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

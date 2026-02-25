@@ -23,21 +23,21 @@
         <!-- Stats Cards -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon">👥</div>
+                <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
                 <div class="stat-content">
                     <h3>{{ total_users }}</h3>
                     <p>Total Users</p>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">📚</div>
+                <div class="stat-icon"><i class="fa-solid fa-book-open"></i></div>
                 <div class="stat-content">
                     <h3>{{ active_classes }}</h3>
                     <p>Active Classes</p>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">💰</div>
+                <div class="stat-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
                 <div class="stat-content">
                     <h3>${{ monthly_revenue }}</h3>
                     <p>Monthly Revenue</p>
@@ -107,7 +107,7 @@
             <div class="alerts-list">
                 {% for alert in water_quality_alerts %}
                 <div class="alert-item alert-{{ alert.severity }}">
-                    <div class="alert-icon">⚠️</div>
+                    <div class="alert-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
                     <div class="alert-content">
                         <strong>{{ alert.pool_name }}</strong>
                         <p>{{ alert.message }}</p>

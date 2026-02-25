@@ -10,10 +10,10 @@
 
 {% block content %}
 <div class="dashboard-layout">
-    {% include "./components/admin_sidebar.html" %}
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
 
     <main class="dashboard-main">
-        {% include "../../components/message.html" %}
+        {% include "components/message.html" %}
         <div class="dashboard-header">
             <h1>Manage Class Sessions</h1>
             <a href="{% url 'select_pool_for_class_session' %}" class="btn-primary">Schedule New Class</a>
@@ -74,7 +74,7 @@
                 </span>
                 <h3>{{ session.class_name }}</h3>
                 <p><strong>Pool:</strong> {{ session.pool.name }}</p>
-                <p><strong>Trainer:</strong> {{ session.user.full_name|default:session.user.username }}</p>
+                <p><strong>Trainer:</strong> {{ session.trainer.full_name|default:session.trainer.username }}</p>
                 <p><strong>Dates:</strong> {{ session.start_date|date:"M d" }} - {{ session.end_date|date:"M d" }}</p>
                 <p><strong>Total Price:</strong> ${{ session.total_price }}</p>
                 <p><strong>Total Bookings:</strong> {{ session.total_bookings|default:0 }}</p>
@@ -84,7 +84,7 @@
                         onclick="openViewModal(this)"
                         data-class-name="{{ session.class_name|escape }}"
                         data-pool-name="{{ session.pool.name|escape }}"
-                        data-trainer-name="{{ session.user.full_name|default:session.user.username|escape }}"
+                        data-trainer-name="{{ session.trainer.full_name|default:session.trainer.username|escape }}"
                         data-class-type="{{ session.class_type.class_type_id }}"
                         data-start-date="{{ session.start_date|date:"Y-m-d" }}"
                         data-end-date="{{ session.end_date|date:"Y-m-d" }}"

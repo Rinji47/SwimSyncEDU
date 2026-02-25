@@ -1,13 +1,85 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
 from django.db.models import Q
-from .models import ClassSession, ClassType, ClassBooking, PrivateClass, PrivateClassAttendance, PrivateClassDetails
+from .models import ClassSession, ClassType, ClassBooking, PrivateClass, PrivateClassDetails
 from pool.models import Pool, TrainerPoolAssignment
 from accounts.models import User
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from django.contrib.auth.decorators import login_required
 
 # Create your views here.
+def _parse_busy_range(raw_from, raw_to):
+    busy_from = None
+    busy_to = None
+
+    if raw_from:
+        try:
+            busy_from = datetime.strptime(raw_from, '%Y-%m-%d').date()
+        except ValueError:
+            busy_from = None
+
+    if raw_to:
+        try:
+            busy_to = datetime.strptime(raw_to, '%Y-%m-%d').date()
+        except ValueError:
+            busy_to = None
+
+    if busy_from and busy_to and busy_from > busy_to:
+        busy_from, busy_to = busy_to, busy_from
+
+    return busy_from, busy_to
+
+
+def _build_trainer_unavailability(trainers, busy_from=None, busy_to=None, max_items=None):
+    trainer_ids = [trainer.pk for trainer in trainers]
+    if not trainer_ids:
+        return {}
+
+    today = date.today()
+    busy = {}
+
+    group_sessions = ClassSession.objects.filter(
+        Q(trainer_id__in=trainer_ids) | Q(substitute_trainer_id__in=trainer_ids),
+        end_date__gte=today,
+        is_cancelled=False,
+    ).order_by('start_date', 'start_time')
+
+    private_sessions = PrivateClass.objects.filter(
+        Q(trainer_id__in=trainer_ids) | Q(substitute_trainer_id__in=trainer_ids),
+        end_date__gte=today,
+        is_cancelled=False,
+    ).order_by('start_date', 'start_time')
+
+    if busy_from:
+        group_sessions = group_sessions.filter(end_date__gte=busy_from)
+        private_sessions = private_sessions.filter(end_date__gte=busy_from)
+    if busy_to:
+        group_sessions = group_sessions.filter(start_date__lte=busy_to)
+        private_sessions = private_sessions.filter(start_date__lte=busy_to)
+
+    for session in group_sessions:
+        label = f"{session.start_date:%b %d}-{session.end_date:%b %d} | {session.start_time:%H:%M}-{session.end_time:%H:%M} | Group"
+        if session.trainer_id in trainer_ids:
+            busy.setdefault(session.trainer_id, []).append(label)
+        if session.substitute_trainer_id in trainer_ids:
+            busy.setdefault(session.substitute_trainer_id, []).append(label)
+
+    for private in private_sessions:
+        label = f"{private.start_date:%b %d}-{private.end_date:%b %d} | {private.start_time:%H:%M}-{private.end_time:%H:%M} | Private"
+        if private.trainer_id in trainer_ids:
+            busy.setdefault(private.trainer_id, []).append(label)
+        if private.substitute_trainer_id in trainer_ids:
+            busy.setdefault(private.substitute_trainer_id, []).append(label)
+
+    totals = {}
+    visible = {}
+    for trainer_id in list(busy.keys()):
+        deduped = list(dict.fromkeys(busy[trainer_id]))
+        totals[trainer_id] = len(deduped)
+        visible[trainer_id] = deduped[:max_items] if max_items else deduped
+
+    return visible, totals
+
 def manage_class_types(request, class_type_id=None):
     class_types = ClassType.objects.all()
 
@@ -69,7 +141,7 @@ def manage_class_types(request, class_type_id=None):
 
         return redirect('manage_class_types')
     
-    return render(request, 'dashboards/admin/admin_manage_class_types.html', {'class_types': class_types})
+    return render(request, 'dashboards/admin/class_management/admin_manage_class_types.html', {'class_types': class_types})
 
 def close_class_type(request, class_type_id):
     class_type = get_object_or_404(ClassType, pk=class_type_id)
@@ -109,8 +181,8 @@ def manage_class_sessions(request):
         class_sessions = class_sessions.filter(
             Q(class_name__icontains=q) |
             Q(pool__name__icontains=q) |
-            Q(user__full_name__icontains=q) |
-            Q(user__username__icontains=q)
+            Q(trainer__full_name__icontains=q) |
+            Q(trainer__username__icontains=q)
         )
 
     if status == 'open':
@@ -121,7 +193,7 @@ def manage_class_sessions(request):
     if pool_filter:
         class_sessions = class_sessions.filter(pool_id=pool_filter)
     if trainer_filter:
-        class_sessions = class_sessions.filter(user_id=trainer_filter)
+        class_sessions = class_sessions.filter(trainer_id=trainer_filter)
 
     if start_filter:
         try:
@@ -139,7 +211,7 @@ def manage_class_sessions(request):
     class_types = ClassType.objects.filter(is_closed=False).all()
     trainers = User.objects.filter(role='trainer')
 
-    return render(request, 'dashboards/admin/admin_manage_classes.html', {
+    return render(request, 'dashboards/admin/class_management/admin_manage_classes.html', {
         'classes': class_sessions,
         'pools': pools,
         'class_types': class_types,
@@ -151,27 +223,43 @@ def manage_class_sessions(request):
 def select_pool_for_class_session(request):
     if not request.user.is_authenticated or request.user.role != 'admin':
         messages.error(request, 'You do not have permission to access this page.')
-        return redirect('home')
+        return redirect('index')
     
     pools = Pool.objects.filter(is_closed=False).all()
-    return render(request, 'dashboards/admin/admin_class_session_management/select_pool_for_class_session.html', {'pools': pools})
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        pools = pools.filter(Q(name__icontains=q) | Q(address__icontains=q))
+    return render(request, 'dashboards/admin/class_management/class_session_management/select_pool_for_class_session.html', {'pools': pools})
 
 def select_trainer_for_class_session(request, pool_id):
     if not request.user.is_authenticated or request.user.role != 'admin':
         messages.error(request, 'You do not have permission to access this page.')
-        return redirect('home')
+        return redirect('index')
     
     pool = get_object_or_404(Pool, pk=pool_id, is_closed=False)
     trainers = User.objects.filter(role='trainer', trainerpoolassignment__pool=pool, trainerpoolassignment__is_active=True).distinct()
-    return render(request, 'dashboards/admin/admin_class_session_management/select_trainer_for_class_session.html', {
+    busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
+    unavailability_map, total_map = _build_trainer_unavailability(trainers, busy_from=busy_from, busy_to=busy_to)
+    trainer_cards = [
+        {
+            'trainer': trainer,
+            'unavailable_slots': unavailability_map.get(trainer.pk, []),
+            'unavailable_total': total_map.get(trainer.pk, 0),
+            'unavailable_more': max(total_map.get(trainer.pk, 0) - len(unavailability_map.get(trainer.pk, [])), 0),
+        }
+        for trainer in trainers
+    ]
+    return render(request, 'dashboards/admin/class_management/class_session_management/select_trainer_for_class_session.html', {
         'pool': pool,
-        'trainers': trainers
+        'trainer_cards': trainer_cards,
+        'busy_from': busy_from,
+        'busy_to': busy_to,
     })
 
 def create_class_session_for_pool(request, pool_id, trainer_id):
     if not request.user.is_authenticated or request.user.is_superuser == False:
         messages.error(request, 'You do not have permission to access this page.')
-        return redirect('home')
+        return redirect('index')
     pool = get_object_or_404(Pool, pk=pool_id, is_closed=False)
     trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
     
@@ -202,13 +290,20 @@ def create_class_session_for_pool(request, pool_id, trainer_id):
                 messages.error(request, 'Start time must be before end time. Overnight sessions are not allowed.')
                 return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
 
-            duration = (datetime.combine(datetime.today(), end_time) - datetime.combine(datetime.today(), start_time))
-            if duration > timedelta(hours=4):
-                messages.error(request, 'Class session duration cannot exceed 4 hours.')
+            today = datetime.now().date()
+            if start_date > today + timedelta(days=120):
+                messages.error(request, 'Start date cannot be more than 4 months from today.')
                 return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
 
-            class_types = ClassType.objects.filter(is_closed=False).all()
-            trainers = User.objects.filter(role='trainer')
+            if start_time < datetime.strptime('06:00', '%H:%M').time() or end_time > datetime.strptime('19:00', '%H:%M').time():
+                messages.error(request, 'Class time must be between 06:00 and 19:00.')
+                return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
+
+            duration = (datetime.combine(datetime.today(), end_time) - datetime.combine(datetime.today(), start_time))
+            if duration > timedelta(hours=3):
+                messages.error(request, 'Class session duration cannot exceed 3 hours.')
+                return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
+
             if TrainerPoolAssignment.objects.filter(trainer=trainer, pool_id=pool_id, is_active=True).exists() == False:
                 messages.error(request, 'Selected trainer is not assigned to the selected pool. Please choose a different trainer or pool.')
                 return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
@@ -251,7 +346,7 @@ def create_class_session_for_pool(request, pool_id, trainer_id):
                 return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
             
             ClassSession.objects.create(
-                user=trainer,
+                trainer=trainer,
                 pool=pool,
                 class_type=class_type,
                 class_name=class_name,
@@ -271,11 +366,19 @@ def create_class_session_for_pool(request, pool_id, trainer_id):
 
     # For GET requests, just render the form
     class_types = ClassType.objects.filter(is_closed=False).all()
-    trainers = User.objects.filter(role='trainer')
-    return render(request, 'dashboards/admin/admin_class_session_management/create_class_session_for_pool.html', {
+    busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
+    unavailability_map, total_map = _build_trainer_unavailability([trainer], busy_from=busy_from, busy_to=busy_to)
+    shown_slots = unavailability_map.get(trainer.pk, [])
+    total_slots = total_map.get(trainer.pk, 0)
+    return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
         'pool': pool,
+        'trainer': trainer,
         'class_types': class_types,
-        'trainers': trainers
+        'trainer_unavailable_slots': shown_slots,
+        'trainer_unavailable_total': total_slots,
+        'trainer_unavailable_more': max(total_slots - len(shown_slots), 0),
+        'busy_from': busy_from,
+        'busy_to': busy_to,
     })
 
 
@@ -362,7 +465,7 @@ def manage_private_class_prices(request):
 def new_private_class_price(request):
     if not request.user.is_authenticated or request.user.role != 'admin':
         messages.error(request, 'You do not have permission to perform this action.')
-        return redirect('home')
+        return redirect('index')
     
     if request.method == 'POST':
         try:
@@ -386,7 +489,7 @@ def new_private_class_price(request):
     return redirect('manage_private_class_prices')
 
 def manage_private_classes(request):
-    private_classes = ClassSession.objects.filter(class_type__duration_days=0).select_related('pool', 'user', 'class_type').order_by('-start_date')
+    private_classes = ClassSession.objects.filter(class_type__duration_days=0).select_related('pool', 'trainer', 'class_type').order_by('-start_date')
     
     q = (request.GET.get('q') or '').strip()
     status = request.GET.get('status')
@@ -397,8 +500,8 @@ def manage_private_classes(request):
         private_classes = private_classes.filter(
             Q(class_name__icontains=q) |
             Q(pool__name__icontains=q) |
-            Q(user__full_name__icontains=q) |
-            Q(user__username__icontains=q)
+            Q(trainer__full_name__icontains=q) |
+            Q(trainer__username__icontains=q)
         )
 
     if status == 'active':
@@ -409,7 +512,7 @@ def manage_private_classes(request):
     if pool_filter:
         private_classes = private_classes.filter(pool_id=pool_filter)
     if trainer_filter:
-        private_classes = private_classes.filter(user_id=trainer_filter)
+        private_classes = private_classes.filter(trainer_id=trainer_filter)
 
     pools = Pool.objects.filter(is_closed=False).all()
     trainers = User.objects.filter(role='trainer')
@@ -441,13 +544,26 @@ def manage_private_classes(request):
 def select_trainer_for_private_class(request, pool_id):
     if not request.user.is_authenticated:
         messages.error(request, 'You do not have permission to access this page.')
-        return redirect('home')
+        return redirect('index')
     
     pool = get_object_or_404(Pool, pk=pool_id, is_closed=False)
     trainers = User.objects.filter(role='trainer', trainerpoolassignment__pool=pool, trainerpoolassignment__is_active=True).distinct()
+    busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
+    unavailability_map, total_map = _build_trainer_unavailability(trainers, busy_from=busy_from, busy_to=busy_to)
+    trainer_cards = [
+        {
+            'trainer': trainer,
+            'unavailable_slots': unavailability_map.get(trainer.pk, []),
+            'unavailable_total': total_map.get(trainer.pk, 0),
+            'unavailable_more': max(total_map.get(trainer.pk, 0) - len(unavailability_map.get(trainer.pk, [])), 0),
+        }
+        for trainer in trainers
+    ]
     return render(request, 'classes/select_trainer_for_private_class.html', {
         'pool': pool,
-        'trainers': trainers
+        'trainer_cards': trainer_cards,
+        'busy_from': busy_from,
+        'busy_to': busy_to,
     })
 
 
@@ -490,14 +606,23 @@ def book_private_class(request, pool_id, trainer_id):
             messages.error(request, 'Start time must be before end time.')
             return redirect('select_trainer_for_private_class', pool_id=pool_id)
 
+        today = datetime.now().date()
+        if start_date > today + timedelta(days=120):
+            messages.error(request, 'Start date cannot be more than 4 months from today.')
+            return redirect('select_trainer_for_private_class', pool_id=pool_id)
+
+        if start_time < datetime.strptime('06:00', '%H:%M').time() or end_time > datetime.strptime('19:00', '%H:%M').time():
+            messages.error(request, 'Class time must be between 06:00 and 19:00.')
+            return redirect('select_trainer_for_private_class', pool_id=pool_id)
+
         duration = (
             datetime.combine(datetime.today(), end_time) -
             datetime.combine(datetime.today(), start_time)
         )
 
-        if duration > timedelta(hours=4):
-            messages.error(request, 'Class session duration cannot exceed 4 hours.')
-            return redirect('private_class_register')
+        if duration > timedelta(hours=3):
+            messages.error(request, 'Class session duration cannot exceed 3 hours.')
+            return redirect('select_trainer_for_private_class', pool_id=pool_id)
 
         trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
         pool = get_object_or_404(Pool, pk=pool_id)
@@ -513,7 +638,7 @@ def book_private_class(request, pool_id, trainer_id):
                 request,
                 'Selected trainer is not assigned to the selected pool.'
             )
-            return redirect('private_class_register')
+            return redirect('select_trainer_for_private_class', pool_id=pool_id)
 
         if assignment.end_date and assignment.end_date < end_date:
             messages.error(
@@ -568,9 +693,22 @@ def book_private_class(request, pool_id, trainer_id):
         messages.success(request, 'Private class booked successfully.')
         return redirect('my_private_classes')
 
+    pool = get_object_or_404(Pool, pk=pool_id, is_closed=False)
+    trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
+    busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
+    unavailability_map, total_map = _build_trainer_unavailability([trainer], busy_from=busy_from, busy_to=busy_to)
+    shown_slots = unavailability_map.get(trainer.pk, [])
+    total_slots = total_map.get(trainer.pk, 0)
     return render(request, 'classes/book_private_class.html', {
         'pool_id': pool_id,
-        'trainer_id': trainer_id
+        'trainer_id': trainer_id,
+        'pool': pool,
+        'trainer': trainer,
+        'trainer_unavailable_slots': shown_slots,
+        'trainer_unavailable_total': total_slots,
+        'trainer_unavailable_more': max(total_slots - len(shown_slots), 0),
+        'busy_from': busy_from,
+        'busy_to': busy_to,
     })
 
 def my_private_classes(request):
@@ -600,4 +738,67 @@ def cancel_private_class(request, private_class_id):
     private_class.save()
     messages.success(request, 'Private class cancelled successfully.')
     return redirect('my_private_classes')
+
+
+
+
+## Trainer's view of managing their class sessions and private classes ##
+def manage_trainer_class_session(request):
+    if request.user.role != 'trainer':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+    
+    class_sessions = ClassSession.objects.filter(trainer=request.user).select_related('pool', 'class_type').order_by('-start_date')
+    return render(request, 'dashboards/trainer/attendance/manage_class_sessions.html', {'class_sessions': class_sessions})
+
+def manage_trainer_private_classes(request):
+    if request.user.role != 'trainer':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+    
+    private_classes = PrivateClass.objects.filter(trainer=request.user).select_related('pool').order_by('-created_at')
+    return render(request, 'dashboards/trainer/attendance/manage_private_classes.html', {'private_classes': private_classes})
+
+def select_class_sessions_for_attendance_history(request, class_session_id):
+    if request.user.role != 'trainer':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+    
+    class_session = get_object_or_404(ClassSession, id=class_session_id)
+
+    if class_session.trainer != request.user and class_session.substitute_trainer != request.user:
+        messages.error(request, 'You can only view attendance history for your own classes or substitute class.')
+        return redirect('manage_trainer_class_session')
+    
+    return redirect('class_session_attendance_history', class_session_id=class_session_id)
+
+def select_private_classes_for_attendance_history(request, private_class_id):
+    if request.user.role != 'trainer':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+    
+    private_class = get_object_or_404(PrivateClass, id=private_class_id)
+
+    if private_class.trainer != request.user and private_class.substitute_trainer != request.user:
+        messages.error(request, 'You can only view attendance history for your own classes or substitute class.')
+        return redirect('manage_trainer_private_classes')
+    
+    return redirect('private_class_attendance_history', private_class_id=private_class_id)
+
+
+def trainer_susitute_class_sessions_list(request):
+    if request.user.role != 'trainer':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+    
+    substitute_sessions = ClassSession.objects.filter(substitute_trainer=request.user).select_related('pool', 'class_type', 'trainer').order_by('-start_date')
+    return render(request, 'dashboards/trainer/attendance/substitute_class_sessions.html', {'substitute_sessions': substitute_sessions})
+
+def trainer_susitute_private_classes_list(request):
+    if request.user.role != 'trainer':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+    
+    substitute_private_classes = PrivateClass.objects.filter(substitute_trainer=request.user).select_related('pool', 'trainer').order_by('-created_at')
+    return render(request, 'dashboards/trainer/attendance/substitute_private_classes.html', {'substitute_private_classes': substitute_private_classes})
 

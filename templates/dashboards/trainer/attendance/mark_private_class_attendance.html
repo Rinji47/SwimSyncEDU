@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mark Private Class Attendance{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/trainer_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="dashboard-section">
+            <h2>Private Class Attendance</h2>
+            <p><strong>Student:</strong> {{ private_class.user.full_name|default:private_class.user.username }}</p>
+            <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
+            <p><strong>Date:</strong> {{ today }}</p>
+
+            {% if today_record %}
+            <p>Current status:
+                <span class="attendance-status {% if today_record.status == 'present' %}present{% elif today_record.status == 'absent' %}absent{% else %}pending{% endif %}">
+                    {{ today_record.get_status_display }}
+                </span>
+            </p>
+            {% endif %}
+
+            <div class="attendance-actions">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
+                    <input type="hidden" name="status" value="present">
+                    <button type="submit" class="btn-sm btn-success">Present</button>
+                </form>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
+                    <input type="hidden" name="status" value="absent">
+                    <button type="submit" class="btn-sm btn-danger">Absent</button>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

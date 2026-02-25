@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Absent Trainer Private Classes{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/admin_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="dashboard-header">
+            <h1>Ongoing Private Classes (Absent Trainers) - {{ today }}</h1>
+            <a href="{% url 'select_trainer_for_attendance' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="dashboard-section card-grid">
+            {% for private_class in ongoing_private_classes %}
+            <div class="class-card">
+                <h3>{{ private_class.user.full_name|default:private_class.user.username }}</h3>
+                <p><strong>Trainer:</strong> {{ private_class.trainer.full_name|default:private_class.trainer.username }}</p>
+                <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
+                <p><strong>Time:</strong> {{ private_class.start_time }} - {{ private_class.end_time }}</p>
+
+                <div class="card-actions">
+                    {% if private_class.substitute_trainer %}
+                        <span class="attendance-status present">Sub: {{ private_class.substitute_trainer.full_name|default:private_class.substitute_trainer.username }}</span>
+                    {% else %}
+                        <a href="{% url 'assign_substitute_trainer_for_private_class' private_class.id %}" class="btn-sm btn-primary">Assign Substitute</a>
+                    {% endif %}
+                    <a href="{% url 'admin_private_class_attendance_history' private_class.id %}" class="btn-sm btn-secondary">History</a>
+                </div>
+            </div>
+            {% empty %}
+            <p>No ongoing private classes currently linked to absent trainers.</p>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

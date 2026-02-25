@@ -68,7 +68,7 @@
             </span>
             <h3>{{ session.class_name }}</h3>
             <p><strong>Pool:</strong> {{ session.pool.name }}</p>
-            <p><strong>Trainer:</strong> {{ session.user.full_name|default:session.user.username }}</p>
+            <p><strong>Trainer:</strong> {{ session.trainer.full_name|default:session.trainer.username }}</p>
             <p><strong>Dates:</strong> {{ session.start_date|date:"M d" }} - {{ session.end_date|date:"M d" }}</p>
             <p><strong>Time:</strong> {{ session.start_time|time:"H:i" }} - {{ session.end_time|time:"H:i" }}</p>
             <p><strong>Seats:</strong> {{ session.seats }}</p>
@@ -80,7 +80,7 @@
                     onclick="openViewPrivateModal(this)"
                     data-class-name="{{ session.class_name|escape }}"
                     data-pool-name="{{ session.pool.name|escape }}"
-                    data-trainer-name="{{ session.user.full_name|default:session.user.username|escape }}"
+                    data-trainer-name="{{ session.trainer.full_name|default:session.trainer.username|escape }}"
                     data-class-type="{{ session.class_type.name|escape }}"
                     data-start-date="{{ session.start_date|date:"Y-m-d" }}"
                     data-end-date="{{ session.end_date|date:"Y-m-d" }}"

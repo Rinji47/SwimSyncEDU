@@ -1,83 +1,76 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Classes at {{ pool.name }} - SwimSync EDU{% endblock %}
+{% block title %}Classes At {{ pool.name }} - SwimSync EDU{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/landing.css' %}">
 <link rel="stylesheet" href="{% static 'css/pools.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
 {% endblock %}
 
 {% block content %}
 <nav class="navbar">
     <div class="container">
         <a class="nav-brand" href="{% url 'index' %}">SwimSync EDU</a>
-        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
         <ul class="nav-menu" id="navMenu">
-            <li><a href="{% url 'index' %}#features">Features</a></li>
-            <li><a href="{% url 'index' %}#roles">For You</a></li>
+            <li><a href="{% url 'nearby_pools' %}" class="active-link">Pools</a></li>
             <li><a href="{% url 'index' %}#about">About</a></li>
-            <li><a href="{% url 'nearby_pools' %}">Pools</a></li>
-            {% if request.user.is_authenticated %}
-                {% if request.user.role == 'admin' %}
-                    <li><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
-                {% elif request.user.role == 'trainer' %}
-                    <li><a href="{% url 'trainer_dashboard' %}">Dashboard</a></li>
-                {% else %}
-                    <li><a href="{% url 'user_dashboard' %}">Dashboard</a></li>
-                {% endif %}
-                <li><a href="{% url 'logout' %}" class="btn-primary">Logout</a></li>
-            {% else %}
-                <li><a href="{% url 'login' %}">Login</a></li>
-                <li><a href="{% url 'signup' %}" class="btn-primary">Get Started</a></li>
-            {% endif %}
         </ul>
     </div>
 </nav>
 
-<section class="pools-hero">
-    <div class="container">
-        <div class="pools-hero-content">
-            <h1>Classes at {{ pool.name }}</h1>
-            <p>Browse available class types for this pool. Sorting and filters will be added on the backend.</p>
-            <div class="pools-hero-actions">
-                <a class="btn-secondary" href="{% url 'nearby_pools' %}">Back to Pools</a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="pools-list">
-    <div class="container">
-        <div class="pools-hero-content" style="margin-bottom: 24px;">
-            <h2>Private Class</h2>
-            <p>Start a private class for this pool.</p>
-            {% if request.user.is_authenticated and request.user.role == 'user' %}
-                <a class="btn-secondary" href="{% url 'select_trainer_for_private_class' pool.pool_id %}">Create Private Class</a>
-            {% else %}
-                <button class="btn-secondary" type="button" disabled>Create Private Class (Login as User)</button>
-            {% endif %}
-        </div>
-        <div class="pools-hero-content" style="margin-bottom: 24px;">
-            <h2>All Class Types</h2>
-        </div>
-        <div class="pools-grid">
-            {% for class_item in class_types %}
-            <div class="pool-card">
-                <div class="pool-card-header">
-                    <h3>{{ class_item.name }}</h3>
-                    <span class="pool-status {% if class_item.is_closed %}closed{% else %}open{% endif %}">
-                        {% if class_item.is_closed %}Closed{% else %}Open{% endif %}
-                    </span>
+<section class="page-shell">
+    <div class="container two-col">
+        <div>
+            <div class="page-head">
+                <div>
+                    <h1>{{ pool.name }}</h1>
+                    <p class="subtitle">Select a class type or start a private class booking.</p>
                 </div>
-                <p class="pool-address">{{ class_item.description }}</p>
-                <p class="pool-meta">Price: ${{ class_item.cost }}</p>
-                <a class="btn-secondary" href="{% url 'pool_classes' pool.pool_id class_item.class_type_id %}">View Classes</a>
+                <a class="btn-secondary" href="{% url 'nearby_pools' %}"><i class="fa-solid fa-arrow-left"></i> Back</a>
             </div>
-            {% empty %}
-            <p class="pools-empty">No class types to show yet. Backend hookup coming soon.</p>
-            {% endfor %}
+
+            <div class="info-card" style="margin-bottom:1rem;">
+                <div class="page-head" style="margin:0;">
+                    <h3 style="margin:0;">Private Class</h3>
+                    {% if request.user.is_authenticated and request.user.role == 'user' %}
+                        <a class="btn-primary" href="{% url 'select_trainer_for_private_class' pool.pool_id %}">Start Private Booking</a>
+                    {% else %}
+                        <button class="btn-secondary" type="button" disabled>Login as User to Book</button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="pools-grid">
+                {% for class_item in class_types %}
+                <article class="pool-card">
+                    <div class="pool-card-header">
+                        <h3>{{ class_item.name }}</h3>
+                        <span class="pool-status {% if class_item.is_closed %}closed{% else %}open{% endif %}">
+                            {% if class_item.is_closed %}Closed{% else %}Open{% endif %}
+                        </span>
+                    </div>
+                    <p class="pool-address">{{ class_item.description|default:'No description provided.' }}</p>
+                    <p class="pool-meta"><strong>Price:</strong> ${{ class_item.cost }}</p>
+                    <a class="btn-secondary" href="{% url 'pool_classes' pool.pool_id class_item.class_type_id %}">View Sessions</a>
+                </article>
+                {% empty %}
+                <p class="pools-empty">No class types available yet.</p>
+                {% endfor %}
+            </div>
         </div>
+
+        <aside class="side-panel">
+            <h3><i class="fa-solid fa-circle-info"></i> Pool Snapshot</h3>
+            <ul class="side-list">
+                <li><strong>Name:</strong> {{ pool.name }}</li>
+                <li><strong>Address:</strong> {{ pool.address }}</li>
+                <li><strong>Capacity:</strong> {{ pool.capacity }}</li>
+                <li><strong>Status:</strong> {% if pool.is_closed %}Closed{% else %}Open{% endif %}</li>
+            </ul>
+        </aside>
     </div>
 </section>
 {% endblock %}

@@ -10,7 +10,7 @@ class ClassTypeAdmin(admin.ModelAdmin):
 
 @admin.register(ClassSession)
 class ClassSessionAdmin(admin.ModelAdmin):
-    list_display = ('class_name', 'user', 'pool', 'class_type', 'start_date', 'end_date', 'seats', 'created_at')
-    search_fields = ('class_name', 'user__username', 'pool__name', 'class_type__name')
+    list_display = ('class_name', 'trainer', 'pool', 'class_type', 'start_date', 'end_date', 'seats', 'created_at')
+    search_fields = ('class_name', 'trainer__username', 'pool__name', 'class_type__name')
     list_filter = ('start_date', 'end_date', 'pool')
     ordering = ('-created_at',)

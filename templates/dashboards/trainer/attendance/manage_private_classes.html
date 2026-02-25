@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Private Classes - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/trainer_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="dashboard-header">
+            <h1>My Private Classes</h1>
+            <a href="{% url 'select_private_class_for_attendance' %}" class="btn-primary">Take Attendance</a>
+        </div>
+
+        <div class="dashboard-section card-grid">
+            {% for private_class in private_classes %}
+            <div class="class-card">
+                <span class="class-status {% if private_class.is_cancelled %}status-cancelled{% else %}status-open{% endif %}">
+                    {% if private_class.is_cancelled %}Cancelled{% else %}Active{% endif %}
+                </span>
+                <h3>Private Class - {{ private_class.user.full_name|default:private_class.user.username }}</h3>
+                <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
+                <p><strong>Dates:</strong> {{ private_class.start_date }} to {{ private_class.end_date }}</p>
+                <p><strong>Time:</strong> {{ private_class.start_time }} - {{ private_class.end_time }}</p>
+
+                <div class="card-actions">
+                    <a href="{% url 'mark_private_class_attendance' private_class.id %}" class="btn-sm btn-primary">Mark Attendance</a>
+                    <a href="{% url 'select_private_classes_for_attendance_history' private_class.id %}" class="btn-sm btn-secondary">View History</a>
+                </div>
+            </div>
+            {% empty %}
+            <p>No private classes assigned yet.</p>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

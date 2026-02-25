@@ -1,11 +1,13 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Select Pool - Assign Trainer{% endblock %}
+{% block title %}Select Pool - Trainer Assignment{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 <link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -13,40 +15,38 @@
     {% include "../components/admin_sidebar.html" %}
     <main class="dashboard-main">
         {% include "../../../components/message.html" %}
-        <div class="dashboard-header">
-            <h1>Select Pool</h1>
-            <a href="{% url 'assign_trainer_manager' %}" class="btn-secondary">Back to Assignments</a>
-        </div>
-        <form class="filter-bar" method="get">
-            <div class="filter-main">
-                <div class="filter-search">
-                    <input type="text" class="filter-input" name="q" placeholder="Search by name or address" value="{{ request.GET.q|default:'' }}">
-                    <select name="status" class="filter-select">
-                        <option value="">All Status</option>
-                        <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Open</option>
-                        <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>Closed</option>
-                    </select>
-                    <button type="submit" class="btn-secondary">Filter</button>
-                </div>
+
+        <div class="page-head">
+            <div>
+                <h1>Select Pool</h1>
+                <p class="subtitle">Choose a pool, then assign a trainer.</p>
             </div>
+            <a href="{% url 'assign_trainer_manager' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <form class="quick-filter" method="get">
+            <input type="text" class="filter-input" name="q" placeholder="Search by name or address" value="{{ request.GET.q|default:'' }}">
+            <select name="status" class="filter-select">
+                <option value="">All Status</option>
+                <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Open</option>
+                <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>Closed</option>
+            </select>
+            <button type="submit" class="btn-secondary">Filter</button>
         </form>
+
         <div class="dashboard-section card-grid">
             {% for pool in pools %}
-            <div class="class-card">
-                <span class="class-status {% if not pool.is_closed %}status-open{% else %}status-cancelled{% endif %}">
-                    {% if not pool.is_closed %}Open{% else %}Closed{% endif %}
-                </span>
+            <article class="class-card">
+                <span class="class-status {% if not pool.is_closed %}status-open{% else %}status-cancelled{% endif %}">{% if pool.is_closed %}Closed{% else %}Open{% endif %}</span>
                 <h3>{{ pool.name }}</h3>
                 <p><strong>Address:</strong> {{ pool.address }}</p>
                 <p><strong>Capacity:</strong> {{ pool.capacity }}</p>
                 <div class="card-actions">
-                    <a href="{% url 'list_trainers' pool.pool_id %}" class="btn-primary btn-sm">Select</a>
+                    <a href="{% url 'list_trainers' pool.pool_id %}" class="btn-primary btn-sm">Select Pool</a>
                 </div>
-            </div>
+            </article>
             {% empty %}
-            <div class="class-card">
-                <p>No pools found.</p>
-            </div>
+            <article class="class-card"><p>No pools found.</p></article>
             {% endfor %}
         </div>
     </main>

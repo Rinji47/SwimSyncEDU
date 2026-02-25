@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Student Attendance - {{ class_session.class_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/trainer_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="attendance-hero">
+            <h2>{{ class_session.class_name }} - Student Attendance</h2>
+            <p class="attendance-meta">Date: {{ today }} | Mark each student with one click.</p>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="student-list">
+                {% for row in booking_rows %}
+                <div class="student-row">
+                    <div class="student-meta">
+                        <strong>{{ row.booking.user.full_name|default:row.booking.user.username }}</strong>
+                        <span>{{ row.booking.user.email }}</span>
+                    </div>
+
+                    <div>
+                        <span class="attendance-status {% if row.status == 'present' %}present{% elif row.status == 'absent' %}absent{% else %}pending{% endif %}">
+                            {{ row.status|title }}
+                        </span>
+                    </div>
+
+                    <div class="attendance-actions">
+                        <form method="post" action="{% url 'mark_class_attendance' row.booking.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
+                            <input type="hidden" name="status" value="present">
+                            <button type="submit" class="btn-sm btn-success">Present</button>
+                        </form>
+                        <form method="post" action="{% url 'mark_class_attendance' row.booking.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
+                            <input type="hidden" name="status" value="absent">
+                            <button type="submit" class="btn-sm btn-danger">Absent</button>
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                <p>No active bookings for this class session.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

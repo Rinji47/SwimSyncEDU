@@ -9,109 +9,80 @@
 
 {% block content %}
 <div class="dashboard-layout">
-    <!-- Sidebar -->
-    <aside class="dashboard-sidebar">
-        <div class="sidebar-header">
-            <h2><a href="{% url 'index' %}">SwimSync EDU</a></h2>
-            <p class="user-role">Trainer</p>
-        </div>
-        <nav class="sidebar-nav">
-            <a href="#" class="nav-item active">
-                <span class="nav-icon">📊</span>
-                Dashboard
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">📚</span>
-                My Classes
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">📅</span>
-                Schedule
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">👥</span>
-                Students
-            </a>
-            <!-- <a href="#" class="nav-item">
-                <span class="nav-icon">⭐</span>
-                Reviews
-            </a> -->
-            <a href="#" class="nav-item">
-                <span class="nav-icon">💰</span>
-                Earnings
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">👤</span>
-                Profile
-            </a>
-            <a href="{% url 'logout' %}" class="nav-item">
-                <span class="nav-icon">🚪</span>
-                Logout
-            </a>
-        </nav>
-    </aside>
-    
-    <!-- Main Content -->
+    {% include "./components/trainer_sidebar.html" %}
+
     <main class="dashboard-main">
         <div class="dashboard-header">
-            <h1>Welcome, {{ user.full_name }}!</h1>
+            <h1>Welcome, {{ user.full_name|default:user.username }}!</h1>
         </div>
-        
-        <!-- Stats Cards -->
+
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon">📚</div>
+                <div class="stat-icon"><i class="fa-solid fa-book-open"></i></div>
                 <div class="stat-content">
                     <h3>{{ active_classes }}</h3>
                     <p>Active Classes</p>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">👥</div>
+                <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
                 <div class="stat-content">
                     <h3>{{ total_students }}</h3>
                     <p>Total Students</p>
                 </div>
             </div>
-            <!-- <div class="stat-card">
-                <div class="stat-icon">⭐</div>
-                <div class="stat-content">
-                    <h3>{{ average_rating }}</h3>
-                    <p>Average Rating</p>
-                </div>
-            </div> -->
             <div class="stat-card">
-                <div class="stat-icon">💰</div>
+                <div class="stat-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
                 <div class="stat-content">
                     <h3>${{ monthly_earnings }}</h3>
                     <p>This Month</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Today's Schedule -->
+
         <section class="dashboard-section">
-            <h2>Today's Schedule</h2>
-            <div class="filter-bar">
-                <div class="filter-main">
-                    <div class="filter-search">
-                        <input type="text" class="filter-input" placeholder="Search today's classes...">
-                        <button type="button" class="btn-secondary">Search</button>
-                        <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-trainer-today">Filters v</button>
+            <h2>Attendance Quick Actions</h2>
+            <div class="data-card-grid">
+                <div class="data-card">
+                    <h3 class="data-card-title">Group Class Attendance</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Action:</span>
+                        <span>Mark attendance for ongoing group classes</span>
+                    </div>
+                    <div class="data-card-actions">
+                        <a href="{% url 'select_class_for_attendance' %}" class="btn-sm btn-primary">Open</a>
+                        <a href="{% url 'manage_trainer_class_session' %}" class="btn-sm btn-secondary">My Group Classes</a>
                     </div>
                 </div>
-                <div class="filter-advanced" id="filters-trainer-today">
-                    <div class="filter-field">
-                        <label>Status</label>
-                        <select class="filter-select">
-                            <option value="">All</option>
-                            <option value="active">Active</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
+
+                <div class="data-card">
+                    <h3 class="data-card-title">Private Class Attendance</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Action:</span>
+                        <span>Mark attendance for ongoing private classes</span>
+                    </div>
+                    <div class="data-card-actions">
+                        <a href="{% url 'select_private_class_for_attendance' %}" class="btn-sm btn-primary">Open</a>
+                        <a href="{% url 'manage_trainer_private_classes' %}" class="btn-sm btn-secondary">My Private Classes</a>
+                    </div>
+                </div>
+
+                <div class="data-card">
+                    <h3 class="data-card-title">Substitute Assignments</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Action:</span>
+                        <span>View classes where you are substitute trainer</span>
+                    </div>
+                    <div class="data-card-actions">
+                        <a href="{% url 'trainer_susitute_class_sessions_list' %}" class="btn-sm btn-primary">Group</a>
+                        <a href="{% url 'trainer_susitute_private_classes_list' %}" class="btn-sm btn-secondary">Private</a>
                     </div>
                 </div>
             </div>
+        </section>
+
+        <section class="dashboard-section">
+            <h2>Today's Schedule</h2>
             <div class="data-card-grid">
                 {% for class in todays_classes %}
                 <div class="data-card">
@@ -129,88 +100,9 @@
                         <span class="data-card-label">Students:</span>
                         <span>{{ class.enrolled }}/{{ class.capacity }}</span>
                     </div>
-                    <div class="data-card-actions">
-                        <button class="btn-sm btn-primary">View Details</button>
-                        <button class="btn-sm btn-secondary">Attendance</button>
-                    </div>
                 </div>
                 {% empty %}
                 <p style="color: var(--text-secondary);">No classes scheduled for today</p>
-                {% endfor %}
-            </div>
-        </section>
-        
-        <!-- Recent Reviews -->
-        <!-- <section class="dashboard-section">
-            <h2>Recent Reviews</h2>
-            <div class="reviews-list">
-                {% for review in recent_reviews %}
-                <div class="review-card">
-                    <div class="review-header">
-                        <div>
-                            <strong>{{ review.student_name }}</strong>
-                            <p class="review-class">{{ review.class_name }}</p>
-                        </div>
-                        <div class="review-rating">
-                            {% for i in "12345" %}
-                                {% if forloop.counter <= review.rating %}⭐{% else %}☆{% endif %}
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <p class="review-text">{{ review.comment }}</p>
-                    <small class="review-date">{{ review.date|date:"M d, Y" }}</small>
-                </div>
-                {% empty %}
-                <p>No reviews yet</p>
-                {% endfor %}
-            </div>
-        </section> -->
-        
-        <!-- Upcoming Classes -->
-        <section class="dashboard-section">
-            <h2>Upcoming Classes This Week</h2>
-            <div class="filter-bar">
-                <div class="filter-main">
-                    <div class="filter-search">
-                        <input type="text" class="filter-input" placeholder="Search upcoming classes...">
-                        <button type="button" class="btn-secondary">Search</button>
-                        <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-trainer-upcoming">Filters v</button>
-                    </div>
-                </div>
-                <div class="filter-advanced" id="filters-trainer-upcoming">
-                    <div class="filter-field">
-                        <label>Facility</label>
-                        <input type="text" class="filter-input" placeholder="Facility name">
-                    </div>
-                </div>
-            </div>
-            <div class="data-card-grid">
-                {% for class in upcoming_classes %}
-                <div class="data-card">
-                    <h3 class="data-card-title">{{ class.name }}</h3>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Date:</span>
-                        <span>{{ class.datetime|date:"M d, Y - h:i A" }}</span>
-                    </div>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Facility:</span>
-                        <span>{{ class.facility_name }}</span>
-                    </div>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Enrolled:</span>
-                        <span>{{ class.enrolled }}</span>
-                    </div>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Capacity:</span>
-                        <span>{{ class.capacity }}</span>
-                    </div>
-                    <div class="data-card-actions">
-                        <button class="btn-sm btn-primary">Edit</button>
-                        <button class="btn-sm btn-secondary">View</button>
-                    </div>
-                </div>
-                {% empty %}
-                <p style="color: var(--text-secondary);">No upcoming classes</p>
                 {% endfor %}
             </div>
         </section>

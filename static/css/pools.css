@@ -36,6 +36,47 @@
   font-size: 0.95rem;
 }
 
+.pools-status.warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.pools-status.warning::before {
+  content: none;
+}
+
+.distance-filter {
+  margin-top: 1rem;
+  margin-bottom: 0.8rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef7fb 100%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.distance-filter label {
+  color: var(--text-primary);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.distance-filter .compact-input {
+  width: 98px;
+  min-width: 98px;
+}
+
+.distance-unit {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
 .pools-list {
   padding: 3rem 0 4rem;
   background-color: white;
@@ -52,15 +93,22 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 1.25rem;
-  box-shadow: 0 6px 18px var(--shadow);
+  box-shadow: 0 8px 20px var(--shadow);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.pool-card:hover {
+  transform: translateY(-4px);
+  border-color: #bae6fd;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
 }
 
 .pool-card-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
 }
@@ -68,6 +116,23 @@
 .pool-card-header h3 {
   font-size: 1.1rem;
   color: var(--text-primary);
+}
+
+.pool-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pool-distance {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0c4a6e;
 }
 
 .pool-status {
@@ -90,6 +155,10 @@
 .pool-address {
   color: var(--text-secondary);
   font-size: 0.95rem;
+}
+
+.pool-address i {
+  color: #0891b2;
 }
 
 .pool-meta {
@@ -122,8 +191,21 @@
   color: var(--text-secondary);
 }
 
+.pools-list .btn-secondary i,
+.pools-hero .btn-secondary i {
+  color: #0891b2;
+}
+
 @media (max-width: 768px) {
   .pools-hero {
     padding: 2.5rem 0 1.5rem;
+  }
+
+  .distance-filter {
+    align-items: stretch;
+  }
+
+  .distance-filter .compact-input {
+    width: 100%;
   }
 }

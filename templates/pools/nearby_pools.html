@@ -6,13 +6,15 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/landing.css' %}">
 <link rel="stylesheet" href="{% static 'css/pools.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
 {% endblock %}
 
 {% block content %}
 <nav class="navbar">
     <div class="container">
         <a class="nav-brand" href="{% url 'index' %}">SwimSync EDU</a>
-        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
         <ul class="nav-menu" id="navMenu">
             <li><a href="{% url 'index' %}#features">Features</a></li>
             <li><a href="{% url 'index' %}#roles">For You</a></li>
@@ -35,42 +37,62 @@
     </div>
 </nav>
 
-<section class="pools-hero">
+<section class="page-shell">
     <div class="container">
-        <div class="pools-hero-content">
-            <h1>Pools Near You</h1>
-            <p>We will use your location to find pools within 10 km. If none are nearby, we will show all pools.</p>
-            <div class="pools-hero-actions">
-                <button class="btn-secondary" type="button" id="requestLocationBtn">Use My Location</button>
-                <a class="btn-secondary" href="{% url 'nearby_pools' %}">Show All Pools</a>
+        {% include "components/message.html" %}
+        <div class="page-head">
+            <div>
+                <h1>Find A Pool</h1>
+                <p class="subtitle">Browse pools near your location and quickly jump to available class types.</p>
             </div>
-            <p class="pools-status" id="poolsStatus">{{ status_message }}</p>
+            <div class="inline-actions">
+                <button class="btn-secondary" type="button" id="requestLocationBtn"><i class="fa-solid fa-location-crosshairs"></i> Use My Location</button>
+                <a class="btn-secondary" href="{% url 'nearby_pools' %}"><i class="fa-solid fa-list"></i> Show All</a>
+            </div>
         </div>
-    </div>
-</section>
+        <form class="distance-filter" method="get">
+            <label for="radiusInput"><i class="fa-solid fa-ruler-horizontal"></i> Distance</label>
+            <input
+                id="radiusInput"
+                name="radius"
+                class="compact-input"
+                type="number"
+                min="1"
+                max="100"
+                step="1"
+                value="{{ radius_km }}"
+            >
+            <span class="distance-unit">km</span>
+            <button class="btn-secondary" type="submit"><i class="fa-solid fa-filter"></i> Update Radius</button>
+        </form>
+        {% if not is_geopy_installed %}
+        <p class="pools-status warning"><i class="fa-solid fa-triangle-exclamation"></i> Geopy not installed yet. Run <code>pip install geopy</code> to use library-based distance calculation.</p>
+        {% endif %}
+        <p class="pools-status" id="poolsStatus">{{ status_message }}</p>
 
-<section class="pools-list">
-    <div class="container">
         <div class="pools-grid" id="poolsGrid">
             {% for pool in pools %}
-            <div class="pool-card">
+            <article class="pool-card">
                 <div class="pool-card-header">
                     <h3>{{ pool.name }}</h3>
-                    {% if pool.is_closed %}
-                        <span class="pool-status closed">Closed</span>
-                    {% else %}
-                        <span class="pool-status open">Open</span>
-                    {% endif %}
+                    <div class="pool-badges">
+                        {% if pool.distance_km != None %}
+                        <span class="pool-distance"><i class="fa-solid fa-route"></i> {{ pool.distance_km }} km</span>
+                        {% endif %}
+                        <span class="pool-status {% if pool.is_closed %}closed{% else %}open{% endif %}">
+                            {% if pool.is_closed %}Closed{% else %}Open{% endif %}
+                        </span>
+                    </div>
                 </div>
-                <p class="pool-address">{{ pool.address }}</p>
-                <p class="pool-meta">Capacity: {{ pool.capacity }}</p>
-                <a class="btn-secondary" href="{% url 'pool_class_types' pool.pool_id %}">View Classes</a>
+                <p class="pool-address"><i class="fa-solid fa-location-dot"></i> {{ pool.address }}</p>
+                <p class="pool-meta"><strong>Capacity:</strong> {{ pool.capacity }}</p>
                 {% if pool.image_url %}
                     <img src="{{ pool.image_url }}" alt="{{ pool.name }}" class="pool-image">
                 {% else %}
                     <div class="pool-image placeholder">No image</div>
                 {% endif %}
-            </div>
+                <a class="btn-primary" href="{% url 'pool_class_types' pool.pool_id %}">View Classes</a>
+            </article>
             {% empty %}
             <p class="pools-empty">No pools available.</p>
             {% endfor %}

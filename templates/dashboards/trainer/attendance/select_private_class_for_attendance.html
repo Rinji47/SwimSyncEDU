@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Select Private Class - Attendance{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/trainer_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="attendance-hero">
+            <h2>Private Class Attendance</h2>
+            <p class="attendance-meta">Date: {{ today }} | Select a private class to mark the student attendance.</p>
+        </div>
+
+        <div class="dashboard-section card-grid">
+            {% for private_class in ongoing_private_classes %}
+            <div class="class-card">
+                <h3>{{ private_class.user.full_name|default:private_class.user.username }}</h3>
+                <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
+                <p><strong>Time:</strong> {{ private_class.start_time }} - {{ private_class.end_time }}</p>
+                <p><strong>Dates:</strong> {{ private_class.start_date }} to {{ private_class.end_date }}</p>
+                <div class="card-actions">
+                    <a href="{% url 'mark_private_class_attendance' private_class.id %}" class="btn-sm btn-primary">Mark Attendance</a>
+                    <a href="{% url 'private_class_attendance_history' private_class.id %}" class="btn-sm btn-secondary">History</a>
+                </div>
+            </div>
+            {% empty %}
+            <p>No ongoing private classes available for attendance.</p>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

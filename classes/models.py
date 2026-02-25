@@ -19,9 +19,12 @@ class ClassType(models.Model):
         return self.name
     
 class ClassSession(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    trainer = models.ForeignKey(User, on_delete=models.CASCADE)
     pool = models.ForeignKey(Pool, on_delete=models.CASCADE)
     class_type = models.ForeignKey(ClassType, on_delete=models.CASCADE)
+    substitute_trainer = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL, related_name='substituted_class_sessions'
+    )
 
     class_name = models.CharField(max_length=100)
     seats = models.IntegerField()
@@ -66,6 +69,10 @@ class PrivateClassDetails(models.Model):
 class PrivateClass(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     trainer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='trainer')
+    substitute_trainer = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL, related_name='substituted_classes'
+    )
+
     pool = models.ForeignKey(Pool, on_delete=models.CASCADE)
     
     start_date = models.DateField()
@@ -98,18 +105,3 @@ class PrivateClass(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s private class with {self.trainer.username}"
-
-
-class PrivateClassAttendance(models.Model):
-    private_class = models.ForeignKey(PrivateClass, on_delete=models.CASCADE, related_name='attendances')
-    date = models.DateField()
-    attended = models.BooleanField(default=False)
-
-    def save(self, *args, **kwargs):
-        if self.date.weekday() >= 5:
-            raise ValueError("Cannot mark attendance on weekends")
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        status = "Present" if self.attended else "Absent"
-        return f"{self.private_class.user.username} - {self.date} - {status}"
