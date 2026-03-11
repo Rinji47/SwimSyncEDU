@@ -1,0 +1,82 @@
+.payment-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(290px, 1fr);
+  gap: 1.2rem;
+}
+
+.payment-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 6px 16px var(--shadow);
+  padding: 1rem 1.1rem;
+}
+
+.payment-card + .payment-card {
+  margin-top: 1rem;
+}
+
+.payment-summary {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.payment-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.payment-total {
+  margin-top: 0.45rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.65rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.gateway-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #166534;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.payment-note {
+  margin-top: 0.85rem;
+  border: 1px solid #bae6fd;
+  background: #f0f9ff;
+  color: #0c4a6e;
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  font-size: 0.92rem;
+}
+
+.pay-actions {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.btn-esewa {
+  width: 100%;
+  background: #16a34a;
+  color: #fff;
+}
+
+.btn-esewa:hover {
+  background: #15803d;
+}
+
+@media (max-width: 980px) {
+  .payment-shell {
+    grid-template-columns: 1fr;
+  }
+}

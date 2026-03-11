@@ -42,6 +42,18 @@
                         <button type="submit" class="btn-primary" {% if not selected_trainer %}disabled{% endif %}>Confirm Assign</button>
                     </form>
 
+                    <form method="post" action="{% url 'cancel_private_class_for_today' private_class.id %}" style="display:inline-flex;">
+                        {% csrf_token %}
+                        <button
+                            type="submit"
+                            class="btn-danger"
+                            {% if selected_trainer %}disabled{% endif %}
+                            onclick="return confirm('Cancel this private class for today and mark attendance as class cancelled?');"
+                        >
+                            Cancel for Today
+                        </button>
+                    </form>
+
                     <a href="{% url 'list_ongoing_private_classes_of_absent_trainer' %}" class="btn-secondary">Cancel</a>
                 </div>
             </div>

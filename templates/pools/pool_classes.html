@@ -16,6 +16,7 @@
         <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
         <ul class="nav-menu" id="navMenu">
             <li><a href="{% url 'nearby_pools' %}" class="active-link">Pools</a></li>
+            <li><a href="{% url 'pool_quality_today_list' %}">Pool Quality</a></li>
             <li><a href="{% url 'index' %}#about">About</a></li>
         </ul>
     </div>
@@ -48,7 +49,7 @@
                     <p class="pool-meta"><strong>Dates:</strong> {{ class_item.start_date|date:"M d, Y" }} - {{ class_item.end_date|date:"M d, Y" }}</p>
                     <p class="pool-meta"><strong>Time:</strong> {{ class_item.start_time|time:"H:i" }} - {{ class_item.end_time|time:"H:i" }}</p>
                     <p class="pool-meta"><strong>Seats:</strong> {{ class_item.total_bookings }}/{{ class_item.seats }}</p>
-                    <p class="pool-meta"><strong>Total Price:</strong> ${{ class_item.total_price }}</p>
+                    <p class="pool-meta"><strong>Total Price:</strong> Rs. {{ class_item.total_price }}</p>
                     <a href="{% url 'book_class' class_item.id %}" class="btn-primary">Book Now</a>
                 </article>
                 {% empty %}
@@ -62,7 +63,7 @@
             <ul class="side-list">
                 <li><strong>Pool:</strong> {{ pool.name }}</li>
                 <li><strong>Class Type:</strong> {{ class_type.name }}</li>
-                <li><strong>Base Price:</strong> ${{ class_type.cost }}</li>
+                <li><strong>Base Price:</strong> Rs. {{ class_type.cost }}</li>
                 <li><strong>Duration:</strong> {{ class_type.duration_days }} day(s)</li>
             </ul>
         </aside>

@@ -119,7 +119,7 @@
                     <p class="class-instructor">Instructor: {{ class.instructor_name }}</p>
                     <p class="class-facility">📍 {{ class.facility_name }}</p>
                     <p class="class-time"><i class="fa-solid fa-calendar-days"></i> {{ class.datetime|date:"M d, Y - h:i A" }}</p>
-                    <p class="class-price">${{ class.price }}</p>
+                    <p class="class-price">Rs. {{ class.price }}</p>
                     <div class="class-footer">
                         <div class="class-rating"><i class="fa-solid fa-star"></i> {{ class.rating }} ({{ class.reviews }} reviews)</div>
                         <button class="btn-primary btn-sm">Book Now</button>

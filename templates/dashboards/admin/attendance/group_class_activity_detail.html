@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Group Class Daily Activity{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/admin_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="dashboard-header">
+            <h1>{{ class_session.class_name }} - Daily Activity</h1>
+            <a href="{% url 'class_private_activity_history' %}?date_from={{ from_date|date:'Y-m-d' }}&date_to={{ to_date|date:'Y-m-d' }}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="dashboard-section">
+            <p><strong>Pool:</strong> {{ class_session.pool.name }}</p>
+            <p><strong>Main Trainer:</strong> {{ class_session.trainer.full_name|default:class_session.trainer.username }}</p>
+            <p><strong>Range:</strong> {{ from_date }} to {{ to_date }}</p>
+        </div>
+
+        <div class="dashboard-section history-table-wrap">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Main Trainer Attendance</th>
+                        <th>Substitute Trainer</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in daily_rows %}
+                    <tr>
+                        <td>{{ row.date }}</td>
+                        <td>
+                            <span class="attendance-status {% if row.main_trainer_status == 'Present' %}present{% elif row.main_trainer_status == 'Absent' %}absent{% else %}pending{% endif %}">
+                                {{ row.main_trainer_status }}
+                            </span>
+                        </td>
+                        <td>{{ row.substitute_name }}</td>
+                        <td>
+                            <span class="attendance-status {% if row.status == 'Cancelled' %}absent{% elif row.status == 'Not Conducted' %}pending{% else %}present{% endif %}">
+                                {{ row.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">No daily activity records found for this date range.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+{% endblock %}

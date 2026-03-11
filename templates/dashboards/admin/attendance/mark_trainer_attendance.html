@@ -22,6 +22,25 @@
         </div>
 
         <div class="dashboard-section">
+            {% if require_substitute_clear_confirmation %}
+            <div class="note-card" style="margin-bottom: 1rem;">
+                <strong>Confirmation Required:</strong>
+                This trainer is assigned as substitute today in
+                <strong>{{ pending_group_substitute_count }}</strong> group class(es) and
+                <strong>{{ pending_private_substitute_count }}</strong> private class(es).
+                Marking this trainer absent will clear those substitute assignments.
+            </div>
+
+            <form method="post" class="attendance-actions" style="margin-bottom: 1rem;">
+                {% csrf_token %}
+                <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
+                <input type="hidden" name="status" value="absent">
+                <input type="hidden" name="confirm_clear_substitute" value="1">
+                <button type="submit" class="btn-danger">Yes, Mark Absent and Clear</button>
+                <a href="{% url 'mark_trainer_attendance' trainer.user_id %}" class="btn-secondary">No, Go Back</a>
+            </form>
+            {% endif %}
+
             <div class="attendance-form-row">
                 <form method="post" class="attendance-form-row">
                     {% csrf_token %}

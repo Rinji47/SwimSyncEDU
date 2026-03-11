@@ -33,7 +33,7 @@
                     <strong>Pool:</strong> {{ booking.class_session.pool.name }}<br>
                     <strong>Trainer:</strong> {{ booking.class_session.trainer.full_name|default:booking.class_session.trainer.username }}<br>
                     <strong>Dates:</strong> {{ booking.class_session.start_date|date:"M d" }} - {{ booking.class_session.end_date|date:"M d" }}<br>
-                    <strong>Price:</strong> ${{ booking.class_session.total_price }}<br>
+                    <strong>Price:</strong> Rs. {{ booking.class_session.total_price }}<br>
                 </div>
 
                 <div class="card-actions" style="margin-top:0.5rem;">
@@ -44,7 +44,7 @@
                             data-pool-name="{{ booking.class_session.pool.name|escape }}"
                             data-trainer-name="{{ booking.class_session.trainer.full_name|default:booking.class_session.trainer.username|escape }}"
                             data-dates="{{ booking.class_session.start_date|date:'M d' }} - {{ booking.class_session.end_date|date:'M d' }}"
-                            data-price="${{ booking.class_session.total_price }}"
+                            data-price="Rs. {{ booking.class_session.total_price }}"
                             data-booking-date="{{ booking.booking_date|date:'M d, Y H:i' }}"
                             data-status="{% if booking.class_session.is_cancelled %}Cancelled{% else %}Open{% endif %}">
                         View

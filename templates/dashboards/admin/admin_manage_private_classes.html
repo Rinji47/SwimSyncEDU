@@ -66,40 +66,31 @@
             <span class="class-status {% if session.is_cancelled %}status-cancelled{% else %}status-open{% endif %}">
                 {% if session.is_cancelled %}Cancelled{% else %}Active{% endif %}
             </span>
-            <h3>{{ session.class_name }}</h3>
+            <h3>Private: {{ session.user.full_name|default:session.user.username }}</h3>
             <p><strong>Pool:</strong> {{ session.pool.name }}</p>
             <p><strong>Trainer:</strong> {{ session.trainer.full_name|default:session.trainer.username }}</p>
             <p><strong>Dates:</strong> {{ session.start_date|date:"M d" }} - {{ session.end_date|date:"M d" }}</p>
             <p><strong>Time:</strong> {{ session.start_time|time:"H:i" }} - {{ session.end_time|time:"H:i" }}</p>
-            <p><strong>Seats:</strong> {{ session.seats }}</p>
-            <p><strong>Total Sessions:</strong> {{ session.total_sessions|default:"N/A" }}</p>
-            <p><strong>Current Price:</strong> ${{ session.total_price }}</p>
+            <p><strong>Learner:</strong> {{ session.user.full_name|default:session.user.username }}</p>
+            <p><strong>Total Sessions:</strong> {{ session.weekdays_count|default:"N/A" }}</p>
+            <p><strong>Current Price:</strong> Rs. {{ session.total_price }}</p>
 
             <div class="card-actions">
                 <button type="button" class="btn-sm btn-primary"
                     onclick="openViewPrivateModal(this)"
-                    data-class-name="{{ session.class_name|escape }}"
+                    data-class-name="Private: {{ session.user.full_name|default:session.user.username|escape }}"
                     data-pool-name="{{ session.pool.name|escape }}"
                     data-trainer-name="{{ session.trainer.full_name|default:session.trainer.username|escape }}"
-                    data-class-type="{{ session.class_type.name|escape }}"
+                    data-class-type="Private Class"
                     data-start-date="{{ session.start_date|date:"Y-m-d" }}"
                     data-end-date="{{ session.end_date|date:"Y-m-d" }}"
                     data-start-time="{{ session.start_time|time:"H:i" }}"
                     data-end-time="{{ session.end_time|time:"H:i" }}"
-                    data-seats="{{ session.seats }}"
-                    data-total-sessions="{{ session.total_sessions|default:'' }}"
+                    data-seats="-"
+                    data-total-sessions="{{ session.weekdays_count|default:'' }}"
                     data-total-price="{{ session.total_price }}"
                     data-is-cancelled="{% if session.is_cancelled %}true{% else %}false{% endif %}"
                 >View Details</button>
-
-                <button type="button" class="btn-sm btn-secondary"
-                        onclick="openEditPriceModal(this)"
-                        data-url="{% url 'edit_private_class_price' session.id %}"
-                        data-class-name="{{ session.class_name|escape }}"
-                        data-current-price="{{ session.total_price }}"
-                        data-class-id="{{ session.id }}">
-                    Edit Price
-                </button>
             </div>
 
         </div>
@@ -154,7 +145,7 @@
             </div>
             <div class="detail-item">
                 <span class="detail-label">Total Price</span>
-                <span class="detail-value">$<span id="view_private_price"></span></span>
+                <span class="detail-value">Rs. <span id="view_private_price"></span></span>
             </div>
             <div class="detail-item">
                 <span class="detail-label">Status</span>
@@ -167,30 +158,6 @@
     </div>
 </div>
 
-<!-- EDIT PRICE MODAL -->
-<div id="editPriceModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Edit Private Class Price</h2>
-            <span class="close" onclick="toggleModal('editPriceModal')">&times;</span>
-        </div>
-        <form method="POST" id="editPriceForm">
-            {% csrf_token %}
-            <div class="form-group">
-                <label>Class Name</label>
-                <p id="edit_price_class_name" style="font-weight: 500; color: var(--text-primary);"></p>
-            </div>
-            <div class="form-group">
-                <label for="total_price">New Price ($)</label>
-                <input type="number" step="0.01" id="total_price" name="total_price" required>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="toggleModal('editPriceModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Update Price</button>
-            </div>
-        </form>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -215,16 +182,5 @@ function openViewPrivateModal(btn) {
     toggleModal('viewPrivateModal');
 }
 
-function openEditPriceModal(btn) {
-    if (!btn || !btn.dataset) return;
-
-    const form = document.getElementById('editPriceForm');
-    form.action = btn.dataset.url;
-    
-    document.getElementById('edit_price_class_name').textContent = btn.dataset.className || "";
-    document.getElementById('total_price').value = btn.dataset.currentPrice || "";
-
-    toggleModal('editPriceModal');
-}
 </script>
 {% endblock %}

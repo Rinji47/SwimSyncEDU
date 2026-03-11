@@ -3,10 +3,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 
-from .models import TrainerAttendanceRecord, ClassSessionAttendance, PrivateClassAttendance
+from .models import (
+    TrainerAttendanceRecord,
+    ClassSessionAttendance,
+    PrivateClassAttendance,
+)
 from accounts.models import User
 from classes.models import ClassSession, PrivateClass, ClassBooking
-from pool.models import TrainerPoolAssignment
+from pool.models import Pool, TrainerPoolAssignment
 
 from datetime import date, datetime
 
@@ -121,31 +125,60 @@ def mark_trainer_attendance(request, trainer_id):
             messages.error(request, "Attendance cannot be marked on weekends.")
             return redirect('mark_trainer_attendance', trainer_id=trainer_id)
 
+        substitute_group_qs = ClassSession.objects.filter(
+            substitute_trainer=trainer,
+            start_date__lte=today,
+            end_date__gte=today,
+            is_cancelled=False,
+        ).select_related('pool')
+        substitute_private_qs = PrivateClass.objects.filter(
+            substitute_trainer=trainer,
+            start_date__lte=today,
+            end_date__gte=today,
+            is_cancelled=False,
+        ).select_related('pool', 'user')
+        has_substitute_assignments_today = substitute_group_qs.exists() or substitute_private_qs.exists()
+        confirm_clear_substitute = request.POST.get('confirm_clear_substitute') == '1'
+
+        if status == 'absent' and has_substitute_assignments_today and not confirm_clear_substitute:
+            messages.warning(
+                request,
+                'This trainer is currently assigned as substitute today. Confirm to mark absent and clear substitute assignments.',
+            )
+            today_record = TrainerAttendanceRecord.objects.filter(trainer=trainer, date=today).first()
+            return render(
+                request,
+                'dashboards/admin/attendance/mark_trainer_attendance.html',
+                {
+                    'trainer': trainer,
+                    'today': today,
+                    'today_record': today_record,
+                    'require_substitute_clear_confirmation': True,
+                    'pending_group_substitute_count': substitute_group_qs.count(),
+                    'pending_private_substitute_count': substitute_private_qs.count(),
+                    'pending_group_substitute_classes': substitute_group_qs[:3],
+                    'pending_private_substitute_classes': substitute_private_qs[:3],
+                },
+            )
+
         attendance_record, created = TrainerAttendanceRecord.objects.update_or_create(
             trainer=trainer, date=date_str, defaults={'status': status}
         )
 
-        if attendance_record.status == 'present':
-            class_sessions_today = ClassSession.objects.filter(
-                Q(trainer=trainer) | Q(substitute_trainer=trainer),
-                start_date__lte=today,
-                end_date__gte=today,
-                is_cancelled=False,
-            )
-            private_classes_today = PrivateClass.objects.filter(
-                Q(trainer=trainer) | Q(substitute_trainer=trainer),
-                start_date__lte=today,
-                end_date__gte=today,
-                is_cancelled=False,
-            )
-
-            class_sessions_updated = class_sessions_today.filter(substitute_trainer=trainer).update(substitute_trainer=None)
+        if attendance_record.status in {'present', 'absent'}:
+            class_sessions_updated = substitute_group_qs.update(substitute_trainer=None)
             if class_sessions_updated:
-                messages.info(request, 'Trainer substitute assignments for group classes were cleared for today.')
+                if attendance_record.status == 'absent':
+                    messages.info(request, 'Trainer was marked absent, so substitute assignments for group classes were cleared.')
+                else:
+                    messages.info(request, 'Trainer substitute assignments for group classes were cleared for today.')
 
-            private_classes_updated = private_classes_today.filter(substitute_trainer=trainer).update(substitute_trainer=None)
+            private_classes_updated = substitute_private_qs.update(substitute_trainer=None)
             if private_classes_updated:
-                messages.info(request, 'Trainer substitute assignments for private classes were cleared for today.')
+                if attendance_record.status == 'absent':
+                    messages.info(request, 'Trainer was marked absent, so substitute assignments for private classes were cleared.')
+                else:
+                    messages.info(request, 'Trainer substitute assignments for private classes were cleared for today.')
 
         if created:
             messages.success(request, 'Trainer attendance marked successfully.')
@@ -225,6 +258,15 @@ def mark_class_attendance(request, class_booking_id):
     if class_session.trainer != request.user and class_session.substitute_trainer != request.user:
         messages.error(request, 'You can only mark attendance for your own classes or subsitute class.')
         return redirect('index')
+
+    teacher_present = TrainerAttendanceRecord.objects.filter(
+        trainer=request.user,
+        date=date.today(),
+        status='present',
+    ).exists()
+    if not teacher_present:
+        messages.error(request, 'Cannot mark attendance because you are not marked as present today.')
+        return redirect('select_student_for_attendance', class_session_id=class_session.id)
 
     if request.method == 'POST':
         try:
@@ -567,6 +609,84 @@ def choose_substitute_trainer_for_private_class(request, private_class_id):
 
 
 @login_required
+def cancel_group_class_for_today(request, class_session_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('index')
+
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method.')
+        return redirect('list_ongoing_classes_of_absent_trainer')
+
+    class_session = get_object_or_404(ClassSession, id=class_session_id)
+    today = date.today()
+
+    if class_session.start_date > today or class_session.end_date < today:
+        messages.error(request, 'This class session is not ongoing today.')
+        return redirect('list_ongoing_classes_of_absent_trainer')
+
+    if class_session.substitute_trainer_id is not None:
+        messages.error(request, 'A substitute trainer is already assigned for today.')
+        return redirect('assign_substitute_trainer_for_class_session', class_session_id=class_session_id)
+
+    bookings = (
+        ClassBooking.objects.filter(class_session=class_session)
+        .select_related('user')
+        .distinct()
+    )
+    if not bookings.exists():
+        messages.info(request, 'No bookings found for this class. Nothing to mark as cancelled.')
+        return redirect('list_ongoing_classes_of_absent_trainer')
+
+    cancelled_count = 0
+    for booking in bookings:
+        ClassSessionAttendance.objects.update_or_create(
+            class_session=class_session,
+            student=booking.user,
+            date=today,
+            defaults={'status': 'class_cancelled', 'marked_by': request.user},
+        )
+        cancelled_count += 1
+
+    messages.success(
+        request,
+        f'Cancelled class for today and marked {cancelled_count} student attendance record(s) as class cancelled.',
+    )
+    return redirect('list_ongoing_classes_of_absent_trainer')
+
+
+@login_required
+def cancel_private_class_for_today(request, private_class_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('index')
+
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method.')
+        return redirect('list_ongoing_private_classes_of_absent_trainer')
+
+    private_class = get_object_or_404(PrivateClass, id=private_class_id)
+    today = date.today()
+
+    if private_class.start_date > today or private_class.end_date < today:
+        messages.error(request, 'This private class is not ongoing today.')
+        return redirect('list_ongoing_private_classes_of_absent_trainer')
+
+    if private_class.substitute_trainer_id is not None:
+        messages.error(request, 'A substitute trainer is already assigned for today.')
+        return redirect('assign_substitute_trainer_for_private_class', private_class_id=private_class_id)
+
+    PrivateClassAttendance.objects.update_or_create(
+        private_class=private_class,
+        student=private_class.user,
+        date=today,
+        defaults={'status': 'class_cancelled', 'marked_by': request.user},
+    )
+    messages.success(request, 'Cancelled private class for today and marked attendance as class cancelled.')
+    return redirect('list_ongoing_private_classes_of_absent_trainer')
+
+
+@login_required
 def list_trainer_classes(request, trainer_id):
     if request.user.role != 'admin' and request.user.pk != trainer_id:
         messages.error(request, 'You do not have permission to access this page.')
@@ -662,4 +782,339 @@ def admin_class_session_attendance_history(request, class_session_id):
         request,
         'dashboards/admin/attendance/class_session_attendance_history.html',
         {'class_session': class_session, 'attendance_records': attendance_records},
+    )
+
+@login_required
+def trainer_attendance_history(request, trainer_id):
+    if request.user.role != 'admin' and request.user.pk != trainer_id:
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    trainer = get_object_or_404(User, pk=trainer_id)
+    attendance_records = TrainerAttendanceRecord.objects.filter(trainer=trainer).order_by('-date')
+    return render(
+        request,
+        'dashboards/admin/attendance/trainer_attendance_history.html',
+        {'trainer': trainer, 'attendance_records': attendance_records},
+    )
+
+
+@login_required
+def class_and_private_classes_cancellation_and_substitute_history(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    today = date.today()
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    event_type = request.GET.get('event', 'all')
+    section = request.GET.get('section', 'all')
+    pool_id = request.GET.get('pool')
+    trainer_q = (request.GET.get('trainer') or '').strip()
+
+    try:
+        from_date = datetime.strptime(date_from, '%Y-%m-%d').date() if date_from else today
+    except ValueError:
+        from_date = today
+    try:
+        to_date = datetime.strptime(date_to, '%Y-%m-%d').date() if date_to else today
+    except ValueError:
+        to_date = today
+    if from_date > to_date:
+        from_date, to_date = to_date, from_date
+
+    if event_type not in {'all', 'cancelled', 'substitute', 'trainer_absent'}:
+        event_type = 'all'
+    if section not in {'all', 'group', 'private'}:
+        section = 'all'
+
+    absent_trainer_ids = set(
+        TrainerAttendanceRecord.objects.filter(
+            date__gte=from_date,
+            date__lte=to_date,
+            status='absent',
+        ).values_list('trainer_id', flat=True).distinct()
+    )
+
+    cancelled_group_class_ids = set(
+        ClassSessionAttendance.objects.filter(
+            date__gte=from_date,
+            date__lte=to_date,
+            status='class_cancelled',
+        ).values_list('class_session_id', flat=True).distinct()
+    )
+
+    cancelled_private_class_ids = set(
+        PrivateClassAttendance.objects.filter(
+            date__gte=from_date,
+            date__lte=to_date,
+            status='class_cancelled',
+        ).values_list('private_class_id', flat=True).distinct()
+    )
+
+    group_classes = ClassSession.objects.filter(
+        start_date__lte=to_date,
+        end_date__gte=from_date,
+    ).select_related('pool', 'trainer', 'substitute_trainer')
+
+    private_classes = PrivateClass.objects.filter(
+        start_date__lte=to_date,
+        end_date__gte=from_date,
+    ).select_related('pool', 'trainer', 'substitute_trainer')
+
+    try:
+        selected_pool_id = int(pool_id) if pool_id else None
+    except (TypeError, ValueError):
+        selected_pool_id = None
+
+    if selected_pool_id is not None:
+        group_classes = group_classes.filter(pool_id=selected_pool_id)
+        private_classes = private_classes.filter(pool_id=selected_pool_id)
+
+    if trainer_q:
+        group_classes = group_classes.filter(
+            Q(trainer__full_name__icontains=trainer_q) |
+            Q(trainer__email__icontains=trainer_q) |
+            Q(substitute_trainer__full_name__icontains=trainer_q) |
+            Q(substitute_trainer__email__icontains=trainer_q)
+        )
+        private_classes = private_classes.filter(
+            Q(trainer__full_name__icontains=trainer_q) |
+            Q(trainer__email__icontains=trainer_q) |
+            Q(substitute_trainer__full_name__icontains=trainer_q) |
+            Q(substitute_trainer__email__icontains=trainer_q)
+        )
+
+    if event_type == 'cancelled':
+        group_classes = group_classes.filter(
+            Q(id__in=cancelled_group_class_ids) | Q(is_cancelled=True)
+        )
+        private_classes = private_classes.filter(
+            Q(id__in=cancelled_private_class_ids) | Q(is_cancelled=True)
+        )
+    elif event_type == 'substitute':
+        group_classes = group_classes.filter(
+            substitute_trainer__isnull=False,
+            trainer_id__in=absent_trainer_ids,
+        )
+        private_classes = private_classes.filter(
+            substitute_trainer__isnull=False,
+            trainer_id__in=absent_trainer_ids,
+        )
+    elif event_type == 'trainer_absent':
+        group_classes = group_classes.filter(
+            trainer_id__in=absent_trainer_ids,
+            substitute_trainer__isnull=True,
+            is_cancelled=False,
+        ).exclude(id__in=cancelled_group_class_ids)
+
+        private_classes = private_classes.filter(
+            trainer_id__in=absent_trainer_ids,
+            substitute_trainer__isnull=True,
+            is_cancelled=False,
+        ).exclude(id__in=cancelled_private_class_ids)
+
+    else:
+        group_classes = group_classes.filter(
+            Q(id__in=cancelled_group_class_ids) |
+            Q(is_cancelled=True) |
+            Q(substitute_trainer__isnull=False, trainer_id__in=absent_trainer_ids) |
+            Q(trainer_id__in=absent_trainer_ids)
+        )
+        private_classes = private_classes.filter(
+            Q(id__in=cancelled_private_class_ids) |
+            Q(is_cancelled=True) |
+            Q(substitute_trainer__isnull=False, trainer_id__in=absent_trainer_ids) |
+            Q(trainer_id__in=absent_trainer_ids)
+        )
+
+    group_classes = group_classes.distinct().order_by('-start_date', '-start_time')
+    private_classes = private_classes.distinct().order_by('-start_date', '-start_time')
+
+    return render(
+        request,
+        'dashboards/admin/attendance/class_and_private_classes_cancellation_and_substitute_history.html',
+        {
+            'today': today,
+            'from_date': from_date,
+            'to_date': to_date,
+            'event_type': event_type,
+            'section': section,
+            'pool_id': str(selected_pool_id) if selected_pool_id is not None else '',
+            'trainer_q': trainer_q,
+            'pools': Pool.objects.all().order_by('name'),
+            'group_classes': group_classes if section in {'all', 'group'} else [],
+            'private_classes': private_classes if section in {'all', 'private'} else [],
+            'cancelled_group_class_ids': cancelled_group_class_ids,
+            'cancelled_private_class_ids': cancelled_private_class_ids,
+        },
+    )
+
+
+@login_required
+def admin_group_class_activity_detail(request, class_session_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    class_session = get_object_or_404(ClassSession, id=class_session_id)
+    today = date.today()
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+
+    try:
+        from_date = datetime.strptime(date_from, '%Y-%m-%d').date() if date_from else today
+    except ValueError:
+        from_date = today
+    try:
+        to_date = datetime.strptime(date_to, '%Y-%m-%d').date() if date_to else today
+    except ValueError:
+        to_date = today
+    if from_date > to_date:
+        from_date, to_date = to_date, from_date
+
+    active_from = max(class_session.start_date, from_date)
+    active_to = min(class_session.end_date, to_date)
+
+    trainer_records = TrainerAttendanceRecord.objects.filter(
+        trainer=class_session.trainer,
+        date__gte=active_from,
+        date__lte=active_to,
+    )
+    trainer_status_map = {record.date: record.status for record in trainer_records}
+    trainer_dates = {record.date for record in trainer_records}
+
+    cancelled_dates = set(
+        ClassSessionAttendance.objects.filter(
+            class_session=class_session,
+            date__gte=active_from,
+            date__lte=active_to,
+            status='class_cancelled',
+        ).values_list('date', flat=True).distinct()
+    )
+
+    candidate_dates = sorted(trainer_dates.union(cancelled_dates), reverse=True)
+    daily_rows = []
+    for class_date in candidate_dates:
+        trainer_status_raw = trainer_status_map.get(class_date)
+        if trainer_status_raw == 'absent':
+            trainer_status = 'Absent'
+        elif trainer_status_raw == 'present':
+            trainer_status = 'Present'
+        else:
+            trainer_status = 'Not Marked'
+
+        has_substitute = bool(class_session.substitute_trainer_id and trainer_status_raw == 'absent')
+        is_cancelled_for_day = class_date in cancelled_dates or class_session.is_cancelled
+        if is_cancelled_for_day:
+            status = 'Cancelled'
+        elif trainer_status_raw == 'absent' and not has_substitute:
+            status = 'Not Conducted'
+        else:
+            status = 'Happened'
+
+        daily_rows.append({
+            'date': class_date,
+            'main_trainer_status': trainer_status,
+            'substitute_name': (
+                (class_session.substitute_trainer.full_name or class_session.substitute_trainer.username)
+                if has_substitute else '-'
+            ),
+            'status': status,
+        })
+
+    return render(
+        request,
+        'dashboards/admin/attendance/group_class_activity_detail.html',
+        {
+            'class_session': class_session,
+            'from_date': from_date,
+            'to_date': to_date,
+            'daily_rows': daily_rows,
+        },
+    )
+
+
+@login_required
+def admin_private_class_activity_detail(request, private_class_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    private_class = get_object_or_404(PrivateClass, id=private_class_id)
+    today = date.today()
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+
+    try:
+        from_date = datetime.strptime(date_from, '%Y-%m-%d').date() if date_from else today
+    except ValueError:
+        from_date = today
+    try:
+        to_date = datetime.strptime(date_to, '%Y-%m-%d').date() if date_to else today
+    except ValueError:
+        to_date = today
+    if from_date > to_date:
+        from_date, to_date = to_date, from_date
+
+    active_from = max(private_class.start_date, from_date)
+    active_to = min(private_class.end_date, to_date)
+
+    trainer_records = TrainerAttendanceRecord.objects.filter(
+        trainer=private_class.trainer,
+        date__gte=active_from,
+        date__lte=active_to,
+    )
+    trainer_status_map = {record.date: record.status for record in trainer_records}
+    trainer_dates = {record.date for record in trainer_records}
+
+    cancelled_dates = set(
+        PrivateClassAttendance.objects.filter(
+            private_class=private_class,
+            date__gte=active_from,
+            date__lte=active_to,
+            status='class_cancelled',
+        ).values_list('date', flat=True).distinct()
+    )
+
+    candidate_dates = sorted(trainer_dates.union(cancelled_dates), reverse=True)
+    daily_rows = []
+    for class_date in candidate_dates:
+        trainer_status_raw = trainer_status_map.get(class_date)
+        if trainer_status_raw == 'absent':
+            trainer_status = 'Absent'
+        elif trainer_status_raw == 'present':
+            trainer_status = 'Present'
+        else:
+            trainer_status = 'Not Marked'
+
+        has_substitute = bool(private_class.substitute_trainer_id and trainer_status_raw == 'absent')
+        is_cancelled_for_day = class_date in cancelled_dates or private_class.is_cancelled
+        if is_cancelled_for_day:
+            status = 'Cancelled'
+        elif trainer_status_raw == 'absent' and not has_substitute:
+            status = 'Not Conducted'
+        else:
+            status = 'Happened'
+
+        daily_rows.append({
+            'date': class_date,
+            'main_trainer_status': trainer_status,
+            'substitute_name': (
+                (private_class.substitute_trainer.full_name or private_class.substitute_trainer.username)
+                if has_substitute else '-'
+            ),
+            'status': status,
+        })
+
+    return render(
+        request,
+        'dashboards/admin/attendance/private_class_activity_detail.html',
+        {
+            'private_class': private_class,
+            'from_date': from_date,
+            'to_date': to_date,
+            'daily_rows': daily_rows,
+        },
     )

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Success{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="page-shell">
+    <div class="container" style="max-width: 780px;">
+        <div class="info-card" style="border-color:#bbf7d0;background:#f0fdf4;">
+            <h1 style="margin-bottom:0.5rem;">Payment Successful</h1>
+            <p class="subtitle" style="color:#166534;">Your transaction has been verified and recorded.</p>
+            <ul class="side-list" style="margin-top:0.9rem;">
+                <li><strong>Transaction ID:</strong> {{ payment.uid }}</li>
+                <li><strong>Purpose:</strong> {{ payment.get_purpose_display }}</li>
+                <li><strong>Method:</strong> {{ payment.get_payment_method_display }}</li>
+                <li><strong>Total Paid:</strong> Rs. {{ payment.total_amount }}</li>
+                <li><strong>Status:</strong> {{ payment.get_payment_status_display }}</li>
+            </ul>
+            <div class="inline-actions" style="margin-top:1rem;">
+                <a class="btn-primary" href="{% url 'user_dashboard' %}">Go to Dashboard</a>
+                <a class="btn-secondary" href="{% url 'index' %}">Home</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

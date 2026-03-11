@@ -22,14 +22,6 @@
                 <a class="btn-secondary" href="{% url 'pool_class_types' pool.pool_id %}"><i class="fa-solid fa-arrow-left"></i> Back</a>
             </div>
 
-            <form class="quick-filter range-filter" method="get">
-                <label><strong>Busy Range:</strong></label>
-                <input class="compact-input" type="date" name="busy_from" value="{% if busy_from %}{{ busy_from|date:'Y-m-d' }}{% endif %}">
-                <input class="compact-input" type="date" name="busy_to" value="{% if busy_to %}{{ busy_to|date:'Y-m-d' }}{% endif %}">
-                <button type="submit" class="btn-secondary">Apply</button>
-                <a href="{% url 'select_trainer_for_private_class' pool.pool_id %}" class="btn-secondary">Clear</a>
-            </form>
-
             <div class="pools-grid">
                 {% for row in trainer_cards %}
                 <article class="pool-card">
@@ -38,14 +30,14 @@
                         <span class="pool-status open">Available</span>
                     </div>
                     <p class="pool-meta"><strong>Email:</strong> {{ row.trainer.email }}</p>
-                    <div class="slot-list">
+                    <div class="slot-list tight">
                         {% for slot in row.unavailable_slots %}
                         <span class="slot-chip" title="{{ slot }}">{{ slot }}</span>
                         {% empty %}
                         <span class="slot-chip slot-empty">No conflicts for selected scope</span>
                         {% endfor %}
-</div>
-                    <a class="btn-primary" href="{% url 'book_private_class' pool.pool_id row.trainer.pk %}{% if busy_from or busy_to %}?{% endif %}{% if busy_from %}busy_from={{ busy_from|date:'Y-m-d' }}{% endif %}{% if busy_from and busy_to %}&{% endif %}{% if busy_to %}busy_to={{ busy_to|date:'Y-m-d' }}{% endif %}">Select Trainer</a>
+                    </div>
+                    <a class="btn-primary" href="{% url 'book_private_class' pool.pool_id row.trainer.pk %}">Select Trainer</a>
                 </article>
                 {% empty %}
                 <p class="pools-empty">No trainers available for this pool.</p>
@@ -59,7 +51,6 @@
                 <li><strong>Pool:</strong> {{ pool.name }}</li>
                 <li><strong>Address:</strong> {{ pool.address }}</li>
                 <li><strong>Capacity:</strong> {{ pool.capacity }}</li>
-                <li><strong>Filter Range:</strong> {% if busy_from or busy_to %}{{ busy_from|default:'-' }} to {{ busy_to|default:'-' }}{% else %}Not set{% endif %}</li>
             </ul>
         </aside>
     </div>

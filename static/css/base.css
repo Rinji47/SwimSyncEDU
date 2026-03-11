@@ -35,6 +35,8 @@ body {
 /* Button Styles */
 .btn-primary,
 .btn-secondary,
+.btn-success,
+.btn-danger,
 .btn-sm {
   display: inline-block;
   padding: 0.75rem 1.5rem;
@@ -91,6 +93,11 @@ body {
 .btn-danger {
   background-color: var(--danger);
   color: white;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+  transform: translateY(-2px);
 }
 
 .link {

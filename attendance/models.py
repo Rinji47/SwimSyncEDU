@@ -45,7 +45,6 @@ class PrivateClassAttendance(models.Model):
         ('present', 'Student Present'),
         ('absent', 'Student Absent'),
         ('class_cancelled', 'Class Cancelled'),
-        ('weekend', 'Weekend / No Class'),
     ]
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='present')

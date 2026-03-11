@@ -42,7 +42,13 @@ window.addEventListener("click", (event) => {
 
 function resetModalFields(modal) {
     const form = modal.querySelector("form");
-    if (form) form.reset();
+    if (form) {
+        form.reset();
+        const defaultAction = form.dataset.defaultAction;
+        if (defaultAction) {
+            form.action = defaultAction;
+        }
+    }
 
     if (modal.id === "poolModal") {
         if (marker && map) {
@@ -51,6 +57,12 @@ function resetModalFields(modal) {
 
         document.getElementById("coordinates").value = "";
         document.getElementById("coordDisplay").innerText = "Click on the map to select location";
+        const existingImagesWrap = document.getElementById("existingPoolImages");
+        const existingImagesList = document.getElementById("existingPoolImagesList");
+        if (existingImagesWrap) existingImagesWrap.style.display = "none";
+        if (existingImagesList) existingImagesList.innerHTML = "";
+        const title = modal.querySelector("h2");
+        if (title) title.textContent = "Add New Pool";
     }
 
     if (modal.id === "classModal") {
@@ -157,6 +169,7 @@ function openEditPoolModal(btn) {
     document.getElementById('address').value = pool.address;
     document.getElementById('capacity').value = pool.capacity;
     document.getElementById('coordinates').value = pool.coordinates;
+    renderExistingPoolImages(pool.images || []);
 
     // Parse existing coordinates
     let lat, lng;
@@ -198,6 +211,29 @@ function openEditPoolModal(btn) {
 
     // Show modal
     toggleModal('poolModal');
+}
+
+function renderExistingPoolImages(images) {
+    const existingImagesWrap = document.getElementById("existingPoolImages");
+    const existingImagesList = document.getElementById("existingPoolImagesList");
+    if (!existingImagesWrap || !existingImagesList) return;
+
+    if (!images || images.length === 0) {
+        existingImagesWrap.style.display = "none";
+        existingImagesList.innerHTML = "";
+        return;
+    }
+
+    existingImagesWrap.style.display = "block";
+    existingImagesList.innerHTML = images
+        .map((image) => `
+            <label style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+                <input type="checkbox" name="delete_image_ids" value="${image.id}">
+                <img src="${image.url}" alt="${image.caption || 'Pool image'}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;">
+                <span>${image.caption || "Pool image"}</span>
+            </label>
+        `)
+        .join("");
 }
 
 // CLASS MODAL

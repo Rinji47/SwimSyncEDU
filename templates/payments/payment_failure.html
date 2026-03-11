@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Failed{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="page-shell">
+    <div class="container" style="max-width: 780px;">
+        <div class="info-card" style="border-color:#fecaca;background:#fef2f2;">
+            <h1 style="margin-bottom:0.5rem;">Payment Failed</h1>
+            <p class="subtitle" style="color:#991b1b;">We could not verify your payment.</p>
+            <ul class="side-list" style="margin-top:0.9rem;">
+                <li><strong>Transaction ID:</strong> {{ payment.uid }}</li>
+                <li><strong>Purpose:</strong> {{ payment.get_purpose_display }}</li>
+                <li><strong>Attempted Total:</strong> Rs. {{ payment.total_amount }}</li>
+                <li><strong>Status:</strong> {{ payment.get_payment_status_display }}</li>
+            </ul>
+            <div class="inline-actions" style="margin-top:1rem;">
+                {% if payment.purpose == 'group' and payment.class_session_id %}
+                <a class="btn-primary" href="{% url 'group_class_payment_success' payment.uid %}">Recheck Status</a>
+                <a class="btn-secondary" href="{% url 'group_class_payment_checkout' payment.class_session_id %}">New Payment</a>
+                {% elif payment.purpose == 'private' %}
+                <a class="btn-primary" href="{% url 'private_class_payment_success' payment.uid %}">Recheck Status</a>
+                <a class="btn-secondary" href="{% url 'private_class_payment_checkout' %}">New Payment</a>
+                {% endif %}
+                <a class="btn-secondary" href="{% url 'index' %}">Home</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

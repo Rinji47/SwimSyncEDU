@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
 from classes.models import ClassSession, ClassType, PrivateClass
-from .models import Pool, PoolQuality, TrainerPoolAssignment
+from .models import Pool, PoolImage, PoolQuality, TrainerPoolAssignment
 from django.utils import timezone
 from accounts.models import User
 from datetime import timedelta, datetime, date
@@ -88,7 +88,7 @@ def _build_trainer_unavailability(trainers, busy_from=None, busy_to=None, max_it
 
 
 def nearby_pools(request):
-    pools = Pool.objects.all().order_by('name')
+    pools = Pool.objects.filter(is_closed=False).prefetch_related('images').all().order_by('name')
     lat = request.GET.get('lat')
     lng = request.GET.get('lng')
     raw_radius = request.GET.get('radius', '10')
@@ -198,8 +198,120 @@ def pool_classes(request, class_type_id, pool_id):
     return render(request, 'pools/pool_classes.html', context)
 
 
+def pool_quality_today_list(request):
+    pools = Pool.objects.all().order_by('name')
+    q = (request.GET.get('q') or '').strip()
+    status = request.GET.get('status')
+    lat = request.GET.get('lat')
+    lng = request.GET.get('lng')
+    raw_radius = request.GET.get('radius', '10')
+    today = timezone.localdate()
+
+    def parse_coordinates(raw):
+        if not raw:
+            return None
+        parts = raw.replace(' ', '').split(',')
+        if len(parts) != 2:
+            return None
+        try:
+            return float(parts[0]), float(parts[1])
+        except ValueError:
+            return None
+
+    def fallback_haversine_km(lat1, lon1, lat2, lon2):
+        r = 6371
+        d_lat = radians(lat2 - lat1)
+        d_lon = radians(lon2 - lon1)
+        a = sin(d_lat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(d_lon / 2) ** 2
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return r * c
+
+    try:
+        radius_km = float(raw_radius)
+    except (TypeError, ValueError):
+        radius_km = 10.0
+    radius_km = min(max(radius_km, 1.0), 100.0)
+
+    if q:
+        pools = pools.filter(Q(name__icontains=q) | Q(address__icontains=q))
+    if status == 'open':
+        pools = pools.filter(is_closed=False)
+    elif status == 'closed':
+        pools = pools.filter(is_closed=True)
+
+    pools = list(pools)
+    status_message = f"Enable location to see pools within {radius_km:g} km. Showing all pools for now."
+
+    if lat and lng:
+        try:
+            user_lat = float(lat)
+            user_lng = float(lng)
+        except ValueError:
+            user_lat = None
+            user_lng = None
+
+        if user_lat is not None and user_lng is not None:
+            nearby = []
+            for pool in pools:
+                coords = parse_coordinates(pool.coordinates)
+                if not coords:
+                    continue
+                distance = geodesic((user_lat, user_lng), coords).km if geodesic else fallback_haversine_km(
+                    user_lat,
+                    user_lng,
+                    coords[0],
+                    coords[1],
+                )
+                if distance <= radius_km:
+                    pool.distance_km = round(distance, 1)
+                    nearby.append((distance, pool))
+            if nearby:
+                nearby.sort(key=lambda item: item[0])
+                pools = [item[1] for item in nearby]
+                status_message = f"Showing {len(pools)} pool{'s' if len(pools) != 1 else ''} within {radius_km:g} km."
+            else:
+                status_message = f"No pools within {radius_km:g} km. Showing all pools instead."
+        else:
+            status_message = "We could not read your location. Showing all pools."
+
+    today_qualities = PoolQuality.objects.filter(
+        pool__in=pools,
+        date=today,
+    ).select_related('pool')
+    quality_by_pool_id = {quality.pool_id: quality for quality in today_qualities}
+
+    pool_cards = [
+        {
+            'pool': pool,
+            'today_quality': quality_by_pool_id.get(pool.pool_id),
+        }
+        for pool in pools
+    ]
+
+    context = {
+        'pool_cards': pool_cards,
+        'today': today,
+        'radius_km': int(radius_km) if radius_km.is_integer() else radius_km,
+        'status_message': status_message,
+    }
+    return render(request, 'pools/pool_quality_today_list.html', context)
+
+
+def pool_quality_today_detail(request, pool_id):
+    pool = get_object_or_404(Pool, pk=pool_id)
+    today = timezone.localdate()
+    today_quality = PoolQuality.objects.filter(pool=pool, date=today).order_by('-updated_at').first()
+
+    context = {
+        'pool': pool,
+        'today': today,
+        'today_quality': today_quality,
+    }
+    return render(request, 'pools/pool_quality_today_detail.html', context)
+
+
 def manage_pools(request, pool_id=None):
-    pools = Pool.objects.all()
+    pools = Pool.objects.prefetch_related('images').all()
 
     q = (request.GET.get('q') or '').strip()
     status = request.GET.get('status')
@@ -226,23 +338,41 @@ def manage_pools(request, pool_id=None):
             pass
 
     if pool_id:
-        pool = Pool.objects.get(pk=pool_id)
+        pool = get_object_or_404(Pool.objects.prefetch_related('images'), pk=pool_id)
     else:
         pool = None
 
     if request.method == 'POST':
         name = request.POST.get('name')
         address = request.POST.get('address')
-        capacity = int(request.POST.get('capacity'))
+        capacity_raw = request.POST.get('capacity')
         coordinates = request.POST.get('coordinates')
-        image = request.FILES.get('image')
+        uploaded_images = request.FILES.getlist('images')
+        deleted_image_ids = request.POST.getlist('delete_image_ids')
+
+        try:
+            capacity = int(capacity_raw)
+            if capacity <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            messages.error(request, 'Capacity must be a positive whole number.')
+            return redirect('manage_pools')
 
         if pool_id and not pool:
             messages.error(request, 'Pool not found.')
             return redirect('manage_pools')
         
-        if pool: 
-            if pool.name == name and pool.address == address and pool.capacity == capacity and pool.coordinates == coordinates and (not image or pool.image_url == image.name):
+        if pool:
+            has_new_images = bool(uploaded_images)
+            has_deleted_images = bool(deleted_image_ids)
+            if (
+                pool.name == name
+                and pool.address == address
+                and pool.capacity == capacity
+                and pool.coordinates == coordinates
+                and not has_new_images
+                and not has_deleted_images
+            ):
                 messages.info(request, 'No changes detected.')
                 return redirect('manage_pools')
         
@@ -268,18 +398,32 @@ def manage_pools(request, pool_id=None):
             pool.address = address
             pool.capacity = capacity
             pool.coordinates = coordinates
-            if image:
-                pool.image_url = image
             pool.save()
+
+            if deleted_image_ids:
+                PoolImage.objects.filter(pool=pool, image_id__in=deleted_image_ids).delete()
+
+            current_max = pool.images.order_by('-sort_order').values_list('sort_order', flat=True).first() or 0
+            for index, uploaded in enumerate(uploaded_images, start=1):
+                PoolImage.objects.create(
+                    pool=pool,
+                    image=uploaded,
+                    sort_order=current_max + index,
+                )
             messages.success(request, 'Pool updated successfully.')
         else:
-            Pool.objects.create(
+            created_pool = Pool.objects.create(
                 name=name,
                 address=address,
                 capacity=capacity,
                 coordinates=coordinates,
-                image_url = image if image else None
             )
+            for index, uploaded in enumerate(uploaded_images, start=1):
+                PoolImage.objects.create(
+                    pool=created_pool,
+                    image=uploaded,
+                    sort_order=index,
+                )
             messages.success(request, 'New pool added successfully.')
         
         return redirect('manage_pools')
@@ -471,7 +615,11 @@ def list_trainers(request, pool_id):
         trainers = trainers.exclude(user_id__in=trainers_assigned_id)
 
     busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
-    unavailability_map, total_map = _build_trainer_unavailability(trainers, busy_from=busy_from, busy_to=busy_to)
+    unavailability_map, total_map = _build_trainer_unavailability(
+        trainers,
+        busy_from=busy_from,
+        busy_to=busy_to,
+    )
     trainer_cards = [
         {
             'trainer': trainer,
@@ -527,7 +675,12 @@ def assign_trainer(request, pool_id, trainer_id):
         'busy_from': busy_from,
         'busy_to': busy_to,
     }
-    slots_map, total_map = _build_trainer_unavailability([trainer], busy_from=context['busy_from'], busy_to=context['busy_to'])
+    slots_map, total_map = _build_trainer_unavailability(
+        [trainer],
+        busy_from=context['busy_from'],
+        busy_to=context['busy_to'],
+        max_items=6,
+    )
     shown_slots = slots_map.get(trainer.pk, [])
     total_slots = total_map.get(trainer.pk, 0)
     context['trainer_unavailable_slots'] = shown_slots
@@ -542,4 +695,3 @@ def unassign_trainer(request, assignment_id):
     assignment.save(update_fields=['end_date', 'is_active'])
     messages.success(request, 'Trainer unassigned successfully.')
     return redirect('assign_trainer_manager')
-

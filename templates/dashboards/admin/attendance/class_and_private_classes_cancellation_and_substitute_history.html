@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Class Activity History{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/admin_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="dashboard-header">
+            <h1>Class Activity History</h1>
+        </div>
+
+        <form class="quick-filter range-filter" method="get">
+            <label><strong>Date Range:</strong></label>
+            <input class="compact-input" type="date" name="date_from" value="{{ from_date|date:'Y-m-d' }}">
+            <input class="compact-input" type="date" name="date_to" value="{{ to_date|date:'Y-m-d' }}">
+
+            <select class="filter-select" name="section">
+                <option value="all" {% if section == 'all' %}selected{% endif %}>All Sections</option>
+                <option value="group" {% if section == 'group' %}selected{% endif %}>Group Classes</option>
+                <option value="private" {% if section == 'private' %}selected{% endif %}>Private Classes</option>
+            </select>
+
+            <select class="filter-select" name="event">
+                <option value="all" {% if event_type == 'all' %}selected{% endif %}>All Events</option>
+                <option value="cancelled" {% if event_type == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                <option value="substitute" {% if event_type == 'substitute' %}selected{% endif %}>Substitute Assigned</option>
+                <option value="trainer_absent" {% if event_type == 'trainer_absent' %}selected{% endif %}>Trainer Absent</option>
+            </select>
+
+            <select class="filter-select" name="pool">
+                <option value="">All Pools</option>
+                {% for pool in pools %}
+                <option value="{{ pool.pool_id }}" {% if pool_id == pool.pool_id|stringformat:'s' %}selected{% endif %}>{{ pool.name }}</option>
+                {% endfor %}
+            </select>
+
+            <input type="text" class="filter-input" name="trainer" placeholder="Trainer name/email" value="{{ trainer_q }}">
+
+            <button type="submit" class="btn-secondary">Apply</button>
+            <a href="{% url 'class_private_activity_history' %}" class="btn-secondary">Clear</a>
+        </form>
+
+        {% if section == 'all' or section == 'group' %}
+        <div class="dashboard-section">
+            <h2>Group Class Sessions</h2>
+            <div class="card-grid">
+                {% for cls in group_classes %}
+                <article class="class-card">
+                    <h3>{{ cls.class_name }}</h3>
+                    <p><strong>Pool:</strong> {{ cls.pool.name }}</p>
+                    <p><strong>Trainer:</strong> {{ cls.trainer.full_name|default:cls.trainer.username }}</p>
+                    <p><strong>Dates:</strong> {{ cls.start_date }} to {{ cls.end_date }}</p>
+                    <p><strong>Time:</strong> {{ cls.start_time }} - {{ cls.end_time }}</p>
+                    <div class="attendance-actions">
+                        {% if cls.is_cancelled or cls.id in cancelled_group_class_ids %}
+                        <span class="attendance-status absent">Cancelled</span>
+                        {% endif %}
+                        {% if cls.substitute_trainer %}
+                        <span class="attendance-status present">Sub: {{ cls.substitute_trainer.full_name|default:cls.substitute_trainer.username }}</span>
+                        {% endif %}
+                        <a href="{% url 'admin_group_class_activity_detail' cls.id %}?date_from={{ from_date|date:'Y-m-d' }}&date_to={{ to_date|date:'Y-m-d' }}" class="btn-sm btn-secondary">View Daily Activity</a>
+                    </div>
+                </article>
+                {% empty %}
+                <p>No group class history for selected filters.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if section == 'all' or section == 'private' %}
+        <div class="dashboard-section">
+            <h2>Private Classes</h2>
+            <div class="card-grid">
+                {% for cls in private_classes %}
+                <article class="class-card">
+                    <h3>Private: {{ cls.user.full_name|default:cls.user.username }}</h3>
+                    <p><strong>Pool:</strong> {{ cls.pool.name }}</p>
+                    <p><strong>Trainer:</strong> {{ cls.trainer.full_name|default:cls.trainer.username }}</p>
+                    <p><strong>Dates:</strong> {{ cls.start_date }} to {{ cls.end_date }}</p>
+                    <p><strong>Time:</strong> {{ cls.start_time }} - {{ cls.end_time }}</p>
+                    <div class="attendance-actions">
+                        {% if cls.is_cancelled or cls.id in cancelled_private_class_ids %}
+                        <span class="attendance-status absent">Cancelled</span>
+                        {% endif %}
+                        {% if cls.substitute_trainer %}
+                        <span class="attendance-status present">Sub: {{ cls.substitute_trainer.full_name|default:cls.substitute_trainer.username }}</span>
+                        {% endif %}
+                        <a href="{% url 'admin_private_class_activity_detail' cls.id %}?date_from={{ from_date|date:'Y-m-d' }}&date_to={{ to_date|date:'Y-m-d' }}" class="btn-sm btn-secondary">View Daily Activity</a>
+                    </div>
+                </article>
+                {% empty %}
+                <p>No private class history for selected filters.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

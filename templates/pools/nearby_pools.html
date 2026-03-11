@@ -20,6 +20,7 @@
             <li><a href="{% url 'index' %}#roles">For You</a></li>
             <li><a href="{% url 'index' %}#about">About</a></li>
             <li><a href="{% url 'nearby_pools' %}" class="active-link">Pools</a></li>
+            <li><a href="{% url 'pool_quality_today_list' %}">Pool Quality</a></li>
             {% if request.user.is_authenticated %}
                 {% if request.user.role == 'admin' %}
                     <li><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
@@ -79,14 +80,33 @@
                         {% if pool.distance_km != None %}
                         <span class="pool-distance"><i class="fa-solid fa-route"></i> {{ pool.distance_km }} km</span>
                         {% endif %}
-                        <span class="pool-status {% if pool.is_closed %}closed{% else %}open{% endif %}">
-                            {% if pool.is_closed %}Closed{% else %}Open{% endif %}
-                        </span>
                     </div>
                 </div>
                 <p class="pool-address"><i class="fa-solid fa-location-dot"></i> {{ pool.address }}</p>
                 <p class="pool-meta"><strong>Capacity:</strong> {{ pool.capacity }}</p>
-                {% if pool.image_url %}
+                {% if pool.images.all %}
+                    <div class="pool-image-carousel" data-carousel>
+                        <div class="pool-image-track">
+                            {% for image in pool.images.all %}
+                            <img
+                                src="{{ image.image.url }}"
+                                alt="{{ image.caption|default:pool.name }}"
+                                class="pool-image slide {% if forloop.first %}active{% endif %}"
+                                data-slide
+                            >
+                            {% endfor %}
+                        </div>
+                        {% if pool.images.all|length > 1 %}
+                        <button class="carousel-btn prev" type="button" data-prev aria-label="Previous image">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <button class="carousel-btn next" type="button" data-next aria-label="Next image">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                        <span class="carousel-indicator" data-indicator>1 / {{ pool.images.all|length }}</span>
+                        {% endif %}
+                    </div>
+                {% elif pool.image_url %}
                     <img src="{{ pool.image_url }}" alt="{{ pool.name }}" class="pool-image">
                 {% else %}
                     <div class="pool-image placeholder">No image</div>

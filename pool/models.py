@@ -18,6 +18,21 @@ class Pool(models.Model):
         return self.name
     
 
+class PoolImage(models.Model):
+    image_id = models.AutoField(primary_key=True)
+    pool = models.ForeignKey(Pool, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='pool_images/')
+    caption = models.CharField(max_length=120, blank=True, null=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['sort_order', 'image_id']
+
+    def __str__(self):
+        return f"{self.pool.name} Image {self.image_id}"
+    
+
 class PoolQuality(models.Model):
     quality_id = models.AutoField(primary_key=True)
     pool = models.ForeignKey(Pool, on_delete=models.CASCADE, related_name='qualities')

@@ -24,7 +24,7 @@
 
         <div class="dashboard-section">
             <h2>Current Private Class Price</h2>
-            <p><strong>Current Price Per Day:</strong> ${{ private_class_price_per_day }}</p>
+            <p><strong>Current Price Per Day:</strong> Rs. {{ private_class_price_per_day }}</p>
         </div>
 
         <div class="dashboard-section">
@@ -38,7 +38,7 @@
                         <span class="class-status status-cancelled">Ended</span>
                     {% endif %}
                     <h3>Private Class Price</h3>
-                    <p><strong>Price Per Day:</strong> ${{ price.private_class_price_per_day }}</p>
+                    <p><strong>Price Per Day:</strong> Rs. {{ price.private_class_price_per_day }}</p>
                     <p><strong>Set On:</strong> {{ price.created_at|date:"M d, Y H:i" }}</p>
                     <p><strong>Ended On:</strong>
                         {% if price.end_date %}
@@ -64,7 +64,7 @@
                 <form method="POST" action="{% url 'new_private_class_price' %}">
                     {% csrf_token %}
                     <div class="form-group">
-                        <label for="private_class_price_per_day">New Price ($)</label>
+                        <label for="private_class_price_per_day">New Price (Rs.)</label>
                         <input type="number" step="0.01" id="private_class_price_per_day" name="private_class_price_per_day" required placeholder="Enter new price">
                     </div>
                     <div class="modal-footer">

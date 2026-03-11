@@ -16,6 +16,7 @@
         <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
         <ul class="nav-menu" id="navMenu">
             <li><a href="{% url 'nearby_pools' %}" class="active-link">Pools</a></li>
+            <li><a href="{% url 'pool_quality_today_list' %}">Pool Quality</a></li>
             <li><a href="{% url 'index' %}#about">About</a></li>
         </ul>
     </div>
@@ -53,7 +54,7 @@
                         </span>
                     </div>
                     <p class="pool-address">{{ class_item.description|default:'No description provided.' }}</p>
-                    <p class="pool-meta"><strong>Price:</strong> ${{ class_item.cost }}</p>
+                    <p class="pool-meta"><strong>Price:</strong> Rs. {{ class_item.cost }}</p>
                     <a class="btn-secondary" href="{% url 'pool_classes' pool.pool_id class_item.class_type_id %}">View Sessions</a>
                 </article>
                 {% empty %}

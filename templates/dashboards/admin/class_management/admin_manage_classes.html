@@ -76,7 +76,7 @@
                 <p><strong>Pool:</strong> {{ session.pool.name }}</p>
                 <p><strong>Trainer:</strong> {{ session.trainer.full_name|default:session.trainer.username }}</p>
                 <p><strong>Dates:</strong> {{ session.start_date|date:"M d" }} - {{ session.end_date|date:"M d" }}</p>
-                <p><strong>Total Price:</strong> ${{ session.total_price }}</p>
+                <p><strong>Total Price:</strong> Rs. {{ session.total_price }}</p>
                 <p><strong>Total Bookings:</strong> {{ session.total_bookings|default:0 }}</p>
 
                 <div class="card-actions">
@@ -147,7 +147,7 @@
             </div>
             <div class="detail-item">
                 <span class="detail-label">Total Price</span>
-                <span class="detail-value">$<span id="view_price"></span></span>
+                <span class="detail-value">Rs. <span id="view_price"></span></span>
             </div>
             <div class="detail-item">
                 <span class="detail-label">Total Bookings</span>

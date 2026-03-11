@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Today's Pool Quality - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/landing.css' %}">
+<link rel="stylesheet" href="{% static 'css/pools.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+{% endblock %}
+
+{% block content %}
+<nav class="navbar">
+    <div class="container">
+        <a class="nav-brand" href="{% url 'index' %}">SwimSync EDU</a>
+        <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
+        <ul class="nav-menu" id="navMenu">
+            <li><a href="{% url 'nearby_pools' %}">Pools</a></li>
+            <li><a href="{% url 'pool_quality_today_list' %}" class="active-link">Pool Quality</a></li>
+            <li><a href="{% url 'index' %}#about">About</a></li>
+        </ul>
+    </div>
+</nav>
+
+<section class="page-shell">
+    <div class="container">
+        <div class="page-head">
+            <div>
+                <h1>View Today's Pool Quality</h1>
+                <p class="subtitle">Select any pool and check the latest quality report for {{ today|date:"M d, Y" }}.</p>
+            </div>
+            <div class="inline-actions">
+                <button class="btn-secondary" type="button" id="requestLocationBtn"><i class="fa-solid fa-location-crosshairs"></i> Use My Location</button>
+                <a class="btn-secondary" href="{% url 'pool_quality_today_list' %}"><i class="fa-solid fa-list"></i> Show All</a>
+                <a class="btn-secondary" href="{% url 'nearby_pools' %}"><i class="fa-solid fa-arrow-left"></i> Back to Pools</a>
+            </div>
+        </div>
+
+        <form class="quick-filter range-filter" method="get">
+            <input type="text" name="q" class="filter-input" placeholder="Search pool by name or address" value="{{ request.GET.q|default_if_none:'' }}">
+            <select name="status" class="filter-select">
+                <option value="">All Status</option>
+                <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Open</option>
+                <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>Closed</option>
+            </select>
+            <input
+                id="radiusInput"
+                name="radius"
+                class="compact-input"
+                type="number"
+                min="1"
+                max="100"
+                step="1"
+                value="{{ radius_km }}"
+            >
+            <button type="submit" class="btn-secondary">Apply</button>
+            <a href="{% url 'pool_quality_today_list' %}" class="btn-secondary">Clear</a>
+        </form>
+        <p class="pools-status" id="poolsStatus">{{ status_message }}</p>
+
+        <div class="pools-grid">
+            {% for card in pool_cards %}
+            <article class="pool-card">
+                <div class="pool-card-header">
+                    <h3>{{ card.pool.name }}</h3>
+                    <div class="pool-badges">
+                        {% if card.pool.distance_km != None %}
+                        <span class="pool-distance"><i class="fa-solid fa-route"></i> {{ card.pool.distance_km }} km</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <p class="pool-address"><i class="fa-solid fa-location-dot"></i> {{ card.pool.address }}</p>
+                <p class="pool-meta">
+                    <strong>Today's Update:</strong>
+                    {% if card.today_quality %}
+                        {{ card.today_quality.cleanliness_rating }}/5 available
+                    {% else %}
+                        Pending
+                    {% endif %}
+                </p>
+                <a class="btn-primary" href="{% url 'pool_quality_today_detail' card.pool.pool_id %}">View Today's Quality</a>
+            </article>
+            {% empty %}
+            <p class="pools-empty">No pools found.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/pools.js' %}"></script>
+{% endblock %}

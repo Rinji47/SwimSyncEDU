@@ -64,7 +64,10 @@
                     {% empty %}
                     <span class="slot-chip slot-empty">No conflicts for selected scope</span>
                     {% endfor %}
-</div>
+                    {% if trainer_unavailable_more > 0 %}
+                    <span class="slot-chip slot-more">+{{ trainer_unavailable_more }} more conflicts</span>
+                    {% endif %}
+                </div>
             </aside>
         </div>
     </main>

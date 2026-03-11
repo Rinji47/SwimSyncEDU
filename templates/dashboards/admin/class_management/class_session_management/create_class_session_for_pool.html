@@ -52,7 +52,7 @@
 
                     <div>
                         <label for="start_date">Start Date</label>
-                        <input type="date" id="start_date" name="start_date" required>
+                        <input type="date" id="start_date" name="start_date" min="{{ today|date:'Y-m-d' }}" max="{{ max_start_date|date:'Y-m-d' }}" required>
                     </div>
                     <div>
                         <label for="end_date">End Date</label>
@@ -97,7 +97,10 @@
                     {% empty %}
                     <span class="slot-chip slot-empty">No conflicts for selected scope</span>
                     {% endfor %}
-</div>
+                    {% if trainer_unavailable_more > 0 %}
+                    <span class="slot-chip slot-more">+{{ trainer_unavailable_more }} more conflicts</span>
+                    {% endif %}
+                </div>
             </aside>
         </div>
     </main>

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Private Class Payment{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pools.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+<link rel="stylesheet" href="{% static 'css/payments.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="page-shell">
+    <div class="container payment-shell">
+        <div>
+            {% include "components/message.html" %}
+            <div class="page-head">
+                <div>
+                    <h1>Private Class Payment</h1>
+                    <p class="subtitle">Review details and continue with eSewa payment.</p>
+                </div>
+                <a class="btn-secondary" href="{% url 'book_private_class' pool.pool_id trainer.user_id %}">
+                    <i class="fa-solid fa-arrow-left"></i> Back
+                </a>
+            </div>
+
+            <div class="payment-card">
+                <h3 style="margin-bottom: 0.8rem;">Private Class Details</h3>
+                <ul class="side-list">
+                    <li><strong>Pool:</strong> {{ pool.name }}</li>
+                    <li><strong>Trainer:</strong> {{ trainer.full_name|default:trainer.username }}</li>
+                    <li><strong>Dates:</strong> {{ start_date }} to {{ end_date }}</li>
+                    <li><strong>Time:</strong> {{ start_time }} - {{ end_time }}</li>
+                    <li><strong>Weekdays Count:</strong> {{ weekdays_count }}</li>
+                    <li><strong>Price Per Day:</strong> Rs. {{ price_per_day }}</li>
+                </ul>
+            </div>
+        </div>
+
+        <aside class="payment-card">
+            <h3><i class="fa-solid fa-receipt"></i> Payment Summary</h3>
+            <div class="gateway-chip"><i class="fa-solid fa-shield-halved"></i> eSewa Gateway</div>
+            <div class="payment-summary" style="margin-top:0.85rem;">
+                <div class="payment-row"><span>Base Amount</span><strong>Rs. {{ base_amount }}</strong></div>
+                <div class="payment-row"><span>Tax (13%)</span><strong>Rs. {{ tax_amount }}</strong></div>
+                <div class="payment-row"><span>Service Charge</span><strong>Rs. {{ service_charge }}</strong></div>
+                <div class="payment-row"><span>Delivery Charge</span><strong>Rs. {{ delivery_charge }}</strong></div>
+                <div class="payment-row payment-total"><span>Total Payable</span><strong>Rs. {{ total_amount }}</strong></div>
+            </div>
+            <div class="payment-note">
+                You will continue through the eSewa payment step. Booking is confirmed only after successful payment.
+            </div>
+
+            <form method="post" action="{{ esewa_form_url }}" class="pay-actions">
+                {% csrf_token %}
+                <input type="hidden" name="amount" value="{{ esewa_fields.amount }}">
+                <input type="hidden" name="tax_amount" value="{{ esewa_fields.tax_amount }}">
+                <input type="hidden" name="total_amount" value="{{ esewa_fields.total_amount }}">
+                <input type="hidden" name="transaction_uuid" value="{{ esewa_fields.transaction_uuid }}">
+                <input type="hidden" name="product_code" value="{{ esewa_fields.product_code }}">
+                <input type="hidden" name="product_service_charge" value="{{ esewa_fields.product_service_charge }}">
+                <input type="hidden" name="product_delivery_charge" value="{{ esewa_fields.product_delivery_charge }}">
+                <input type="hidden" name="success_url" value="{{ esewa_fields.success_url }}">
+                <input type="hidden" name="failure_url" value="{{ esewa_fields.failure_url }}">
+                <input type="hidden" name="signed_field_names" value="{{ esewa_fields.signed_field_names }}">
+                <input type="hidden" name="signature" value="{{ esewa_fields.signature }}">
+                <button type="submit" class="btn-primary btn-esewa">
+                    Pay with eSewa
+                </button>
+                <a class="btn-secondary" href="{% url 'private_class_payment_cancel' %}" style="text-align:center;">Cancel</a>
+            </form>
+        </aside>
+    </div>
+</section>
+{% endblock %}

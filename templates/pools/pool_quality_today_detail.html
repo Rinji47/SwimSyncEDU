@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Today's Quality - {{ pool.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/landing.css' %}">
+<link rel="stylesheet" href="{% static 'css/pools.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+{% endblock %}
+
+{% block content %}
+<nav class="navbar">
+    <div class="container">
+        <a class="nav-brand" href="{% url 'index' %}">SwimSync EDU</a>
+        <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
+        <ul class="nav-menu" id="navMenu">
+            <li><a href="{% url 'nearby_pools' %}">Pools</a></li>
+            <li><a href="{% url 'pool_quality_today_list' %}" class="active-link">Pool Quality</a></li>
+            <li><a href="{% url 'index' %}#about">About</a></li>
+        </ul>
+    </div>
+</nav>
+
+<section class="page-shell">
+    <div class="container two-col">
+        <div>
+            <div class="page-head">
+                <div>
+                    <h1>{{ pool.name }}</h1>
+                    <p class="subtitle">Today's water quality for {{ today|date:"M d, Y" }}.</p>
+                </div>
+                <a class="btn-secondary" href="{% url 'pool_quality_today_list' %}"><i class="fa-solid fa-arrow-left"></i> All Pools</a>
+            </div>
+
+            <article class="info-card">
+                {% if today_quality %}
+                <div class="pools-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                    <div class="pool-card">
+                        <p class="pool-meta"><strong>Cleanliness</strong></p>
+                        <h3>{{ today_quality.cleanliness_rating }}/5</h3>
+                    </div>
+                    <div class="pool-card">
+                        <p class="pool-meta"><strong>pH Level</strong></p>
+                        <h3>{% if today_quality.pH_level %}{{ today_quality.pH_level }}{% else %}N/A{% endif %}</h3>
+                    </div>
+                    <div class="pool-card">
+                        <p class="pool-meta"><strong>Temperature</strong></p>
+                        <h3>{% if today_quality.water_temperature %}{{ today_quality.water_temperature }} C{% else %}N/A{% endif %}</h3>
+                    </div>
+                    <div class="pool-card">
+                        <p class="pool-meta"><strong>Chlorine</strong></p>
+                        <h3>{% if today_quality.chlorine_level %}{{ today_quality.chlorine_level }} ppm{% else %}N/A{% endif %}</h3>
+                    </div>
+                </div>
+                <p class="pools-status" style="margin-top: 1rem;">Last updated: {{ today_quality.updated_at|date:"M d, Y H:i" }}</p>
+                {% else %}
+                <p class="pools-status warning">Quality update pending for today.</p>
+                {% endif %}
+            </article>
+        </div>
+
+        <aside class="side-panel">
+            <h3><i class="fa-solid fa-circle-info"></i> Pool Snapshot</h3>
+            <ul class="side-list">
+                <li><strong>Name:</strong> {{ pool.name }}</li>
+                <li><strong>Address:</strong> {{ pool.address }}</li>
+                <li><strong>Capacity:</strong> {{ pool.capacity }}</li>
+                <li><strong>Status:</strong> {% if pool.is_closed %}Closed{% else %}Open{% endif %}</li>
+            </ul>
+        </aside>
+    </div>
+</section>
+{% endblock %}

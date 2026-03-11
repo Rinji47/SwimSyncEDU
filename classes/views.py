@@ -6,6 +6,7 @@ from pool.models import Pool, TrainerPoolAssignment
 from accounts.models import User
 from datetime import date, datetime, timedelta, timezone
 from django.contrib.auth.decorators import login_required
+from decimal import Decimal, ROUND_HALF_UP
 
 # Create your views here.
 def _parse_busy_range(raw_from, raw_to):
@@ -79,6 +80,7 @@ def _build_trainer_unavailability(trainers, busy_from=None, busy_to=None, max_it
         visible[trainer_id] = deduped[:max_items] if max_items else deduped
 
     return visible, totals
+
 
 def manage_class_types(request, class_type_id=None):
     class_types = ClassType.objects.all()
@@ -239,7 +241,11 @@ def select_trainer_for_class_session(request, pool_id):
     pool = get_object_or_404(Pool, pk=pool_id, is_closed=False)
     trainers = User.objects.filter(role='trainer', trainerpoolassignment__pool=pool, trainerpoolassignment__is_active=True).distinct()
     busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
-    unavailability_map, total_map = _build_trainer_unavailability(trainers, busy_from=busy_from, busy_to=busy_to)
+    unavailability_map, total_map = _build_trainer_unavailability(
+        trainers,
+        busy_from=busy_from,
+        busy_to=busy_to,
+    )
     trainer_cards = [
         {
             'trainer': trainer,
@@ -291,8 +297,9 @@ def create_class_session_for_pool(request, pool_id, trainer_id):
                 return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
 
             today = datetime.now().date()
-            if start_date > today + timedelta(days=120):
-                messages.error(request, 'Start date cannot be more than 4 months from today.')
+            max_start_date = today + timedelta(days=31)
+            if start_date > max_start_date:
+                messages.error(request, 'Start date cannot be more than 1 month from today.')
                 return redirect('create_class_session_for_pool', pool_id=pool_id, trainer_id=trainer_id)
 
             if start_time < datetime.strptime('06:00', '%H:%M').time() or end_time > datetime.strptime('19:00', '%H:%M').time():
@@ -367,13 +374,20 @@ def create_class_session_for_pool(request, pool_id, trainer_id):
     # For GET requests, just render the form
     class_types = ClassType.objects.filter(is_closed=False).all()
     busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
-    unavailability_map, total_map = _build_trainer_unavailability([trainer], busy_from=busy_from, busy_to=busy_to)
+    unavailability_map, total_map = _build_trainer_unavailability(
+        [trainer],
+        busy_from=busy_from,
+        busy_to=busy_to,
+        max_items=6,
+    )
     shown_slots = unavailability_map.get(trainer.pk, [])
     total_slots = total_map.get(trainer.pk, 0)
     return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
         'pool': pool,
         'trainer': trainer,
         'class_types': class_types,
+        'today': date.today(),
+        'max_start_date': date.today() + timedelta(days=31),
         'trainer_unavailable_slots': shown_slots,
         'trainer_unavailable_total': total_slots,
         'trainer_unavailable_more': max(total_slots - len(shown_slots), 0),
@@ -405,17 +419,7 @@ def book_class(request, class_id):
     if class_session.end_date is not None and class_session.end_date < datetime.now().date():
         messages.error(request, 'Cannot book a past class session.')
         return redirect('pool_classes')
-    
-    if ClassBooking.objects.filter(user=request.user, class_session=class_session, is_cancelled=False).exists():
-        messages.error(request, 'You have already booked this class session.')
-    elif class_session.total_bookings >= class_session.seats:
-        messages.error(request, 'No seats available for this class session.')
-    else:
-        ClassBooking.objects.create(user=request.user, class_session=class_session)
-        class_session.total_bookings += 1
-        class_session.save(update_fields=['total_bookings'])
-        messages.success(request, 'Class session booked successfully.')
-    return redirect('my_bookings')
+    return redirect('group_class_payment_checkout', class_id=class_session.id)
 
 def cancel_booked_class(request, booking_id):
     booking = get_object_or_404(ClassBooking, pk=booking_id, user=request.user, is_cancelled=False)
@@ -489,7 +493,7 @@ def new_private_class_price(request):
     return redirect('manage_private_class_prices')
 
 def manage_private_classes(request):
-    private_classes = ClassSession.objects.filter(class_type__duration_days=0).select_related('pool', 'trainer', 'class_type').order_by('-start_date')
+    private_classes = PrivateClass.objects.select_related('pool', 'trainer', 'user').order_by('-start_date')
     
     q = (request.GET.get('q') or '').strip()
     status = request.GET.get('status')
@@ -498,10 +502,13 @@ def manage_private_classes(request):
 
     if q:
         private_classes = private_classes.filter(
-            Q(class_name__icontains=q) |
+            Q(user__full_name__icontains=q) |
+            Q(user__username__icontains=q) |
+            Q(user__email__icontains=q) |
             Q(pool__name__icontains=q) |
             Q(trainer__full_name__icontains=q) |
-            Q(trainer__username__icontains=q)
+            Q(trainer__username__icontains=q) |
+            Q(trainer__email__icontains=q)
         )
 
     if status == 'active':
@@ -549,7 +556,11 @@ def select_trainer_for_private_class(request, pool_id):
     pool = get_object_or_404(Pool, pk=pool_id, is_closed=False)
     trainers = User.objects.filter(role='trainer', trainerpoolassignment__pool=pool, trainerpoolassignment__is_active=True).distinct()
     busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
-    unavailability_map, total_map = _build_trainer_unavailability(trainers, busy_from=busy_from, busy_to=busy_to)
+    unavailability_map, total_map = _build_trainer_unavailability(
+        trainers,
+        busy_from=busy_from,
+        busy_to=busy_to,
+    )
     trainer_cards = [
         {
             'trainer': trainer,
@@ -607,8 +618,9 @@ def book_private_class(request, pool_id, trainer_id):
             return redirect('select_trainer_for_private_class', pool_id=pool_id)
 
         today = datetime.now().date()
-        if start_date > today + timedelta(days=120):
-            messages.error(request, 'Start date cannot be more than 4 months from today.')
+        max_start_date = today + timedelta(days=31)
+        if start_date > max_start_date:
+            messages.error(request, 'Start date cannot be more than 1 month from today.')
             return redirect('select_trainer_for_private_class', pool_id=pool_id)
 
         if start_time < datetime.strptime('06:00', '%H:%M').time() or end_time > datetime.strptime('19:00', '%H:%M').time():
@@ -680,23 +692,46 @@ def book_private_class(request, pool_id, trainer_id):
             )
             return redirect('select_trainer_for_private_class', pool_id=pool_id)
 
-        PrivateClass.objects.create(
-            user=request.user,
-            trainer=trainer,
-            pool=pool,
-            start_date=start_date,
-            end_date=end_date,
-            start_time=start_time,
-            end_time=end_time
-        )
+        weekdays_count = 0
+        day_cursor = start_date
+        while day_cursor <= end_date:
+            if day_cursor.weekday() < 5:
+                weekdays_count += 1
+            day_cursor += timedelta(days=1)
+        if weekdays_count <= 0:
+            messages.error(request, 'Selected date range has no weekdays for private class.')
+            return redirect('book_private_class', pool_id=pool_id, trainer_id=trainer_id)
 
-        messages.success(request, 'Private class booked successfully.')
-        return redirect('my_private_classes')
+        pricing = PrivateClassDetails.objects.order_by('-created_at').first()
+        price_per_day = Decimal(pricing.private_class_price_per_day if pricing else 0).quantize(Decimal('0.01'))
+        base_amount = (price_per_day * Decimal(weekdays_count)).quantize(Decimal('0.01'))
+        tax_amount = (base_amount * Decimal('0.13')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        total_amount = (base_amount + tax_amount).quantize(Decimal('0.01'))
+
+        request.session['private_class_checkout'] = {
+            'pool_id': pool_id,
+            'trainer_id': trainer_id,
+            'start_date': start_date.isoformat(),
+            'end_date': end_date.isoformat(),
+            'start_time': start_time.strftime('%H:%M'),
+            'end_time': end_time.strftime('%H:%M'),
+            'weekdays_count': weekdays_count,
+            'price_per_day': str(price_per_day),
+            'base_amount': str(base_amount),
+            'tax_amount': str(tax_amount),
+            'total_amount': str(total_amount),
+        }
+        return redirect('private_class_payment_checkout')
 
     pool = get_object_or_404(Pool, pk=pool_id, is_closed=False)
     trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
     busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
-    unavailability_map, total_map = _build_trainer_unavailability([trainer], busy_from=busy_from, busy_to=busy_to)
+    unavailability_map, total_map = _build_trainer_unavailability(
+        [trainer],
+        busy_from=busy_from,
+        busy_to=busy_to,
+        max_items=6,
+    )
     shown_slots = unavailability_map.get(trainer.pk, [])
     total_slots = total_map.get(trainer.pk, 0)
     return render(request, 'classes/book_private_class.html', {
@@ -704,6 +739,8 @@ def book_private_class(request, pool_id, trainer_id):
         'trainer_id': trainer_id,
         'pool': pool,
         'trainer': trainer,
+        'today': date.today(),
+        'max_start_date': date.today() + timedelta(days=31),
         'trainer_unavailable_slots': shown_slots,
         'trainer_unavailable_total': total_slots,
         'trainer_unavailable_more': max(total_slots - len(shown_slots), 0),

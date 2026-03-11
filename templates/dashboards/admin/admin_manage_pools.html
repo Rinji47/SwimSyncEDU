@@ -92,7 +92,16 @@
                                 "name": "{{ pool.name|escapejs }}",
                                 "address": "{{ pool.address|escapejs }}",
                                 "capacity": "{{ pool.capacity }}",
-                                "coordinates": "{{ pool.coordinates|escapejs }}"
+                                "coordinates": "{{ pool.coordinates|escapejs }}",
+                                "images": [
+                                    {% for image in pool.images.all %}
+                                    {
+                                        "id": "{{ image.image_id }}",
+                                        "url": "{{ image.image.url|escapejs }}",
+                                        "caption": "{{ image.caption|default_if_none:''|escapejs }}"
+                                    }{% if not forloop.last %},{% endif %}
+                                    {% endfor %}
+                                ]
                             }'
                         >Edit</button>
                         <button class="btn-sm btn-danger">
@@ -116,7 +125,7 @@
             <h2>Add New Pool</h2>
             <span class="close" onclick="toggleModal('poolModal')">&times;</span>
         </div>
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" action="{% url 'manage_pools' %}" data-default-action="{% url 'manage_pools' %}">
             {% csrf_token %}
             <div class="form-grid">
                 <div class="form-group">
@@ -138,8 +147,14 @@
                     <small id="coordDisplay">Click on the map to select location</small>
                 </div>
                 <div class="form-group">
-                    <label for="image">Pool Image</label>
-                    <input type="file" id="image" name="image_url" accept="image/*">
+                    <label for="images">Pool Images</label>
+                    <input type="file" id="images" name="images" accept="image/*" multiple>
+                    <small>Upload one or more images. You can add more while editing.</small>
+                </div>
+                <div class="form-group full-width" id="existingPoolImages" style="display: none;">
+                    <label>Existing Images (Edit Mode)</label>
+                    <div id="existingPoolImagesList"></div>
+                    <small>Select images to remove when saving.</small>
                 </div>
             </div>
             <div class="modal-footer">

@@ -3,6 +3,8 @@ from . import views
 
 urlpatterns = [
     path('nearby/', views.nearby_pools, name='nearby_pools'),
+    path('quality/today/', views.pool_quality_today_list, name='pool_quality_today_list'),
+    path('quality/today/<int:pool_id>/', views.pool_quality_today_detail, name='pool_quality_today_detail'),
     path('pool/<int:pool_id>/classes/', views.pool_class_types, name='pool_class_types'),
     path('pool/<int:pool_id>/classes/<int:class_type_id>/', views.pool_classes, name='pool_classes'),
     path('manage_pools/', views.manage_pools, name='manage_pools'),

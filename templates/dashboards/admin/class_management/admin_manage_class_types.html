@@ -63,7 +63,7 @@
                     </div>
                     <div class="data-card-row">
                         <span class="data-card-label">Cost:</span>
-                        <span>${{ type.cost }}</span>
+                        <span>Rs. {{ type.cost }}</span>
                     </div>
                     <div class="data-card-row">
                         <span class="data-card-label">Duration:</span>
@@ -111,7 +111,7 @@
                 <input type="text" id="type_name" name="name" required>
             </div>
             <div class="form-group">
-                <label for="cost">Cost ($)</label>
+                <label for="cost">Cost (Rs.)</label>
                 <input type="number" step="0.01" id="cost" name="cost" required>
             </div>
             <!-- Removed is_group field -->
