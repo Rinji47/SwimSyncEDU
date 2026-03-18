@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}View Certificate - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+<style>
+.certificate-page {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.certificate-wrapper {
+    background: linear-gradient(135deg, #f8fafc 0%, #eef9ff 100%);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1rem;
+}
+
+.certificate-sheet {
+    background: #ffffff;
+    border: 2px solid #0891b2;
+    border-radius: 14px;
+    box-shadow: 0 12px 32px var(--shadow);
+    overflow: hidden;
+}
+
+.certificate-top {
+    background: linear-gradient(100deg, #0e7490 0%, #0891b2 55%, #06b6d4 100%);
+    color: #ffffff;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.certificate-top h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    letter-spacing: 0.04em;
+}
+
+.certificate-badge {
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.certificate-body {
+    padding: 2rem 1.5rem;
+    text-align: center;
+}
+
+.certificate-title {
+    font-size: 2rem;
+    margin-bottom: 0.45rem;
+    color: var(--text-primary);
+}
+
+.certificate-subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 1.4rem;
+}
+
+.certificate-name {
+    font-size: 2rem;
+    line-height: 1.2;
+    color: #0e7490;
+    font-weight: 700;
+    padding-bottom: 0.45rem;
+    border-bottom: 2px dashed #bae6fd;
+    display: inline-block;
+    margin-bottom: 1.2rem;
+}
+
+.certificate-statement {
+    max-width: 760px;
+    margin: 0 auto;
+    color: var(--text-primary);
+}
+
+.certificate-class-name {
+    font-size: 1.3rem;
+    color: #0f172a;
+    margin: 0.85rem 0;
+    font-weight: 700;
+}
+
+.certificate-meta {
+    margin-top: 1.4rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.9rem;
+    text-align: left;
+}
+
+.certificate-meta-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem;
+    background: #f8fafc;
+}
+
+.certificate-meta-item .label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+}
+
+.certificate-meta-item .value {
+    font-size: 0.97rem;
+    color: var(--text-primary);
+    margin-top: 0.2rem;
+    font-weight: 600;
+}
+
+.certificate-signatures {
+    margin-top: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.2rem;
+}
+
+.signature-box {
+    text-align: center;
+}
+
+.signature-line {
+    border-top: 2px solid #cbd5e1;
+    margin-bottom: 0.4rem;
+}
+
+.certificate-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+@media print {
+    .dashboard-sidebar,
+    .dashboard-header,
+    .certificate-actions,
+    .messages-container {
+        display: none !important;
+    }
+
+    .dashboard-main {
+        margin-left: 0;
+        padding: 0;
+    }
+
+    .dashboard-section,
+    .certificate-wrapper {
+        border: 0;
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'dashboards/user/components/user_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include 'components/message.html' %}
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Completion Certificate</h1>
+                <p style="color: var(--text-secondary); margin-top: 0.35rem;">
+                    View your awarded certificate details.
+                </p>
+            </div>
+            <a href="{% url 'select_trainer_from_certificate' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="dashboard-section certificate-page">
+            <div class="certificate-actions">
+                <a href="{% url 'export_certificate_pdf' certificate.id %}" class="btn-secondary">Export PDF</a>
+                <button type="button" onclick="window.print()" class="btn-primary">Print</button>
+            </div>
+
+            <div class="certificate-wrapper">
+                <article class="certificate-sheet">
+                    <header class="certificate-top">
+                        <h2>SWIMSYNC EDU</h2>
+                        <span class="certificate-badge">CERT-{{ certificate.id }}</span>
+                    </header>
+
+                    <section class="certificate-body">
+                        <h3 class="certificate-title">Certificate of Completion</h3>
+                        <p class="certificate-subtitle">This certifies that</p>
+
+                        <div class="certificate-name">
+                            {{ certificate.user.full_name|default:certificate.user.username }}
+                        </div>
+
+                        <p class="certificate-statement">
+                            has successfully completed the
+                            {% if certificate.class_booking %}
+                                Group Class
+                            {% elif certificate.private_class %}
+                                Private Class
+                            {% else %}
+                                Swim Program
+                            {% endif %}
+                            at SwimSync EDU.
+                        </p>
+
+                        <p class="certificate-class-name">
+                            {% if certificate.class_booking %}
+                                {{ certificate.class_booking.class_session.class_name }}
+                            {% elif certificate.private_class %}
+                                Private Class
+                            {% else %}
+                                Class Name
+                            {% endif %}
+                        </p>
+
+                        <div class="certificate-meta">
+                            <div class="certificate-meta-item">
+                                <div class="label">Trainer</div>
+                                <div class="value">{{ trainer.full_name|default:trainer.username }}</div>
+                            </div>
+                            <div class="certificate-meta-item">
+                                <div class="label">Issued Date</div>
+                                <div class="value">{{ certificate.issued_at|date:"M d, Y" }}</div>
+                            </div>
+                            <div class="certificate-meta-item">
+                                <div class="label">Certificate ID</div>
+                                <div class="value">CERT-{{ certificate.id }}</div>
+                            </div>
+                            <div class="certificate-meta-item">
+                                <div class="label">Pool</div>
+                                <div class="value">
+                                    {% if certificate.class_booking %}
+                                        {{ certificate.class_booking.class_session.pool.name }}
+                                    {% elif certificate.private_class %}
+                                        {{ certificate.private_class.pool.name }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="certificate-signatures">
+                            <div class="signature-box">
+                                <div class="signature-line"></div>
+                                <div>{{ trainer.full_name|default:trainer.username }}</div>
+                                <small>Trainer Signature</small>
+                            </div>
+                            <div class="signature-box">
+                                <div class="signature-line"></div>
+                                <div>SwimSync EDU</div>
+                                <small>Authorized Signature</small>
+                            </div>
+                        </div>
+                    </section>
+                </article>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

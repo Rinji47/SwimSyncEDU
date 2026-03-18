@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
@@ -428,7 +429,14 @@ def manage_pools(request, pool_id=None):
         
         return redirect('manage_pools')
     
-    return render(request, 'dashboards/admin/admin_manage_pools.html', {'pools': pools})
+    return render(
+        request,
+        'dashboards/admin/admin_manage_pools.html',
+        {
+            'pools': pools,
+            'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+        },
+    )
 
 def close_pool(request, pool_id):
     pool = Pool.objects.get(pk=pool_id)

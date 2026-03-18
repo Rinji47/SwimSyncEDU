@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Certificate {{ certificate.id }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 16pt;
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #0f172a;
+            font-size: 11pt;
+            background-color: #f3f7fb;
+        }
+
+        .certificate-frame {
+            border: 2pt solid #0891b2;
+            background-color: #ffffff;
+            padding: 0;
+        }
+
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #0e7490;
+            border-bottom: 6pt solid #22d3ee;
+        }
+
+        .header-table td {
+            padding: 14pt 16pt;
+            color: #ffffff;
+            vertical-align: middle;
+        }
+
+        .brand-cell {
+            font-size: 15pt;
+            font-weight: bold;
+            letter-spacing: 0.6pt;
+        }
+
+        .certid-cell {
+            text-align: right;
+        }
+
+        .certid-pill {
+            font-size: 10pt;
+            border: 1pt solid #7dd3fc;
+            padding: 4pt 10pt;
+            display: inline-block;
+        }
+
+        .content {
+            padding: 22pt 18pt 20pt 18pt;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 25pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin-bottom: 10pt;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #334155;
+            margin-bottom: 12pt;
+        }
+
+        .name {
+            text-align: center;
+            font-size: 22pt;
+            color: #0e7490;
+            font-weight: bold;
+            border-bottom: 1pt dashed #7dd3fc;
+            display: block;
+            padding-bottom: 7pt;
+            margin: 0 25pt 14pt 25pt;
+        }
+
+        .statement {
+            text-align: center;
+            line-height: 1.5;
+            margin-bottom: 10pt;
+            font-size: 12pt;
+        }
+
+        .class-name {
+            text-align: center;
+            font-size: 16pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin-bottom: 18pt;
+        }
+
+        .meta-grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20pt;
+        }
+
+        .meta-grid td {
+            width: 25%;
+            border: 1pt solid #d7e1ec;
+            background-color: #f8fafc;
+            padding: 10pt 12pt;
+            vertical-align: top;
+        }
+
+        .meta-label {
+            font-size: 10pt;
+            color: #334155;
+            text-transform: uppercase;
+            margin-bottom: 6pt;
+        }
+
+        .meta-value {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #0f172a;
+        }
+
+        .signatures {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8pt;
+        }
+
+        .signatures td {
+            width: 50%;
+            padding: 6pt 14pt 2pt 14pt;
+            vertical-align: top;
+            text-align: center;
+        }
+
+        .line {
+            border-top: 2pt solid #c1ccd8;
+            margin-bottom: 10pt;
+            height: 1pt;
+        }
+
+        .sign-name {
+            font-size: 13pt;
+            margin-bottom: 4pt;
+            color: #0f172a;
+        }
+
+        .sign-role {
+            color: #334155;
+            font-size: 11pt;
+        }
+
+        .footer-note {
+            margin-top: 16pt;
+            text-align: center;
+            font-size: 9pt;
+            color: #64748b;
+            border-top: 1pt solid #d7e1ec;
+            padding-top: 9pt;
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate-frame">
+        <table class="header-table">
+            <tr>
+                <td class="brand-cell">SWIMSYNC EDU</td>
+                <td class="certid-cell"><span class="certid-pill">CERT-{{ certificate.id }}</span></td>
+            </tr>
+        </table>
+
+        <div class="content">
+            <div class="title">Certificate of Completion</div>
+            <div class="subtitle">This certifies that</div>
+
+            <div class="name">{{ certificate.user.full_name|default:certificate.user.username }}</div>
+
+            <div class="statement">
+                has successfully completed the
+                {% if certificate.class_booking %}
+                    Group Class
+                {% elif certificate.private_class %}
+                    Private Class
+                {% else %}
+                    Swim Program
+                {% endif %}
+                at SwimSync EDU.
+            </div>
+
+            <div class="class-name">
+                {% if certificate.class_booking %}
+                    {{ certificate.class_booking.class_session.class_name }}
+                {% elif certificate.private_class %}
+                    Private Class
+                {% else %}
+                    Class Name
+                {% endif %}
+            </div>
+
+            <table class="meta-grid">
+                <tr>
+                    <td>
+                        <div class="meta-label">Trainer</div>
+                        <div class="meta-value">{{ trainer.full_name|default:trainer.username }}</div>
+                    </td>
+                    <td>
+                        <div class="meta-label">Issued Date</div>
+                        <div class="meta-value">{{ certificate.issued_at|date:"M d, Y" }}</div>
+                    </td>
+                    <td>
+                        <div class="meta-label">Certificate ID</div>
+                        <div class="meta-value">CERT-{{ certificate.id }}</div>
+                    </td>
+                    <td>
+                        <div class="meta-label">Pool</div>
+                        <div class="meta-value">
+                            {% if certificate.class_booking %}
+                                {{ certificate.class_booking.class_session.pool.name }}
+                            {% elif certificate.private_class %}
+                                {{ certificate.private_class.pool.name }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="signatures">
+                <tr>
+                    <td>
+                        <div class="line"></div>
+                        <div class="sign-name">{{ trainer.full_name|default:trainer.username }}</div>
+                        <div class="sign-role">Trainer Signature</div>
+                    </td>
+                    <td>
+                        <div class="line"></div>
+                        <div class="sign-name">SwimSync EDU</div>
+                        <div class="sign-role">Authorized Signature</div>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="footer-note">Generated by SwimSync EDU</div>
+        </div>
+    </div>
+</body>
+</html>

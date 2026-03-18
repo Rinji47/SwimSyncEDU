@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pending Private Certificates{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'dashboards/trainer/components/trainer_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include 'components/message.html' %}
+        <div class="dashboard-header">
+            <h1>Pending Private Certificates</h1>
+        </div>
+
+        <div class="dashboard-section card-grid">
+            {% for private_class in pending_private_classes %}
+            <div class="class-card compact">
+                <h3>{{ private_class.user.full_name|default:private_class.user.username }}</h3>
+                <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
+                <p><strong>Dates:</strong> {{ private_class.start_date }} to {{ private_class.end_date }}</p>
+                <p><strong>Time:</strong> {{ private_class.start_time }} - {{ private_class.end_time }}</p>
+                <div class="card-actions" style="margin-top:0.6rem;">
+                    <a href="{% url 'issue_private_class_completion_certificate' private_class.id %}" class="btn-sm btn-primary">
+                        Grant Certificate
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <p>No completed private classes are waiting for certificates.</p>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

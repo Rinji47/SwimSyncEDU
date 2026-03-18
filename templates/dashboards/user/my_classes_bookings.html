@@ -60,9 +60,16 @@
                     {% else %}
                         <span class="btn-sm btn-secondary"
                               style="background:#ccc;cursor:default;">
-                            Cancelled
+                            {% if booking.is_cancelled or booking.class_session.is_cancelled %}
+                                Cancelled
+                            {% elif booking.class_session.end_date < today %}
+                                Completed
+                            {% else %}
+                                Unavailable
+                            {% endif %}
                         </span>
                     {% endif %}
+
                 </div>
             </div>
             {% empty %}

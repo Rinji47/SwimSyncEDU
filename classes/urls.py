@@ -43,4 +43,9 @@ urlpatterns = [
     path('trainer/manage/private-class/<int:private_class_id>/attendance-history/', views.select_private_classes_for_attendance_history, name='select_private_classes_for_attendance_history'),
     path('trainer/manage/substitute-group-classes/', views.trainer_susitute_class_sessions_list, name='trainer_susitute_class_sessions_list'),
     path('trainer/manage/substitute-private-classes/', views.trainer_susitute_private_classes_list, name='trainer_susitute_private_classes_list'),
+    path('trainer/certificates/group/', views.pending_group_certificate_sessions, name='pending_group_certificate_sessions'),
+    path('trainer/certificates/group/<int:class_session_id>/', views.select_student_for_group_certificate, name='select_student_for_group_certificate'),
+    path('trainer/certificates/group/issue/<int:booking_id>/', views.issue_group_class_completion_certificate, name='issue_group_class_completion_certificate'),
+    path('trainer/certificates/private/', views.pending_private_certificates, name='pending_private_certificates'),
+    path('trainer/certificates/private/issue/<int:private_class_id>/', views.issue_private_class_completion_certificate, name='issue_private_class_completion_certificate'),
 ]

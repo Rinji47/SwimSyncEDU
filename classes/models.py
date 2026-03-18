@@ -105,3 +105,34 @@ class PrivateClass(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s private class with {self.trainer.username}"
+
+
+class CompletionCertificate(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='completion_certificates')
+    trainer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='issued_certificates')
+
+    class_booking = models.OneToOneField(
+        ClassBooking, 
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='completion_certificate'
+    )
+
+    private_class = models.OneToOneField(
+        PrivateClass,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='completion_certificate'
+    )
+
+    issued_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        if self.class_booking:
+            return f"Certificate for {self.user.username} - {self.class_booking.class_session.class_name}"
+        elif self.private_class:
+            return f"Certificate for {self.user.username} - Private Class with {self.trainer.username}"
+        else:
+            return f"Certificate for {self.user.username} - No class associated"

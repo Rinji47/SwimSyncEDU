@@ -1,6 +1,9 @@
 import base64
 import hashlib
 import hmac
+import json
+import urllib.error
+import urllib.request
 from datetime import datetime, timedelta
 from decimal import Decimal
 from uuid import uuid4
@@ -18,8 +21,6 @@ from pool.models import Pool
 
 from .models import Payment
 
-import json
-
 
 ESEWA_PRODUCT_CODE = getattr(settings, "ESEWA_PRODUCT_CODE", "EPAYTEST")
 ESEWA_SECRET_KEY = getattr(settings, "ESEWA_SECRET_KEY", "8gBm/:&EnhH.1/q")
@@ -27,6 +28,17 @@ ESEWA_FORM_URL = getattr(
     settings,
     "ESEWA_FORM_URL",
     "https://rc-epay.esewa.com.np/api/epay/main/v2/form",
+)
+KHALTI_SECRET_KEY = getattr(settings, "KHALTI_SECRET_KEY", "").strip()
+KHALTI_INITIATE_URL = getattr(
+    settings,
+    "KHALTI_INITIATE_URL",
+    "https://a.khalti.com/api/v2/epayment/initiate/",
+)
+KHALTI_LOOKUP_URL = getattr(
+    settings,
+    "KHALTI_LOOKUP_URL",
+    "https://a.khalti.com/api/v2/epayment/lookup/",
 )
 
 
@@ -68,6 +80,117 @@ def build_esewa_fields(payment, success_url, failure_url):
             ESEWA_PRODUCT_CODE,
         ),
     }
+
+
+def khalti_request_json(url, payload):
+    if not KHALTI_SECRET_KEY:
+        return None, "Khalti secret key is not configured."
+
+    data = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(
+        url,
+        data=data,
+        headers={
+            "Authorization": f"Key {KHALTI_SECRET_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=25) as response:
+            return json.loads(response.read().decode("utf-8")), None
+    except urllib.error.HTTPError as exc:
+        try:
+            body = exc.read().decode("utf-8")
+        except Exception:
+            body = str(exc)
+        return None, body
+    except Exception as exc:
+        return None, str(exc)
+
+
+def khalti_return_url(request, payment):
+    return request.build_absolute_uri(
+        reverse("khalti_payment_verify", kwargs={"uid": payment.uid})
+    )
+
+
+def khalti_website_url(request):
+    return f"{request.scheme}://{request.get_host()}"
+
+
+def complete_group_payment(payment):
+    class_session = payment.class_session
+
+    if not class_session:
+        return False, "Associated class session not found."
+
+    if class_session.is_cancelled:
+        return False, "This class session was cancelled."
+
+    if class_session.end_date and class_session.end_date < datetime.now().date():
+        return False, "This class session has already ended."
+
+    if class_session.total_bookings >= class_session.seats:
+        return False, "This class session is already full."
+
+    existing_booking = ClassBooking.objects.filter(
+        user=payment.user,
+        class_session=class_session,
+        is_cancelled=False,
+    ).first()
+
+    if existing_booking:
+        payment.class_booking = existing_booking
+        payment.payment_status = "Completed"
+        payment.save(update_fields=["class_booking", "payment_status"])
+        return True, None
+
+    booking = ClassBooking.objects.create(
+        user=payment.user,
+        class_session=class_session,
+    )
+    payment.class_booking = booking
+    payment.payment_status = "Completed"
+    payment.save(update_fields=["class_booking", "payment_status"])
+
+    class_session.total_bookings += 1
+    class_session.save(update_fields=["total_bookings"])
+    return True, None
+
+
+def complete_private_payment(payment):
+    checkout_data = payment.extra_payload or {}
+    try:
+        pool = get_object_or_404(Pool, pk=int(checkout_data["pool_id"]), is_closed=False)
+        trainer = get_object_or_404(User, pk=int(checkout_data["trainer_id"]), role="trainer")
+        start_date = datetime.strptime(checkout_data["start_date"], "%Y-%m-%d").date()
+        end_date = datetime.strptime(checkout_data["end_date"], "%Y-%m-%d").date()
+        start_time = datetime.strptime(checkout_data["start_time"], "%H:%M").time()
+        end_time = datetime.strptime(checkout_data["end_time"], "%H:%M").time()
+    except (KeyError, TypeError, ValueError):
+        return False, "Private class payment details are invalid."
+
+    if payment.private_class:
+        payment.payment_status = "Completed"
+        payment.save(update_fields=["payment_status"])
+        return True, None
+
+    private_class = PrivateClass.objects.create(
+        user=payment.user,
+        trainer=trainer,
+        pool=pool,
+        start_date=start_date,
+        end_date=end_date,
+        start_time=start_time,
+        end_time=end_time,
+    )
+
+    payment.private_class = private_class
+    payment.payment_status = "Completed"
+    payment.save(update_fields=["private_class", "payment_status"])
+    return True, None
 
 
 @login_required
@@ -145,6 +268,7 @@ def group_class_payment_checkout(request, class_id):
             "total_amount": total_amount,
             "esewa_form_url": ESEWA_FORM_URL,
             "esewa_fields": esewa_fields,
+            "khalti_start_url": reverse("khalti_payment_start", kwargs={"uid": payment.uid}),
         },
     )
 
@@ -232,6 +356,7 @@ def private_class_payment_checkout(request):
             "total_amount": total_amount,
             "esewa_form_url": ESEWA_FORM_URL,
             "esewa_fields": esewa_fields,
+            "khalti_start_url": reverse("khalti_payment_start", kwargs={"uid": payment.uid}),
         },
     )
 
@@ -239,8 +364,6 @@ def private_class_payment_checkout(request):
 @login_required
 def group_class_payment_success(request, uid):
     payment = get_object_or_404(Payment, uid=uid, purpose="group", user=request.user)
-    class_session = payment.class_session
-
     data = request.GET.get("data")
     if not data:
         messages.error(request, "Payment verification failed. No data received.")
@@ -284,52 +407,12 @@ def group_class_payment_success(request, uid):
 
 
 
-    if not class_session:
-        messages.error(request, "Associated class session not found.")
+    ok, error_message = complete_group_payment(payment)
+    if not ok:
+        messages.error(request, error_message)
         payment.payment_status = "Failed"
         payment.save(update_fields=["payment_status"])
         return redirect("my_bookings")
-
-    if class_session.is_cancelled:
-        messages.error(request, "This class session was cancelled.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("my_bookings")
-
-    if class_session.end_date and class_session.end_date < datetime.now().date():
-        messages.error(request, "This class session has already ended.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("my_bookings")
-
-    if class_session.total_bookings >= class_session.seats:
-        messages.error(request, "This class session is already full.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("my_bookings")
-
-    existing_booking = ClassBooking.objects.filter(
-        user=request.user,
-        class_session=class_session,
-        is_cancelled=False,
-    ).first()
-
-    if existing_booking:
-        payment.class_booking = existing_booking
-        payment.payment_status = "Completed"
-        payment.save(update_fields=["class_booking", "payment_status"])
-        return render(request, "payments/payment_success.html", {"payment": payment})
-
-    booking = ClassBooking.objects.create(
-        user=request.user,
-        class_session=class_session,
-    )
-    payment.class_booking = booking
-    payment.payment_status = "Completed"
-    payment.save(update_fields=["class_booking", "payment_status"])
-
-    class_session.total_bookings += 1
-    class_session.save(update_fields=["total_bookings"])
 
     return render(request, "payments/payment_success.html", {"payment": payment})
 
@@ -386,38 +469,104 @@ def private_class_payment_success(request, uid):
         payment.save(update_fields=["payment_status"])
         return redirect("private_class_payment_failure", uid=payment.uid)
 
-    checkout_data = payment.extra_payload or {}
-    try:
-        pool = get_object_or_404(Pool, pk=int(checkout_data["pool_id"]), is_closed=False)
-        trainer = get_object_or_404(User, pk=int(checkout_data["trainer_id"]), role="trainer")
-        start_date = datetime.strptime(checkout_data["start_date"], "%Y-%m-%d").date()
-        end_date = datetime.strptime(checkout_data["end_date"], "%Y-%m-%d").date()
-        start_time = datetime.strptime(checkout_data["start_time"], "%H:%M").time()
-        end_time = datetime.strptime(checkout_data["end_time"], "%H:%M").time()
-    except (KeyError, TypeError, ValueError):
-        messages.error(request, "Private class payment details are invalid.")
+    ok, error_message = complete_private_payment(payment)
+    if not ok:
+        messages.error(request, error_message)
         payment.payment_status = "Failed"
         payment.save(update_fields=["payment_status"])
         return redirect("private_class_payment_failure", uid=payment.uid)
 
-    if payment.private_class:
-        payment.payment_status = "Completed"
-        payment.save(update_fields=["payment_status"])
+    return render(request, "payments/payment_success.html", {"payment": payment})
+
+
+@login_required
+def khalti_payment_start(request, uid):
+    payment = get_object_or_404(Payment, uid=uid, user=request.user, payment_status="Pending")
+
+    return_url = khalti_return_url(request, payment)
+    payload = {
+        "return_url": return_url,
+        "website_url": khalti_website_url(request),
+        "amount": int(payment.total_amount * 100),
+        "purchase_order_id": str(payment.uid),
+        "purchase_order_name": f"{payment.purpose.title()} Payment",
+        "customer_info": {
+            "name": request.user.full_name or request.user.username,
+            "email": request.user.email or "",
+            "phone": request.user.phone or "",
+        },
+    }
+    data, error = khalti_request_json(KHALTI_INITIATE_URL, payload)
+
+    if error or not data or not data.get("payment_url"):
+        messages.error(request, "Failed to start Khalti payment. Please try again.")
+        payment.gateway_response = {"init_error": error, "response": data}
+        payment.save(update_fields=["gateway_response"])
+
+        if payment.purpose == "group" and payment.class_session:
+            return redirect("group_class_payment_checkout", class_id=payment.class_session.id)
+        return redirect("private_class_payment_checkout")
+
+    payment.extra_payload = {
+        **(payment.extra_payload or {}),
+        "gateway": "khalti",
+        "khalti_pidx": data.get("pidx"),
+    }
+    payment.gateway_response = data
+    payment.save(update_fields=["extra_payload", "gateway_response"])
+    return redirect(data["payment_url"])
+
+
+@login_required
+def khalti_payment_verify(request, uid):
+    payment = get_object_or_404(Payment, uid=uid, user=request.user)
+    pidx = request.GET.get("pidx")
+
+    if payment.payment_status == "Completed":
         return render(request, "payments/payment_success.html", {"payment": payment})
 
-    private_class = PrivateClass.objects.create(
-        user=request.user,
-        trainer=trainer,
-        pool=pool,
-        start_date=start_date,
-        end_date=end_date,
-        start_time=start_time,
-        end_time=end_time,
-    )
+    if not pidx:
+        payment.payment_status = "Failed"
+        payment.save(update_fields=["payment_status"])
+        messages.error(request, "Khalti payment verification failed.")
+        return render(request, "payments/payment_failure.html", {"payment": payment})
 
-    payment.private_class = private_class
-    payment.payment_status = "Completed"
-    payment.save(update_fields=["private_class", "payment_status"])
+    data, error = khalti_request_json(KHALTI_LOOKUP_URL, {"pidx": pidx})
+
+    if error or not data:
+        payment.payment_status = "Failed"
+        payment.gateway_response = {"lookup_error": error, "response": data}
+        payment.save(update_fields=["payment_status", "gateway_response"])
+        messages.error(request, "Could not verify Khalti payment.")
+        return render(request, "payments/payment_failure.html", {"payment": payment})
+
+    payment.gateway_response = data
+    payment.save(update_fields=["gateway_response"])
+
+    if data.get("status") != "Completed":
+        payment.payment_status = "Failed"
+        payment.save(update_fields=["payment_status"])
+        messages.error(request, "Payment was not completed in Khalti.")
+        return render(request, "payments/payment_failure.html", {"payment": payment})
+
+    expected_amount = int(payment.total_amount * 100)
+    if str(data.get("purchase_order_id")) != str(payment.uid) or int(data.get("total_amount", 0)) != expected_amount:
+        payment.payment_status = "Failed"
+        payment.save(update_fields=["payment_status"])
+        messages.error(request, "Khalti verification mismatch detected.")
+        return render(request, "payments/payment_failure.html", {"payment": payment})
+
+    if payment.purpose == "group":
+        ok, error_message = complete_group_payment(payment)
+    else:
+        ok, error_message = complete_private_payment(payment)
+
+    if not ok:
+        payment.payment_status = "Failed"
+        payment.save(update_fields=["payment_status"])
+        messages.error(request, error_message)
+        return render(request, "payments/payment_failure.html", {"payment": payment})
+
     return render(request, "payments/payment_success.html", {"payment": payment})
 
 
@@ -470,7 +619,7 @@ def payment_report(request):
 def admin_payment_report(request):
     if not request.user.is_staff:
         messages.error(request, "You do not have permission to access this page.")
-        return redirect("home")
+        return redirect("index")
 
     cutoff_time = timezone.now() - timedelta(minutes=15)
     Payment.objects.filter(

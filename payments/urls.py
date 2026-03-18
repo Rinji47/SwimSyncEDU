@@ -4,6 +4,8 @@ from . import views
 urlpatterns = [
     path('report/', views.payment_report, name='payment_report'),
     path('admin-report/', views.admin_payment_report, name='admin_payment_report'),
+    path('khalti/start/<str:uid>/', views.khalti_payment_start, name='khalti_payment_start'),
+    path('khalti/verify/<str:uid>/', views.khalti_payment_verify, name='khalti_payment_verify'),
     path('group-class/<int:class_id>/checkout/', views.group_class_payment_checkout, name='group_class_payment_checkout'),
     path('group-class/<int:class_id>/cancel/', views.group_class_payment_cancel, name='group_class_payment_cancel'),
     path('group-class/success/<str:uid>/', views.group_class_payment_success, name='group_class_payment_success'),

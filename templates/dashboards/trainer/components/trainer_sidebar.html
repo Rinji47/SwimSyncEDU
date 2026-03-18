@@ -11,6 +11,8 @@
         {% url 'select_private_class_for_attendance' as select_private_class_for_attendance_url %}
         {% url 'trainer_susitute_class_sessions_list' as trainer_substitute_group_url %}
         {% url 'trainer_susitute_private_classes_list' as trainer_substitute_private_url %}
+        {% url 'pending_group_certificate_sessions' as pending_group_certificate_sessions_url %}
+        {% url 'pending_private_certificates' as pending_private_certificates_url %}
 
         <a href="{{ trainer_dashboard_url }}" class="nav-item {% if request.path == trainer_dashboard_url %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
@@ -39,6 +41,14 @@
         <a href="{{ trainer_substitute_private_url }}" class="nav-item {% if request.path == trainer_substitute_private_url %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-user-shield"></i></span>
             Sub Private Classes
+        </a>
+        <a href="{{ pending_group_certificate_sessions_url }}" class="nav-item {% if request.path == pending_group_certificate_sessions_url or '/trainer/certificates/group/' in request.path %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-award"></i></span>
+            Group Certificates
+        </a>
+        <a href="{{ pending_private_certificates_url }}" class="nav-item {% if request.path == pending_private_certificates_url or '/trainer/certificates/private/' in request.path %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-certificate"></i></span>
+            Private Certificates
         </a>
         <a href="{% url 'logout' %}" class="nav-item">
             <span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span>

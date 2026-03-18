@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pending Group Certificates{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'dashboards/trainer/components/trainer_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include 'components/message.html' %}
+        <div class="dashboard-header">
+            <h1>Pending Group Certificates</h1>
+        </div>
+
+        <div class="dashboard-section card-grid">
+            {% for class_session in pending_sessions %}
+            <div class="class-card compact">
+                <h3>{{ class_session.class_name }}</h3>
+                <p><strong>Pool:</strong> {{ class_session.pool.name }}</p>
+                <p><strong>Dates:</strong> {{ class_session.start_date }} to {{ class_session.end_date }}</p>
+                <p><strong>Trainer:</strong> {{ class_session.trainer.full_name|default:class_session.trainer.username }}</p>
+                <div class="card-actions" style="margin-top:0.6rem;">
+                    <a href="{% url 'select_student_for_group_certificate' class_session.id %}" class="btn-sm btn-primary">
+                        Select Students
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <p>No completed group class sessions are waiting for certificates.</p>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

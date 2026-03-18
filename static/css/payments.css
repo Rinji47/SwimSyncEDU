@@ -75,6 +75,16 @@
   background: #15803d;
 }
 
+.btn-khalti {
+  width: 100%;
+  background: #0f766e;
+  color: #fff;
+}
+
+.btn-khalti:hover {
+  background: #115e59;
+}
+
 @media (max-width: 980px) {
   .payment-shell {
     grid-template-columns: 1fr;

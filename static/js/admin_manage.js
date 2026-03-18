@@ -21,6 +21,10 @@ function toggleModal(modalId) {
             modal.classList.add("show");
 
             if (modalId === "poolModal") {
+                if (!window.google || !window.google.maps) {
+                    return;
+                }
+
                 if (!map) {
                     initMap();
                 } else {
@@ -81,7 +85,7 @@ let marker = null;
 
 function initMap() {
     const mapDiv = document.getElementById("map");
-    if (!mapDiv) return;
+    if (!mapDiv || !window.google || !window.google.maps) return;
 
     const fallbackLoc = { lat: 28.2096, lng: 83.9856 }; // Pokhara
 
@@ -160,6 +164,11 @@ function onPoolModalOpen() {
 }
 
 function openEditPoolModal(btn) {
+    if (!window.google || !window.google.maps) {
+        alert("Google Maps is unavailable. Set GOOGLE_MAPS_API_KEY before editing pool coordinates.");
+        return;
+    }
+
     const modal = document.getElementById('poolModal');
     const pool = JSON.parse(btn.dataset.pool);
     const editUrl = btn.dataset.url;

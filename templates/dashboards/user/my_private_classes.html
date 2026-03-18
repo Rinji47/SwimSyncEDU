@@ -64,10 +64,16 @@
                         </a>
                     {% else %}
                         <span class="btn-sm btn-secondary" style="background:#ccc;cursor:default;">
-                            Cancelled
+                            {% if private_class.is_cancelled %}
+                                Cancelled
+                            {% elif private_class.end_date < today %}
+                                Completed
+                            {% else %}
+                                Unavailable
+                            {% endif %}
                         </span>
                     {% endif %}
-                    
+
                     <!-- VIEW DETAILS BUTTON -->
                     <button type="button"
                             class="btn-sm btn-primary"

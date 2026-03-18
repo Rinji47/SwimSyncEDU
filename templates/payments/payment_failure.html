@@ -22,11 +22,11 @@
             </ul>
             <div class="inline-actions" style="margin-top:1rem;">
                 {% if payment.purpose == 'group' and payment.class_session_id %}
-                <a class="btn-primary" href="{% url 'group_class_payment_success' payment.uid %}">Recheck Status</a>
+                <a class="btn-primary" href="{% url 'payment_report' %}">Payment History</a>
                 <a class="btn-secondary" href="{% url 'group_class_payment_checkout' payment.class_session_id %}">New Payment</a>
                 {% elif payment.purpose == 'private' %}
-                <a class="btn-primary" href="{% url 'private_class_payment_success' payment.uid %}">Recheck Status</a>
-                <a class="btn-secondary" href="{% url 'private_class_payment_checkout' %}">New Payment</a>
+                <a class="btn-primary" href="{% url 'payment_report' %}">Payment History</a>
+                <a class="btn-secondary" href="{% url 'nearby_pools' %}">New Payment</a>
                 {% endif %}
                 <a class="btn-secondary" href="{% url 'index' %}">Home</a>
             </div>

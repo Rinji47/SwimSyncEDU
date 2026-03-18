@@ -10,10 +10,12 @@
 
 {% block extra_js %}
 <!-- Load Google Maps only on this page -->
+{% if google_maps_api_key %}
 <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDZb6NorhL_dISlcYvNqjRBmzJMZl9jMJk&callback=initMap"
+    src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key|urlencode }}&callback=initMap"
   async defer>
 </script>
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -144,6 +146,9 @@
                     <label>Select Pool Location</label>
                     <input type="hidden" id="coordinates" name="coordinates">
                     <div id="map" style="height: 300px; border-radius: 8px;"></div>
+                    {% if not google_maps_api_key %}
+                    <small style="color: #b91c1c;">Google Maps is unavailable until `GOOGLE_MAPS_API_KEY` is set in the environment.</small>
+                    {% endif %}
                     <small id="coordDisplay">Click on the map to select location</small>
                 </div>
                 <div class="form-group">

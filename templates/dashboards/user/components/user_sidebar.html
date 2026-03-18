@@ -4,7 +4,12 @@
         <p class="user-role">User</p>
     </div>
     <nav class="sidebar-nav">
-        <a href="#" class="nav-item active">
+        {% url 'user_dashboard' as user_dashboard_url %}
+        {% url 'my_bookings' as my_bookings_url %}
+        {% url 'my_private_classes' as my_private_classes_url %}
+        {% url 'select_trainer_from_certificate' as my_reviews_url %}
+
+        <a href="{{ user_dashboard_url }}" class="nav-item {% if request.path == user_dashboard_url %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
             Dashboard
         </a>
@@ -12,15 +17,15 @@
             <span class="nav-icon"><i class="fa-solid fa-water-ladder"></i></span>
             Browse Classes
         </a>
-        <a href="{% url 'my_bookings' %}" class="nav-item">
+        <a href="{{ my_bookings_url }}" class="nav-item {% if request.path == my_bookings_url %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-calendar-check"></i></span>
             My Bookings
         </a>
-        <a href="{% url 'my_private_classes' %}" class="nav-item">
+        <a href="{{ my_private_classes_url }}" class="nav-item {% if request.path == my_private_classes_url %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-user-lock"></i></span>
             My Private Classes
         </a>
-        <a href="#" class="nav-item">
+        <a href="{{ my_reviews_url }}" class="nav-item {% if request.path == my_reviews_url or '/reviews/certificate/' in request.path %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-star"></i></span>
             My Reviews
         </a>
