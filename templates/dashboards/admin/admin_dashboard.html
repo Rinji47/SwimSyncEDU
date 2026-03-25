@@ -10,167 +10,159 @@
 
 {% block content %}
 <div class="dashboard-layout">
-    <!-- Sidebar -->
     {% include "./components/admin_sidebar.html" %}
     
-    <!-- Main Content -->
     <main class="dashboard-main">
-        <div class="dashboard-header">
-            <h1>Admin Dashboard</h1>
-            <button class="btn-primary">Generate Report</button>
-        </div>
+        <section class="admin-hero">
+            <div class="admin-hero-copy">
+                <h1>Admin Dashboard</h1>
+                <p class="admin-dashboard-subtitle">Monitor members, class activity, revenue, and the latest pool quality updates from one control panel.</p>
+            </div>
+            <div class="admin-hero-actions">
+                <a class="btn-primary" href="{% url 'admin_payment_report' %}">View Payment Reports</a>
+                <a class="btn-secondary" href="{% url 'select_pool_quality' %}">Update Pool Quality</a>
+            </div>
+        </section>
         
-        <!-- Stats Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+        <div class="admin-kpi-grid">
+            <div class="admin-kpi-card admin-kpi-card-primary">
+                <div class="admin-kpi-icon"><i class="fa-solid fa-users"></i></div>
                 <div class="stat-content">
                     <h3>{{ total_users }}</h3>
-                    <p>Total Users</p>
+                    <p>Total Members</p>
                 </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fa-solid fa-book-open"></i></div>
+            <div class="admin-kpi-card">
+                <div class="admin-kpi-icon"><i class="fa-solid fa-person-chalkboard"></i></div>
+                <div class="stat-content">
+                    <h3>{{ total_trainers }}</h3>
+                    <p>Total Trainers</p>
+                </div>
+            </div>
+            <div class="admin-kpi-card">
+                <div class="admin-kpi-icon"><i class="fa-solid fa-book-open"></i></div>
                 <div class="stat-content">
                     <h3>{{ active_classes }}</h3>
-                    <p>Active Classes</p>
+                    <p>Active Group Classes</p>
                 </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
+            <div class="admin-kpi-card admin-kpi-card-emphasis">
+                <div class="admin-kpi-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
                 <div class="stat-content">
-                    <h3>Rs. {{ monthly_revenue }}</h3>
-                    <p>Monthly Revenue</p>
+                    <h3>Rs. {{ monthly_revenue|default:"0.00" }}</h3>
+                    <p>Revenue This Month</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Role Requests & Instructor Applications -->
+
+        <section class="admin-summary-strip">
+            <article class="admin-summary-item">
+                <span class="admin-summary-label">Private Classes</span>
+                <strong>{{ active_private_classes }}</strong>
+            </article>
+            <article class="admin-summary-item">
+                <span class="admin-summary-label">Pending Payments</span>
+                <strong>{{ pending_payments }}</strong>
+            </article>
+            <article class="admin-summary-item">
+                <span class="admin-summary-label">Total Revenue</span>
+                <strong>Rs. {{ total_revenue|default:"0.00" }}</strong>
+            </article>
+        </section>
+
         <section class="dashboard-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2 style="margin-bottom: 0;">Role Requests & Instructor Applications</h2>
+            <div class="admin-section-head">
+                <h2>Quick Actions</h2>
+                <p>Fast access to high-frequency admin tasks.</p>
             </div>
-            <div class="filter-bar">
-                <div class="filter-main">
-                    <div class="filter-search">
-                        <input type="text" class="filter-input" placeholder="Search requests...">
-                        <button type="button" class="btn-secondary">Search</button>
-                        <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-requests">Filters v</button>
+            <div class="admin-action-grid">
+                <a class="admin-action-card" href="{% url 'manage_members' %}">
+                    <span class="admin-action-icon"><i class="fa-solid fa-users"></i></span>
+                    <div>
+                        <strong>Manage Members</strong>
+                        <p>Review and manage user accounts.</p>
                     </div>
-                </div>
-                <div class="filter-advanced" id="filters-requests">
-                    <div class="filter-field">
-                        <label>Role</label>
-                        <select class="filter-select">
-                            <option value="all">All</option>
-                            <option value="instructor">Instructor</option>
-                            <option value="admin">Admin</option>
-                        </select>
+                </a>
+                <a class="admin-action-card" href="{% url 'manage_classes' %}">
+                    <span class="admin-action-icon"><i class="fa-solid fa-book-open"></i></span>
+                    <div>
+                        <strong>Manage Classes</strong>
+                        <p>Update class sessions and schedules.</p>
                     </div>
-                </div>
-            </div>
-            <div class="data-card-grid">
-                {% for application in pending_applications %}
-                <div class="data-card">
-                    <h3 class="data-card-title">{{ application.name }}</h3>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Email:</span>
-                        <span>{{ application.email }}</span>
+                </a>
+                <a class="admin-action-card" href="{% url 'select_pool_quality' %}">
+                    <span class="admin-action-icon"><i class="fa-solid fa-vial-circle-check"></i></span>
+                    <div>
+                        <strong>Update Pool Quality</strong>
+                        <p>Add today&apos;s quality record for a pool.</p>
                     </div>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Role:</span>
-                        <span class="status-badge status-secondary">{{ application.requested_role|default:"Instructor" }}</span>
+                </a>
+                <a class="admin-action-card" href="{% url 'admin_payment_report' %}">
+                    <span class="admin-action-icon"><i class="fa-solid fa-money-bill-wave"></i></span>
+                    <div>
+                        <strong>Payment Reports</strong>
+                        <p>Inspect member payment activity.</p>
                     </div>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Details:</span>
-                        <span>{{ application.certifications }}</span>
-                    </div>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Applied:</span>
-                        <span>{{ application.applied_date|date:"M d, Y" }}</span>
-                    </div>
-                    <div class="data-card-actions">
-                        <button class="btn-sm btn-success">Approve Role</button>
-                        <button class="btn-sm btn-danger">Reject</button>
-                    </div>
-                </div>
-                {% empty %}
-                <p style="color: var(--text-secondary);">No pending applications</p>
-                {% endfor %}
+                </a>
             </div>
         </section>
-        
-        
-        <!-- Water Quality Alerts -->
-        <section class="dashboard-section">
-            <h2>Water Quality Alerts</h2>
-            <div class="alerts-list">
-                {% for alert in water_quality_alerts %}
-                <div class="alert-item alert-{{ alert.severity }}">
-                    <div class="alert-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                    <div class="alert-content">
-                        <strong>{{ alert.pool_name }}</strong>
-                        <p>{{ alert.message }}</p>
-                        <small>{{ alert.timestamp|date:"M d, Y - h:i A" }}</small>
-                    </div>
-                    <button class="btn-sm btn-secondary">Resolve</button>
+
+        <div class="admin-panel-grid">
+            <section class="dashboard-section admin-panel">
+                <div class="admin-section-head">
+                    <h2>Recent Bookings</h2>
+                    <p>The latest bookings submitted by members.</p>
                 </div>
-                {% empty %}
-                <p style="color: #64748b;">No water quality alerts at this time.</p>
-                {% endfor %}
-            </div>
-        </section>
-        
-        <!-- Recent Activity -->
-        <section class="dashboard-section">
-            <h2>Recent Bookings</h2>
-            <div class="filter-bar">
-                <div class="filter-main">
-                    <div class="filter-search">
-                        <input type="text" class="filter-input" placeholder="Search bookings...">
-                        <button type="button" class="btn-secondary">Search</button>
-                        <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-bookings">Filters v</button>
-                    </div>
+                <div class="admin-list">
+                    {% for booking in recent_bookings %}
+                    <article class="admin-list-row">
+                        <div class="admin-list-main">
+                            <div class="admin-list-top">
+                                <strong>{{ booking.user.full_name|default:booking.user.username }}</strong>
+                                <span class="admin-inline-status {% if booking.is_cancelled %}status-closed{% else %}status-open{% endif %}">
+                                    {% if booking.is_cancelled %}Cancelled{% else %}Active{% endif %}
+                                </span>
+                            </div>
+                            <p>{{ booking.class_session.class_name }}</p>
+                            <small>{{ booking.class_session.pool.name }} | {{ booking.class_session.trainer.full_name|default:booking.class_session.trainer.username }}</small>
+                        </div>
+                        <div class="admin-list-side">
+                            <span>{{ booking.booking_date|date:"M d, Y" }}</span>
+                            <small>{{ booking.booking_date|date:"h:i A" }}</small>
+                        </div>
+                    </article>
+                    {% empty %}
+                    <p class="admin-empty-text">No recent bookings.</p>
+                    {% endfor %}
                 </div>
-                <div class="filter-advanced" id="filters-bookings">
-                    <div class="filter-field">
-                        <label>Status</label>
-                        <select class="filter-select">
-                            <option value="">All</option>
-                            <option value="active">Active</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-                    </div>
+            </section>
+
+            <section class="dashboard-section admin-panel">
+                <div class="admin-section-head">
+                    <h2>Recent Pool Quality</h2>
+                    <p>The latest submitted quality readings across pools.</p>
                 </div>
-            </div>
-            <div class="data-card-grid">
-                {% for booking in recent_bookings %}
-                <div class="data-card">
-                    <span class="data-card-status">{{ booking.status }}</span>
-                    <h3 class="data-card-title">{{ booking.member_name }}</h3>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Class:</span>
-                        <span>{{ booking.class_name }}</span>
-                    </div>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Instructor:</span>
-                        <span>{{ booking.instructor_name }}</span>
-                    </div>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Facility:</span>
-                        <span>{{ booking.facility_name }}</span>
-                    </div>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Date:</span>
-                        <span>{{ booking.datetime|date:"M d, Y - h:i A" }}</span>
-                    </div>
+                <div class="admin-list">
+                    {% for quality in recent_pool_quality %}
+                    <article class="admin-list-row admin-list-row-quality">
+                        <div class="admin-list-main">
+                            <div class="admin-list-top">
+                                <strong>{{ quality.pool.name }}</strong>
+                                <span class="admin-inline-metric">{{ quality.cleanliness_rating }}/10</span>
+                            </div>
+                            <p>pH {% if quality.pH_level %}{{ quality.pH_level }}{% else %}N/A{% endif %} | Chlorine {% if quality.chlorine_level %}{{ quality.chlorine_level }} ppm{% else %}N/A{% endif %}</p>
+                            <small>Temperature {% if quality.water_temperature %}{{ quality.water_temperature }} C{% else %}N/A{% endif %}</small>
+                        </div>
+                        <div class="admin-list-side">
+                            <span>{{ quality.date|date:"M d, Y" }}</span>
+                        </div>
+                    </article>
+                    {% empty %}
+                    <p class="admin-empty-text">No pool quality records available yet.</p>
+                    {% endfor %}
                 </div>
-                {% empty %}
-                <p style="color: var(--text-secondary);">No recent bookings</p>
-                {% endfor %}
-            </div>
-        </section>
+            </section>
+        </div>
     </main>
 </div>
 {% endblock %}

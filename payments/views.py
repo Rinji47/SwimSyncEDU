@@ -11,6 +11,7 @@ from uuid import uuid4
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -450,8 +451,19 @@ def private_class_payment_success(request, uid):
         payment.payment_status = "Failed"
         payment.save(update_fields=["payment_status"])
         return redirect("private_class_payment_failure", uid=payment.uid)
+    
+    expected_total_amount_str = str(payment.total_amount)
+    received_total_amount = payment_data.get("total_amount")
 
-    if str(payment_data.get("total_amount")) != str(payment.total_amount):
+    if received_total_amount is None:
+        messages.error(request, "Payment verification failed. Amount data is missing.")
+        payment.payment_status = "Failed"
+        payment.save(update_fields=["payment_status"])
+        return redirect("private_class_payment_failure", uid=payment.uid)
+    
+    received_total_amount_str = str(received_total_amount)
+
+    if received_total_amount_str.rstrip('0').rstrip('.') != expected_total_amount_str.rstrip('0').rstrip('.'):
         messages.error(request, "Payment verification failed. Amount mismatch.")
         payment.payment_status = "Failed"
         payment.save(update_fields=["payment_status"])
@@ -603,16 +615,33 @@ def private_class_payment_cancel(request):
 
 
 @login_required
-def payment_report(request):
+def user_payment_report(request):
     cutoff_time = timezone.now() - timedelta(minutes=15)
+
     Payment.objects.filter(
         user=request.user,
         payment_status="Pending",
         payment_date__lt=cutoff_time,
     ).update(payment_status="Cancelled")
-
+    
     payments = Payment.objects.filter(user=request.user).order_by("-payment_date")
-    return render(request, "payments/payment_report.html", {"payments": payments})
+    summary = payments.aggregate(
+        total_records=Count("id"),
+        completed_count=Count("id", filter=Q(payment_status="Completed")),
+        pending_count=Count("id", filter=Q(payment_status="Pending")),
+        cancelled_count=Count("id", filter=Q(payment_status="Cancelled")),
+        failed_count=Count("id", filter=Q(payment_status="Failed")),
+        total_spend=Sum("total_amount", filter=Q(payment_status="Completed")),
+    )
+
+    return render(
+        request,
+        "dashboards/user/payments/payment_report.html",
+        {
+            "payments": payments,
+            "summary": summary,
+        },
+    )
 
 
 @login_required
@@ -627,5 +656,21 @@ def admin_payment_report(request):
         payment_date__lt=cutoff_time,
     ).update(payment_status="Cancelled")
 
-    payments = Payment.objects.all().order_by("-payment_date")
-    return render(request, "payments/admin_payment_report.html", {"payments": payments})
+    payments = Payment.objects.select_related("user").all().order_by("-payment_date")
+    summary = payments.aggregate(
+        total_records=Count("id"),
+        completed_count=Count("id", filter=Q(payment_status="Completed")),
+        pending_count=Count("id", filter=Q(payment_status="Pending")),
+        cancelled_count=Count("id", filter=Q(payment_status="Cancelled")),
+        failed_count=Count("id", filter=Q(payment_status="Failed")),
+        collected_total=Sum("total_amount", filter=Q(payment_status="Completed")),
+    )
+
+    return render(
+        request,
+        "dashboards/admin/payments/admin_payment_report.html",
+        {
+            "payments": payments,
+            "summary": summary,
+        },
+    )

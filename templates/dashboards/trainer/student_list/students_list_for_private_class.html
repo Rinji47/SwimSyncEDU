@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Private Class Student{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/trainer_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="dashboard-header">
+            <h1>Private Class Student</h1>
+            <a href="{% url 'select_private_class_to_view_students_list' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="attendance-hero">
+            <h2>{{ private_class.user.full_name|default:private_class.user.username }}</h2>
+            <p class="attendance-meta">{{ private_class.pool.name }} | {{ private_class.start_date }} to {{ private_class.end_date }} | {{ private_class.start_time }} - {{ private_class.end_time }}</p>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="student-list">
+                <div class="student-row">
+                    <div class="student-meta">
+                        <strong>{{ private_class.user.full_name|default:private_class.user.username }}</strong>
+                        <span>{{ private_class.user.email }}</span>
+                    </div>
+                    <div>
+                        <span class="attendance-status present">Enrolled</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

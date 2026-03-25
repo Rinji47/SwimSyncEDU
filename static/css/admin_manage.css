@@ -52,6 +52,12 @@
   color: #b91c1c;
 }
 
+.class-status.status-completed {
+  border-color: #c7eed8;
+  background: #ecfdf3;
+  color: #166534;
+}
+
 .card-actions {
   margin-top: 0.8rem;
   display: flex;

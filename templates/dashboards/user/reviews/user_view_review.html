@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}View Review - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+<style>
+    .view-review-shell {
+        max-width: 900px;
+        margin: 0 auto;
+        border-radius: 24px;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+    }
+
+    .view-review-top {
+        padding: 1.4rem 1.5rem 1.2rem;
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .view-review-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0;
+    }
+
+    .view-review-item {
+        padding: 1rem 0;
+        border-bottom: 1px dashed #dbe4f0;
+    }
+
+    .view-review-item:nth-child(odd) {
+        padding-right: 1.25rem;
+    }
+
+    .view-review-item:nth-child(even) {
+        padding-left: 1.25rem;
+    }
+
+    .view-review-item.full {
+        grid-column: 1 / -1;
+        padding-right: 0;
+        padding-left: 0;
+    }
+
+    .view-review-body {
+        padding: 1.35rem 1.5rem 1.5rem;
+        background: #fcfdff;
+    }
+
+    .view-review-label {
+        display: block;
+        color: #64748b;
+        font-size: 0.82rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+    }
+
+    .view-review-value {
+        display: block;
+        color: var(--text-primary);
+        font-size: 1rem;
+        line-height: 1.55;
+    }
+
+    .view-review-comment {
+        min-height: 170px;
+        padding: 1rem;
+        border: 1px solid #d1d5db;
+        border-radius: 18px;
+        background: #fff;
+        font-size: 1rem;
+        line-height: 1.7;
+    }
+
+    @media (max-width: 760px) {
+        .view-review-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .view-review-item:nth-child(odd),
+        .view-review-item:nth-child(even) {
+            padding-left: 0;
+            padding-right: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'dashboards/user/components/user_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include 'components/message.html' %}
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Your Review</h1>
+                <p style="color: var(--text-secondary); margin-top: 0.35rem;">
+                    Review details for {{ trainer.full_name|default:trainer.username }}.
+                </p>
+            </div>
+            <a href="{% url 'user_select_trainer_from_certificate' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="dashboard-section" style="display:flex; justify-content:center;">
+            <div class="modal-content view-review-shell" style="position: static; transform: none;">
+                <div class="view-review-top">
+                    <div class="view-review-grid">
+                        <div class="view-review-item">
+                            <span class="view-review-label">Trainer</span>
+                            <span class="view-review-value">{{ trainer.full_name|default:trainer.username }}</span>
+                        </div>
+                        <div class="view-review-item">
+                            <span class="view-review-label">Rating</span>
+                            <span class="view-review-value">{{ review.rating }}/5</span>
+                        </div>
+                        <div class="view-review-item">
+                            <span class="view-review-label">Created</span>
+                            <span class="view-review-value">{{ review.created_at|date:"M d, Y H:i" }}</span>
+                        </div>
+                        <div class="view-review-item">
+                            <span class="view-review-label">Last Updated</span>
+                            <span class="view-review-value">{{ review.updated_at|date:"M d, Y H:i" }}</span>
+                        </div>
+                        <div class="view-review-item">
+                            <span class="view-review-label">Certificate Issued</span>
+                            <span class="view-review-value">{{ certificate.issued_at|date:"M d, Y" }}</span>
+                        </div>
+
+                        {% if certificate.class_booking %}
+                        <div class="view-review-item">
+                            <span class="view-review-label">Class Type</span>
+                            <span class="view-review-value">Group Class</span>
+                        </div>
+                        <div class="view-review-item">
+                            <span class="view-review-label">Class Name</span>
+                            <span class="view-review-value">{{ certificate.class_booking.class_session.class_name }}</span>
+                        </div>
+                        <div class="view-review-item">
+                            <span class="view-review-label">Pool</span>
+                            <span class="view-review-value">{{ certificate.class_booking.class_session.pool.name }}</span>
+                        </div>
+                        {% elif certificate.private_class %}
+                        <div class="view-review-item">
+                            <span class="view-review-label">Class Type</span>
+                            <span class="view-review-value">Private Class</span>
+                        </div>
+                        <div class="view-review-item">
+                            <span class="view-review-label">Pool</span>
+                            <span class="view-review-value">{{ certificate.private_class.pool.name }}</span>
+                        </div>
+                        <div class="view-review-item">
+                            <span class="view-review-label">Dates</span>
+                            <span class="view-review-value">{{ certificate.private_class.start_date|date:"M d, Y" }} - {{ certificate.private_class.end_date|date:"M d, Y" }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="view-review-body">
+                    <div class="view-review-item full">
+                        <span class="view-review-label">Comment</span>
+                        <div class="view-review-comment">
+                            {% if review.comment %}
+                            {{ review.comment|linebreaksbr }}
+                            {% else %}
+                            <span style="color: var(--text-secondary);">No comment provided.</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="modal-footer" style="margin-top: 1.5rem;">
+                        <a href="{% url 'user_select_trainer_from_certificate' %}" class="btn-secondary">Back</a>
+                        <a href="{% url 'user_edit_review' certificate.id %}" class="btn-primary">Edit Review</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

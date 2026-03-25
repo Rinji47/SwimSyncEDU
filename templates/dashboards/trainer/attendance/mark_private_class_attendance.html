@@ -31,14 +31,14 @@
             {% endif %}
 
             <div class="attendance-actions">
-                <form method="post">
+                <form method="post" action="{% url 'mark_private_class_attendance' private_class.id %}">
                     {% csrf_token %}
                     <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
                     <input type="hidden" name="status" value="present">
                     <button type="submit" class="btn-sm btn-success">Present</button>
                 </form>
 
-                <form method="post">
+                <form method="post" action="{% url 'mark_private_class_attendance' private_class.id %}">
                     {% csrf_token %}
                     <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
                     <input type="hidden" name="status" value="absent">

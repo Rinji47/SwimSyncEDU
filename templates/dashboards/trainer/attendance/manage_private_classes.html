@@ -16,17 +16,24 @@
 
     <main class="dashboard-main">
         {% include '../../../components/message.html' %}
+        {% now "Y-m-d" as today_str %}
 
         <div class="dashboard-header">
             <h1>My Private Classes</h1>
-            <a href="{% url 'select_private_class_for_attendance' %}" class="btn-primary">Take Attendance</a>
+            <a href="{% url 'select_private_class_for_attendance' %}" class="btn-primary">Go to Attendance Page</a>
         </div>
 
         <div class="dashboard-section card-grid">
             {% for private_class in private_classes %}
             <div class="class-card">
-                <span class="class-status {% if private_class.is_cancelled %}status-cancelled{% else %}status-open{% endif %}">
-                    {% if private_class.is_cancelled %}Cancelled{% else %}Active{% endif %}
+                <span class="class-status {% if private_class.is_cancelled %}status-cancelled{% elif private_class.end_date|date:'Y-m-d' < today_str %}status-completed{% else %}status-open{% endif %}">
+                    {% if private_class.is_cancelled %}
+                        Cancelled
+                    {% elif private_class.end_date|date:'Y-m-d' < today_str %}
+                        Completed
+                    {% else %}
+                        Active
+                    {% endif %}
                 </span>
                 <h3>Private Class - {{ private_class.user.full_name|default:private_class.user.username }}</h3>
                 <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
@@ -34,7 +41,11 @@
                 <p><strong>Time:</strong> {{ private_class.start_time }} - {{ private_class.end_time }}</p>
 
                 <div class="card-actions">
-                    <a href="{% url 'mark_private_class_attendance' private_class.id %}" class="btn-sm btn-primary">Mark Attendance</a>
+                    {% if not private_class.is_cancelled and private_class.end_date|date:'Y-m-d' >= today_str %}
+                    <a href="{% url 'select_private_class_for_attendance' %}" class="btn-sm btn-primary">Go to Attendance Page</a>
+                    {% else %}
+                    <span class="btn-sm btn-secondary">Completed</span>
+                    {% endif %}
                     <a href="{% url 'select_private_classes_for_attendance_history' private_class.id %}" class="btn-sm btn-secondary">View History</a>
                 </div>
             </div>

@@ -7,25 +7,56 @@
 <link rel="stylesheet" href="{% static 'css/landing.css' %}">
 <link rel="stylesheet" href="{% static 'css/pools.css' %}">
 <link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<style>
+    .class-type-shell {
+        background: #f8fafc;
+    }
+
+    .class-type-hero {
+        margin-bottom: 1.2rem;
+        padding: 1.45rem 1.5rem;
+        border-radius: 24px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+    }
+
+    .class-type-hero h1 {
+        font-size: clamp(2rem, 4vw, 3.2rem);
+        line-height: 0.98;
+        margin-bottom: 0.45rem;
+    }
+
+    .class-type-grid .pool-card,
+    .private-booking-card {
+        border-radius: 22px;
+        box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07);
+    }
+
+    .private-booking-card {
+        padding: 1.2rem 1.3rem;
+    }
+
+    .class-type-grid .pool-card h3 {
+        font-size: 1.3rem;
+    }
+
+    .class-type-grid .btn-secondary,
+    .private-booking-card .btn-primary {
+        width: 100%;
+        justify-content: center;
+        border-radius: 14px;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<nav class="navbar">
-    <div class="container">
-        <a class="nav-brand" href="{% url 'index' %}">SwimSync EDU</a>
-        <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
-        <ul class="nav-menu" id="navMenu">
-            <li><a href="{% url 'nearby_pools' %}" class="active-link">Pools</a></li>
-            <li><a href="{% url 'pool_quality_today_list' %}">Pool Quality</a></li>
-            <li><a href="{% url 'index' %}#about">About</a></li>
-        </ul>
-    </div>
-</nav>
+{% include 'components/public_nav.html' with active='pools' %}
 
-<section class="page-shell">
+<section class="page-shell class-type-shell">
     <div class="container two-col">
         <div>
-            <div class="page-head">
+            <div class="page-head class-type-hero">
                 <div>
                     <h1>{{ pool.name }}</h1>
                     <p class="subtitle">Select a class type or start a private class booking.</p>
@@ -33,7 +64,7 @@
                 <a class="btn-secondary" href="{% url 'nearby_pools' %}"><i class="fa-solid fa-arrow-left"></i> Back</a>
             </div>
 
-            <div class="info-card" style="margin-bottom:1rem;">
+            <div class="info-card private-booking-card" style="margin-bottom:1rem;">
                 <div class="page-head" style="margin:0;">
                     <h3 style="margin:0;">Private Class</h3>
                     {% if request.user.is_authenticated and request.user.role == 'user' %}
@@ -44,7 +75,7 @@
                 </div>
             </div>
 
-            <div class="pools-grid">
+            <div class="pools-grid class-type-grid">
                 {% for class_item in class_types %}
                 <article class="pool-card">
                     <div class="pool-card-header">

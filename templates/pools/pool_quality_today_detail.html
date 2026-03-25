@@ -10,17 +10,7 @@
 {% endblock %}
 
 {% block content %}
-<nav class="navbar">
-    <div class="container">
-        <a class="nav-brand" href="{% url 'index' %}">SwimSync EDU</a>
-        <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
-        <ul class="nav-menu" id="navMenu">
-            <li><a href="{% url 'nearby_pools' %}">Pools</a></li>
-            <li><a href="{% url 'pool_quality_today_list' %}" class="active-link">Pool Quality</a></li>
-            <li><a href="{% url 'index' %}#about">About</a></li>
-        </ul>
-    </div>
-</nav>
+{% include 'components/public_nav.html' with active='quality' %}
 
 <section class="page-shell">
     <div class="container two-col">

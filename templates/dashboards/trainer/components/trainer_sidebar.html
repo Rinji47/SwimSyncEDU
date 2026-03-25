@@ -9,10 +9,13 @@
         {% url 'manage_trainer_private_classes' as manage_trainer_private_classes_url %}
         {% url 'select_class_for_attendance' as select_class_for_attendance_url %}
         {% url 'select_private_class_for_attendance' as select_private_class_for_attendance_url %}
+        {% url 'select_session_to_view_students_list' as select_session_to_view_students_list_url %}
+        {% url 'select_private_class_to_view_students_list' as select_private_class_to_view_students_list_url %}
         {% url 'trainer_susitute_class_sessions_list' as trainer_substitute_group_url %}
         {% url 'trainer_susitute_private_classes_list' as trainer_substitute_private_url %}
         {% url 'pending_group_certificate_sessions' as pending_group_certificate_sessions_url %}
         {% url 'pending_private_certificates' as pending_private_certificates_url %}
+        {% url 'trainer_my_reviews' as trainer_my_reviews_url %}
 
         <a href="{{ trainer_dashboard_url }}" class="nav-item {% if request.path == trainer_dashboard_url %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
@@ -34,6 +37,14 @@
             <span class="nav-icon"><i class="fa-solid fa-user-check"></i></span>
             Private Attendance
         </a>
+        <a href="{{ select_session_to_view_students_list_url }}" class="nav-item {% if request.path == select_session_to_view_students_list_url or '/classes/student-lists/group/' in request.path %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-address-book"></i></span>
+            Group Student Lists
+        </a>
+        <a href="{{ select_private_class_to_view_students_list_url }}" class="nav-item {% if request.path == select_private_class_to_view_students_list_url or '/classes/student-lists/private/' in request.path %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-id-card"></i></span>
+            Private Student Lists
+        </a>
         <a href="{{ trainer_substitute_group_url }}" class="nav-item {% if request.path == trainer_substitute_group_url %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-user-group"></i></span>
             Sub Group Classes
@@ -49,6 +60,10 @@
         <a href="{{ pending_private_certificates_url }}" class="nav-item {% if request.path == pending_private_certificates_url or '/trainer/certificates/private/' in request.path %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-certificate"></i></span>
             Private Certificates
+        </a>
+        <a href="{{ trainer_my_reviews_url }}" class="nav-item {% if request.path == trainer_my_reviews_url %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-star-half-stroke"></i></span>
+            My Reviews
         </a>
         <a href="{% url 'logout' %}" class="nav-item">
             <span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span>

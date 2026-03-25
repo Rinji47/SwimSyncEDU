@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Today's Classes - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<style>
+    .today-page-note {
+        margin: 0.35rem 0 0;
+        color: var(--text-secondary);
+    }
+
+    .today-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .today-card-meta {
+        font-size: 0.92rem;
+        line-height: 1.45;
+    }
+
+    .today-type {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin-bottom: 0.75rem;
+        color: var(--text-secondary);
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
+
+    .today-status-ongoing {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+        color: #15803d;
+    }
+
+    .today-status-upcoming {
+        border-color: #fde68a;
+        background: #fffbeb;
+        color: #b45309;
+    }
+
+    .today-status-completed {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+        color: #475569;
+    }
+
+    .today-empty {
+        margin-top: 1.5rem;
+        padding: 1.1rem 1.2rem;
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+        background: #fff;
+        color: var(--text-secondary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/user/components/user_sidebar.html" %}
+
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Today's Classes</h1>
+                <p class="today-page-note">Your schedule for {{ today|date:"M d, Y" }} across group and private sessions.</p>
+            </div>
+        </div>
+
+        {% if cards %}
+        <div class="dashboard-section today-grid">
+            {% for card in cards %}
+            <article class="class-card compact">
+                <span class="class-status
+                    {% if 'Cancelled' in card.status %}status-cancelled
+                    {% elif 'Completed' in card.status %}today-status-completed
+                    {% elif 'Upcoming' in card.status %}today-status-upcoming
+                    {% else %}today-status-ongoing{% endif %}">
+                    {{ card.status }}
+                </span>
+
+                {% if card.type == 'group' %}
+                <div class="today-type">
+                    <i class="fa-solid fa-users"></i>
+                    Group Class
+                </div>
+                <h3>{{ card.session.class_name }}</h3>
+                <div class="today-card-meta">
+                    <strong>Pool:</strong> {{ card.session.pool.name }}<br>
+                    <strong>Trainer:</strong> {{ card.session.trainer.full_name|default:card.session.trainer.username }}<br>
+                    <strong>Type:</strong> {{ card.session.class_type.name }}<br>
+                    <strong>Dates:</strong> {{ card.session.start_date|date:"M d" }} - {{ card.session.end_date|date:"M d" }}<br>
+                    <strong>Time:</strong> {{ card.session.start_time|time:"H:i" }} - {{ card.session.end_time|time:"H:i" }}<br>
+                    <strong>Price:</strong> Rs. {{ card.session.total_price }}
+                </div>
+                <div class="card-actions">
+                    <a href="{% url 'my_bookings' %}" class="btn-sm btn-secondary" style="text-decoration:none;">All Bookings</a>
+                    <button type="button"
+                            class="btn-sm btn-primary"
+                            onclick="openTodayClassModal(this)"
+                            data-title="{{ card.session.class_name|escape }}"
+                            data-type="Group Class"
+                            data-status="{{ card.status|escape }}"
+                            data-pool="{{ card.session.pool.name|escape }}"
+                            data-trainer="{{ card.session.trainer.full_name|default:card.session.trainer.username|escape }}"
+                            data-dates="{{ card.session.start_date|date:'M d, Y' }} - {{ card.session.end_date|date:'M d, Y' }}"
+                            data-time="{{ card.session.start_time|time:'H:i' }} - {{ card.session.end_time|time:'H:i' }}"
+                            data-extra="Class Type: {{ card.session.class_type.name|escape }}">
+                        View
+                    </button>
+                </div>
+                {% else %}
+                <div class="today-type">
+                    <i class="fa-solid fa-user-lock"></i>
+                    Private Class
+                </div>
+                <h3>Private Class</h3>
+                <div class="today-card-meta">
+                    <strong>Pool:</strong> {{ card.private_class.pool.name }}<br>
+                    <strong>Trainer:</strong> {{ card.private_class.trainer.full_name|default:card.private_class.trainer.username }}<br>
+                    <strong>Dates:</strong> {{ card.private_class.start_date|date:"M d" }} - {{ card.private_class.end_date|date:"M d" }}<br>
+                    <strong>Time:</strong> {{ card.private_class.start_time|time:"H:i" }} - {{ card.private_class.end_time|time:"H:i" }}<br>
+                    <strong>Total Price:</strong> Rs. {{ card.private_class.total_price }}
+                </div>
+                <div class="card-actions">
+                    <a href="{% url 'my_private_classes' %}" class="btn-sm btn-secondary" style="text-decoration:none;">All Private</a>
+                    <button type="button"
+                            class="btn-sm btn-primary"
+                            onclick="openTodayClassModal(this)"
+                            data-title="Private Class"
+                            data-type="Private Class"
+                            data-status="{{ card.status|escape }}"
+                            data-pool="{{ card.private_class.pool.name|escape }}"
+                            data-trainer="{{ card.private_class.trainer.full_name|default:card.private_class.trainer.username|escape }}"
+                            data-dates="{{ card.private_class.start_date|date:'M d, Y' }} - {{ card.private_class.end_date|date:'M d, Y' }}"
+                            data-time="{{ card.private_class.start_time|time:'H:i' }} - {{ card.private_class.end_time|time:'H:i' }}"
+                            data-extra="Booked By: {{ card.private_class.user.full_name|default:card.private_class.user.username|escape }}">
+                        View
+                    </button>
+                </div>
+                {% endif %}
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="today-empty">
+            No classes fall on today's schedule.
+        </div>
+        {% endif %}
+    </main>
+</div>
+
+<div id="todayClassModal" class="modal">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h2 id="today_modal_title">Class Details</h2>
+            <span class="close" onclick="toggleTodayClassModal()">&times;</span>
+        </div>
+
+        <div class="details-grid">
+            <div class="detail-item">
+                <span class="detail-label">Type</span>
+                <span class="detail-value" id="today_modal_type"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Status</span>
+                <span class="detail-value" id="today_modal_status"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Pool</span>
+                <span class="detail-value" id="today_modal_pool"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Trainer</span>
+                <span class="detail-value" id="today_modal_trainer"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Dates</span>
+                <span class="detail-value" id="today_modal_dates"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Time</span>
+                <span class="detail-value" id="today_modal_time"></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Extra</span>
+                <span class="detail-value" id="today_modal_extra"></span>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn-secondary" onclick="toggleTodayClassModal()">Close</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const todayClassModal = document.getElementById('todayClassModal');
+
+function openTodayClassModal(button) {
+    document.getElementById('today_modal_title').innerText = button.getAttribute('data-title');
+    document.getElementById('today_modal_type').innerText = button.getAttribute('data-type');
+    document.getElementById('today_modal_status').innerText = button.getAttribute('data-status');
+    document.getElementById('today_modal_pool').innerText = button.getAttribute('data-pool');
+    document.getElementById('today_modal_trainer').innerText = button.getAttribute('data-trainer');
+    document.getElementById('today_modal_dates').innerText = button.getAttribute('data-dates');
+    document.getElementById('today_modal_time').innerText = button.getAttribute('data-time');
+    document.getElementById('today_modal_extra').innerText = button.getAttribute('data-extra');
+    todayClassModal.classList.add('show');
+}
+
+function toggleTodayClassModal() {
+    todayClassModal.classList.remove('show');
+}
+
+window.addEventListener('mousedown', function(event) {
+    if (todayClassModal.classList.contains('show') && event.target === todayClassModal) {
+        toggleTodayClassModal();
+    }
+});
+</script>
+{% endblock %}

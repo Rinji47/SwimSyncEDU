@@ -8,40 +8,78 @@
 <link rel="stylesheet" href="{% static 'css/pools.css' %}">
 <link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
 <link rel="stylesheet" href="{% static 'css/message.css' %}">
+<style>
+    .pool-browse-shell {
+        background: #f8fafc;
+    }
+
+    .pool-browse-hero {
+        margin-bottom: 1.4rem;
+        padding: 1.5rem 1.55rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 24px;
+        background: #ffffff;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+    }
+
+    .pool-browse-hero h1 {
+        font-size: clamp(2rem, 4vw, 3.4rem);
+        line-height: 0.95;
+        margin-bottom: 0.55rem;
+        max-width: 8ch;
+    }
+
+    .pool-browse-hero .subtitle {
+        max-width: 58ch;
+        font-size: 1.03rem;
+    }
+
+    .pool-browse-grid .pool-card {
+        border-radius: 22px;
+        padding: 1.35rem;
+        box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07);
+    }
+
+    .pool-browse-grid .pool-card-header h3 {
+        font-size: 1.35rem;
+        line-height: 1.05;
+    }
+
+    .pool-browse-grid .btn-primary {
+        width: 100%;
+        justify-content: center;
+        border-radius: 14px;
+        margin-top: 0.35rem;
+    }
+
+    .pool-status-banner {
+        margin: 1rem 0 1.25rem;
+        padding: 0.95rem 1.15rem;
+        border-radius: 18px;
+        border: 1px solid #dbeafe;
+        background: #ffffff;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .pool-status-banner .pools-status {
+        margin: 0;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+        padding: 0;
+        border-radius: 0;
+        font-size: 1rem;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<nav class="navbar">
-    <div class="container">
-        <a class="nav-brand" href="{% url 'index' %}">SwimSync EDU</a>
-        <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
-        <ul class="nav-menu" id="navMenu">
-            <li><a href="{% url 'index' %}#features">Features</a></li>
-            <li><a href="{% url 'index' %}#roles">For You</a></li>
-            <li><a href="{% url 'index' %}#about">About</a></li>
-            <li><a href="{% url 'nearby_pools' %}" class="active-link">Pools</a></li>
-            <li><a href="{% url 'pool_quality_today_list' %}">Pool Quality</a></li>
-            {% if request.user.is_authenticated %}
-                {% if request.user.role == 'admin' %}
-                    <li><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
-                {% elif request.user.role == 'trainer' %}
-                    <li><a href="{% url 'trainer_dashboard' %}">Dashboard</a></li>
-                {% else %}
-                    <li><a href="{% url 'user_dashboard' %}">Dashboard</a></li>
-                {% endif %}
-                <li><a href="{% url 'logout' %}" class="btn-primary">Logout</a></li>
-            {% else %}
-                <li><a href="{% url 'login' %}">Login</a></li>
-                <li><a href="{% url 'signup' %}" class="btn-primary">Get Started</a></li>
-            {% endif %}
-        </ul>
-    </div>
-</nav>
+{% include 'components/public_nav.html' with active='pools' %}
 
-<section class="page-shell">
+<section class="page-shell pool-browse-shell">
     <div class="container">
         {% include "components/message.html" %}
-        <div class="page-head">
+        <div class="page-head pool-browse-hero">
             <div>
                 <h1>Find A Pool</h1>
                 <p class="subtitle">Browse pools near your location and quickly jump to available class types.</p>
@@ -51,7 +89,7 @@
                 <a class="btn-secondary" href="{% url 'nearby_pools' %}"><i class="fa-solid fa-list"></i> Show All</a>
             </div>
         </div>
-        <form class="distance-filter" method="get">
+        <form class="distance-filter" method="get" action="{% url 'nearby_pools' %}">
             <label for="radiusInput"><i class="fa-solid fa-ruler-horizontal"></i> Distance</label>
             <input
                 id="radiusInput"
@@ -69,9 +107,11 @@
         {% if not is_geopy_installed %}
         <p class="pools-status warning"><i class="fa-solid fa-triangle-exclamation"></i> Geopy not installed yet. Run <code>pip install geopy</code> to use library-based distance calculation.</p>
         {% endif %}
-        <p class="pools-status" id="poolsStatus">{{ status_message }}</p>
+        <div class="pool-status-banner">
+            <p class="pools-status" id="poolsStatus">{{ status_message }}</p>
+        </div>
 
-        <div class="pools-grid" id="poolsGrid">
+        <div class="pools-grid pool-browse-grid" id="poolsGrid">
             {% for pool in pools %}
             <article class="pool-card">
                 <div class="pool-card-header">

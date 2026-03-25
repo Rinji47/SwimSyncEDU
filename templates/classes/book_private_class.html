@@ -7,6 +7,43 @@
 <link rel="stylesheet" href="{% static 'css/pools.css' %}">
 <link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
 <link rel="stylesheet" href="{% static 'css/message.css' %}">
+<style>
+    .busy-slots-title {
+        margin-top: 1rem;
+    }
+
+    .busy-slots-panel {
+        margin-top: 0.8rem;
+        padding: 0.9rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    .busy-slot-list-large {
+        gap: 0.7rem;
+        max-height: 220px;
+    }
+
+    .busy-slot-list-large .slot-chip {
+        padding: 0.7rem 1rem;
+        border-radius: 999px;
+        font-size: 1rem;
+        line-height: 1.35;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+        box-shadow: 0 6px 14px rgba(245, 158, 11, 0.10);
+    }
+
+    .busy-slot-list-large .slot-empty {
+        box-shadow: 0 6px 14px rgba(34, 197, 94, 0.08);
+    }
+
+    .busy-slot-list-large .slot-more {
+        box-shadow: none;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -23,7 +60,7 @@
             </div>
 
             <div class="info-card">
-                <form method="post" class="split-form">
+                <form method="post" action="{% url 'book_private_class' pool_id trainer_id %}" class="split-form">
                     {% csrf_token %}
                     <input type="hidden" name="trainer_id" value="{{ trainer_id }}">
                     <input type="hidden" name="pool_id" value="{{ pool_id }}">
@@ -60,15 +97,16 @@
                 <li><strong>Email:</strong> {{ trainer.email }}</li>
             </ul>
 
-            <form method="get" class="quick-filter range-filter" style="margin-top:0.9rem;">
+            <form method="get" action="{% url 'book_private_class' pool_id trainer_id %}" class="quick-filter range-filter" style="margin-top:0.9rem;">
                 <label><strong>Busy Range:</strong></label>
                 <input class="compact-input" type="date" name="busy_from" value="{% if busy_from %}{{ busy_from|date:'Y-m-d' }}{% endif %}">
                 <input class="compact-input" type="date" name="busy_to" value="{% if busy_to %}{{ busy_to|date:'Y-m-d' }}{% endif %}">
                 <button type="submit" class="btn-secondary">Apply</button>
             </form>
 
-            <h3 style="margin-top:0.6rem;"><i class="fa-solid fa-calendar-xmark"></i> Trainer Busy Slots</h3>
-            <div class="slot-list">
+            <h3 class="busy-slots-title"><i class="fa-solid fa-calendar-xmark"></i> Trainer Busy Slots</h3>
+            <div class="busy-slots-panel">
+            <div class="slot-list busy-slot-list-large">
                 {% for slot in trainer_unavailable_slots %}
                 <span class="slot-chip" title="{{ slot }}">{{ slot }}</span>
                 {% empty %}
@@ -77,6 +115,7 @@
                 {% if trainer_unavailable_more > 0 %}
                 <span class="slot-chip slot-more">+{{ trainer_unavailable_more }} more conflicts</span>
                 {% endif %}
+            </div>
             </div>
         </aside>
     </div>

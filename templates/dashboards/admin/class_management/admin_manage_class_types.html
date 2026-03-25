@@ -18,10 +18,10 @@
         {% include "components/message.html" %}
         <div class="dashboard-header">
             <h1>Class Types</h1>
-            <button class="btn-primary" onclick="toggleModal('classTypeModal')">Add Class Type</button>
+            <button class="btn-primary" onclick="openAddClassTypeModal()">Add Class Type</button>
         </div>
 
-        <form class="filter-bar" method="GET">
+        <form class="filter-bar" method="GET" action="{% url 'manage_class_types' %}">
             <div class="filter-main">
                 <div class="filter-search">
                     <input type="text" class="filter-input" name="q" placeholder="Search class types..." value="{{ request.GET.q|default_if_none:'' }}">
@@ -118,6 +118,9 @@
             <div class="form-group">
                 <label for="duration_days">Duration (days)</label>
                 <input type="number" id="duration_days" name="duration_days" min="0" step="1" value="0">
+                <small id="class_type_duration_note" style="display:block;margin-top:0.35rem;color:var(--text-secondary);">
+                    This duration is used when creating future class sessions.
+                </small>
             </div>
             <div class="form-group">
                 <label for="description">Description</label>

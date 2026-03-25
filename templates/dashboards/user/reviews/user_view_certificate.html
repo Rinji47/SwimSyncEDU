@@ -180,12 +180,11 @@
                     View your awarded certificate details.
                 </p>
             </div>
-            <a href="{% url 'select_trainer_from_certificate' %}" class="btn-secondary">Back</a>
+            <a href="{% url 'user_select_trainer_from_certificate' %}" class="btn-secondary">Back</a>
         </div>
 
         <div class="dashboard-section certificate-page">
             <div class="certificate-actions">
-                <a href="{% url 'export_certificate_pdf' certificate.id %}" class="btn-secondary">Export PDF</a>
                 <button type="button" onclick="window.print()" class="btn-primary">Print</button>
             </div>
 

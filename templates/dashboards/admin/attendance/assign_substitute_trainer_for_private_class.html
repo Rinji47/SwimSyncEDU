@@ -36,7 +36,7 @@
                 <div class="attendance-actions" style="margin-top:1rem;">
                     <a href="{% url 'choose_substitute_trainer_for_private_class' private_class.id %}" class="btn-secondary">{% if selected_trainer %}Change Trainer{% else %}Assign Trainer{% endif %}</a>
 
-                    <form method="post" style="display:inline-flex;">
+                    <form method="post" action="{% url 'assign_substitute_trainer_for_private_class' private_class.id %}" style="display:inline-flex;">
                         {% csrf_token %}
                         <input type="hidden" name="selected_trainer_id" value="{% if selected_trainer %}{{ selected_trainer.pk }}{% endif %}">
                         <button type="submit" class="btn-primary" {% if not selected_trainer %}disabled{% endif %}>Confirm Assign</button>

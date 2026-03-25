@@ -18,7 +18,6 @@ from datetime import date, datetime
 # Create your views here.
 def _get_substitute_candidates(pool, today, start_time, end_time, exclude_trainer_ids=None):
     exclude_trainer_ids = exclude_trainer_ids or []
-
     assigned_trainer_ids = TrainerPoolAssignment.objects.filter(
         pool=pool,
         is_active=True,
@@ -32,18 +31,15 @@ def _get_substitute_candidates(pool, today, start_time, end_time, exclude_traine
         status='present',
     ).values_list('trainer_id', flat=True)
 
-    trainers = (
-        User.objects.filter(
-            role='trainer',
-            is_active=True,
-            pk__in=assigned_trainer_ids,
-        )
-        .filter(pk__in=present_trainer_ids)
-        .exclude(pk__in=exclude_trainer_ids)
-        .distinct()
-    )
-
+    trainers = User.objects.filter(
+        role='trainer',
+        is_active=True,
+        pk__in=assigned_trainer_ids,
+    ).filter(pk__in=present_trainer_ids
+    ).exclude(pk__in=exclude_trainer_ids).distinct()
+    
     candidates = []
+
     for trainer in trainers:
         class_conflict = ClassSession.objects.filter(
             Q(trainer=trainer) | Q(substitute_trainer=trainer),
@@ -61,16 +57,21 @@ def _get_substitute_candidates(pool, today, start_time, end_time, exclude_traine
             end_time__gt=start_time,
             is_cancelled=False,
         ).exists()
+
         has_conflict = class_conflict or private_conflict
+        if has_conflict:
+            conflict_label = 'Busy at this time'
+        else:
+            conflict_label = 'Available'
+
         candidates.append(
             {
                 'trainer': trainer,
                 'is_available': not has_conflict,
-                'conflict_label': 'Busy at this time' if has_conflict else 'Available',
+                'conflict_label': conflict_label,
             }
         )
     return candidates
-
 
 @login_required
 def select_trainer_for_attendance(request):
@@ -80,14 +81,17 @@ def select_trainer_for_attendance(request):
 
     today = date.today()
     trainers = User.objects.filter(role='trainer', is_active=True).order_by('full_name', 'username')
-    attendance_map = {
-        record.trainer_id: record.status
-        for record in TrainerAttendanceRecord.objects.filter(date=today).select_related('trainer')
-    }
-    trainer_rows = [
-        {'trainer': trainer, 'status': attendance_map.get(trainer.pk, 'pending')}
-        for trainer in trainers
-    ]
+    attendance_map = {}
+    attendance_records = TrainerAttendanceRecord.objects.filter(date=today).select_related('trainer')
+    for record in attendance_records:
+        attendance_map[record.trainer_id] = record.status
+
+    trainer_rows = []
+    for trainer in trainers:
+        trainer_rows.append({
+            'trainer': trainer,
+            'status': attendance_map.get(trainer.pk, 'pending'),
+        })
     return render(
         request,
         'dashboards/admin/attendance/select_trainer_for_attendance.html',
@@ -230,14 +234,17 @@ def select_student_for_attendance(request, class_session_id):
 
     today = date.today()
     bookings = ClassBooking.objects.filter(class_session=class_session, is_cancelled=False).select_related('user')
-    attendance_today = {
-        record.student_id: record.status
-        for record in ClassSessionAttendance.objects.filter(class_session=class_session, date=today)
-    }
-    booking_rows = [
-        {'booking': booking, 'status': attendance_today.get(booking.user_id, 'pending')}
-        for booking in bookings
-    ]
+    attendance_today = {}
+    attendance_records = ClassSessionAttendance.objects.filter(class_session=class_session, date=today)
+    for record in attendance_records:
+        attendance_today[record.student_id] = record.status
+
+    booking_rows = []
+    for booking in bookings:
+        booking_rows.append({
+            'booking': booking,
+            'status': attendance_today.get(booking.user_id, 'pending'),
+        })
 
     return render(
         request,
@@ -268,45 +275,37 @@ def mark_class_attendance(request, class_booking_id):
         messages.error(request, 'Cannot mark attendance because you are not marked as present today.')
         return redirect('select_student_for_attendance', class_session_id=class_session.id)
 
-    if request.method == 'POST':
-        try:
-            date_str = datetime.strptime(request.POST.get('date', ''), '%Y-%m-%d').date()
-        except ValueError:
-            messages.error(request, 'Invalid date.')
-            return redirect('select_student_for_attendance', class_session_id=class_session.id)
-
-        status = request.POST.get('status')
-        if status not in {'present', 'absent', 'class_cancelled'}:
-            messages.error(request, 'Invalid attendance status.')
-            return redirect('select_student_for_attendance', class_session_id=class_session.id)
-
-        student = class_booking.user
-
-        if date_str != date.today():
-            messages.error(request, 'You can only mark attendance for today.')
-            return redirect('select_student_for_attendance', class_session_id=class_session.id)
-
-        if date_str.weekday() >= 5:  # Saturday or Sunday
-            messages.error(request, "Attendance cannot be marked on weekends.")
-            return redirect('select_student_for_attendance', class_session_id=class_session.id)
-
-        ClassSessionAttendance.objects.update_or_create(
-            class_session=class_session, student=student, date=date_str,
-            defaults={'status': status, 'marked_by': request.user}
-        )
-        messages.success(request, 'Class attendance marked successfully.')
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method.')
         return redirect('select_student_for_attendance', class_session_id=class_session.id)
 
-    today_record = ClassSessionAttendance.objects.filter(
-        class_session=class_session,
-        student=class_booking.user,
-        date=date.today(),
-    ).first()
-    return render(
-        request,
-        'dashboards/trainer/attendance/mark_class_attendance.html',
-        {'class_booking': class_booking, 'today': date.today(), 'today_record': today_record},
+    try:
+        date_str = datetime.strptime(request.POST.get('date', ''), '%Y-%m-%d').date()
+    except ValueError:
+        messages.error(request, 'Invalid date.')
+        return redirect('select_student_for_attendance', class_session_id=class_session.id)
+
+    status = request.POST.get('status')
+    if status not in {'present', 'absent', 'class_cancelled'}:
+        messages.error(request, 'Invalid attendance status.')
+        return redirect('select_student_for_attendance', class_session_id=class_session.id)
+
+    student = class_booking.user
+
+    if date_str != date.today():
+        messages.error(request, 'You can only mark attendance for today.')
+        return redirect('select_student_for_attendance', class_session_id=class_session.id)
+
+    if date_str.weekday() >= 5:
+        messages.error(request, "Attendance cannot be marked on weekends.")
+        return redirect('select_student_for_attendance', class_session_id=class_session.id)
+
+    ClassSessionAttendance.objects.update_or_create(
+        class_session=class_session, student=student, date=date_str,
+        defaults={'status': status, 'marked_by': request.user}
     )
+    messages.success(request, 'Class attendance marked successfully.')
+    return redirect('select_student_for_attendance', class_session_id=class_session.id)
 
 
 @login_required
@@ -341,34 +340,43 @@ def mark_private_class_attendance(request, private_class_id):
         messages.error(request, 'You can only mark attendance for your own classes or subsitute class.')
         return redirect('index')
 
+    teacher_present = TrainerAttendanceRecord.objects.filter(
+        trainer=request.user,
+        date=date.today(),
+        status='present',
+    ).exists()
+    if not teacher_present:
+        messages.error(request, 'Cannot mark attendance because you are not marked as present today.')
+        return redirect('select_private_class_for_attendance')
+
     if request.method == 'POST':
         try:
             date_str = datetime.strptime(request.POST.get('date', ''), '%Y-%m-%d').date()
         except ValueError:
             messages.error(request, 'Invalid date.')
-            return redirect('mark_private_class_attendance', private_class_id=private_class_id)
+            return redirect('select_private_class_for_attendance')
 
         status = request.POST.get('status')
         if status not in {'present', 'absent', 'class_cancelled'}:
             messages.error(request, 'Invalid attendance status.')
-            return redirect('mark_private_class_attendance', private_class_id=private_class_id)
+            return redirect('select_private_class_for_attendance')
 
         student = private_class.user
 
         if date_str != date.today():
             messages.error(request, 'You can only mark attendance for today.')
-            return redirect('mark_private_class_attendance', private_class_id=private_class_id)
+            return redirect('select_private_class_for_attendance')
 
         if date_str.weekday() >= 5:  # Saturday or Sunday
             messages.error(request, "Attendance cannot be marked on weekends.")
-            return redirect('mark_private_class_attendance', private_class_id=private_class_id)
+            return redirect('select_private_class_for_attendance')
 
         PrivateClassAttendance.objects.update_or_create(
             private_class=private_class, student=student, date=date_str,
             defaults={'status': status, 'marked_by': request.user}
         )
         messages.success(request, 'Private class attendance marked successfully.')
-        return redirect('mark_private_class_attendance', private_class_id=private_class_id)
+        return redirect('select_private_class_for_attendance')
 
     today_record = PrivateClassAttendance.objects.filter(
         private_class=private_class,
@@ -380,7 +388,6 @@ def mark_private_class_attendance(request, private_class_id):
         'dashboards/trainer/attendance/mark_private_class_attendance.html',
         {'private_class': private_class, 'today': date.today(), 'today_record': today_record},
     )
-
 
 @login_required
 def list_ongoing_classes_of_absent_trainer(request):
@@ -431,7 +438,7 @@ def assign_substitute_trainer_for_class_session(request, class_session_id):
     if request.user.role != 'admin':
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('index')
-
+    
     class_session = get_object_or_404(ClassSession, id=class_session_id)
     today = date.today()
     absent_trainer_ids = list(
@@ -441,15 +448,15 @@ def assign_substitute_trainer_for_class_session(request, class_session_id):
     if class_session.start_date > today or class_session.end_date < today:
         messages.error(request, 'This class session is not ongoing.')
         return redirect('list_ongoing_classes_of_absent_trainer')
-
+    
     if class_session.substitute_trainer is not None:
         messages.error(request, 'This class session already has a substitute trainer.')
         return redirect('list_ongoing_classes_of_absent_trainer')
-
+    
     if class_session.trainer_id not in absent_trainer_ids:
         messages.error(request, 'The trainer of this class session is not marked as absent today.')
         return redirect('list_ongoing_classes_of_absent_trainer')
-
+    
     candidate_rows = _get_substitute_candidates(
         pool=class_session.pool,
         today=today,
@@ -457,7 +464,11 @@ def assign_substitute_trainer_for_class_session(request, class_session_id):
         end_time=class_session.end_time,
         exclude_trainer_ids=[class_session.trainer_id, class_session.substitute_trainer_id],
     )
-    available_trainer_ids = [row['trainer'].pk for row in candidate_rows if row['is_available']]
+
+    available_trainer_ids = []
+    for row in candidate_rows:
+        if row['is_available']:
+            available_trainer_ids.append(row['trainer'].pk)
 
     selected_trainer = None
     selected_trainer_id = request.GET.get('selected_trainer_id') or request.POST.get('selected_trainer_id')
@@ -466,22 +477,25 @@ def assign_substitute_trainer_for_class_session(request, class_session_id):
             selected_trainer_id = int(selected_trainer_id)
         except ValueError:
             selected_trainer_id = None
+    
     if selected_trainer_id in available_trainer_ids:
-        selected_trainer = next(row['trainer'] for row in candidate_rows if row['trainer'].pk == selected_trainer_id)
-
+        for row in candidate_rows:
+            if row['trainer'].pk == selected_trainer_id:
+                selected_trainer = row['trainer']
+                break
+    
     if request.method == 'POST':
         if not selected_trainer:
             messages.error(request, 'Please select an available trainer first.')
             return redirect('assign_substitute_trainer_for_class_session', class_session_id=class_session_id)
-
         class_session.substitute_trainer = selected_trainer
         class_session.save()
         messages.success(request, 'Substitute trainer assigned successfully.')
         return redirect('list_ongoing_classes_of_absent_trainer')
-
+    
     return render(
         request,
-        'dashboards/admin/attendance/assign_substitute_trainer.html',
+        'dashboards/admin/attendance/assign_substitute_trainer_for_class_session.html',
         {
             'class_session': class_session,
             'today': today,
@@ -490,19 +504,18 @@ def assign_substitute_trainer_for_class_session(request, class_session_id):
         },
     )
 
-
 @login_required
 def choose_substitute_trainer_for_class_session(request, class_session_id):
     if request.user.role != 'admin':
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('index')
-
+    
     class_session = get_object_or_404(ClassSession, id=class_session_id)
     today = date.today()
     if class_session.start_date > today or class_session.end_date < today:
         messages.error(request, 'This class session is not ongoing.')
         return redirect('list_ongoing_classes_of_absent_trainer')
-
+    
     candidate_rows = _get_substitute_candidates(
         pool=class_session.pool,
         today=today,
@@ -548,7 +561,10 @@ def assign_substitute_trainer_for_private_class(request, private_class_id):
         end_time=private_class.end_time,
         exclude_trainer_ids=[private_class.trainer_id, private_class.substitute_trainer_id],
     )
-    available_trainer_ids = [row['trainer'].pk for row in candidate_rows if row['is_available']]
+    available_trainer_ids = []
+    for row in candidate_rows:
+        if row['is_available']:
+            available_trainer_ids.append(row['trainer'].pk)
 
     selected_trainer = None
     selected_trainer_id = request.GET.get('selected_trainer_id') or request.POST.get('selected_trainer_id')
@@ -558,7 +574,10 @@ def assign_substitute_trainer_for_private_class(request, private_class_id):
         except ValueError:
             selected_trainer_id = None
     if selected_trainer_id in available_trainer_ids:
-        selected_trainer = next(row['trainer'] for row in candidate_rows if row['trainer'].pk == selected_trainer_id)
+        for row in candidate_rows:
+            if row['trainer'].pk == selected_trainer_id:
+                selected_trainer = row['trainer']
+                break
 
     if request.method == 'POST':
         if not selected_trainer:
@@ -693,25 +712,18 @@ def list_trainer_classes(request, trainer_id):
         return redirect('index')
 
     trainer = get_object_or_404(User, pk=trainer_id)
-    today = date.today()
-    ongoing_classes = ClassSession.objects.filter(
-        Q(trainer=trainer) | Q(substitute_trainer=trainer),
-        start_date__lte=today,
-        end_date__gte=today,
-        is_cancelled=False,
-    ).order_by('start_time')
+    classes = ClassSession.objects.filter(
+        Q(trainer=trainer) | Q(substitute_trainer=trainer)
+    ).order_by('-start_date', '-start_time')
 
-    ongoing_private_classes = PrivateClass.objects.filter(
-        Q(trainer=trainer) | Q(substitute_trainer=trainer),
-        start_date__lte=today,
-        end_date__gte=today,
-        is_cancelled=False,
-    ).order_by('start_date')
+    private_classes = PrivateClass.objects.filter(
+        Q(trainer=trainer) | Q(substitute_trainer=trainer)
+    ).order_by('-start_date', '-start_time')
 
     return render(
         request,
         'dashboards/admin/attendance/list_trainer_classes.html',
-        {'trainer': trainer, 'ongoing_classes': ongoing_classes, 'ongoing_private_classes': ongoing_private_classes, 'today': today},
+        {'trainer': trainer, 'classes': classes, 'private_classes': private_classes},
     )
 
 
@@ -808,50 +820,29 @@ def class_and_private_classes_cancellation_and_substitute_history(request):
     today = date.today()
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
-    event_type = request.GET.get('event', 'all')
     section = request.GET.get('section', 'all')
     pool_id = request.GET.get('pool')
     trainer_q = (request.GET.get('trainer') or '').strip()
 
     try:
-        from_date = datetime.strptime(date_from, '%Y-%m-%d').date() if date_from else today
+        if date_from:
+            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+        else:
+            from_date = today
     except ValueError:
         from_date = today
     try:
-        to_date = datetime.strptime(date_to, '%Y-%m-%d').date() if date_to else today
+        if date_to:
+            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
+        else:
+            to_date = today
     except ValueError:
         to_date = today
     if from_date > to_date:
         from_date, to_date = to_date, from_date
 
-    if event_type not in {'all', 'cancelled', 'substitute', 'trainer_absent'}:
-        event_type = 'all'
     if section not in {'all', 'group', 'private'}:
         section = 'all'
-
-    absent_trainer_ids = set(
-        TrainerAttendanceRecord.objects.filter(
-            date__gte=from_date,
-            date__lte=to_date,
-            status='absent',
-        ).values_list('trainer_id', flat=True).distinct()
-    )
-
-    cancelled_group_class_ids = set(
-        ClassSessionAttendance.objects.filter(
-            date__gte=from_date,
-            date__lte=to_date,
-            status='class_cancelled',
-        ).values_list('class_session_id', flat=True).distinct()
-    )
-
-    cancelled_private_class_ids = set(
-        PrivateClassAttendance.objects.filter(
-            date__gte=from_date,
-            date__lte=to_date,
-            status='class_cancelled',
-        ).values_list('private_class_id', flat=True).distinct()
-    )
 
     group_classes = ClassSession.objects.filter(
         start_date__lte=to_date,
@@ -864,7 +855,10 @@ def class_and_private_classes_cancellation_and_substitute_history(request):
     ).select_related('pool', 'trainer', 'substitute_trainer')
 
     try:
-        selected_pool_id = int(pool_id) if pool_id else None
+        if pool_id:
+            selected_pool_id = int(pool_id)
+        else:
+            selected_pool_id = None
     except (TypeError, ValueError):
         selected_pool_id = None
 
@@ -886,51 +880,23 @@ def class_and_private_classes_cancellation_and_substitute_history(request):
             Q(substitute_trainer__email__icontains=trainer_q)
         )
 
-    if event_type == 'cancelled':
-        group_classes = group_classes.filter(
-            Q(id__in=cancelled_group_class_ids) | Q(is_cancelled=True)
-        )
-        private_classes = private_classes.filter(
-            Q(id__in=cancelled_private_class_ids) | Q(is_cancelled=True)
-        )
-    elif event_type == 'substitute':
-        group_classes = group_classes.filter(
-            substitute_trainer__isnull=False,
-            trainer_id__in=absent_trainer_ids,
-        )
-        private_classes = private_classes.filter(
-            substitute_trainer__isnull=False,
-            trainer_id__in=absent_trainer_ids,
-        )
-    elif event_type == 'trainer_absent':
-        group_classes = group_classes.filter(
-            trainer_id__in=absent_trainer_ids,
-            substitute_trainer__isnull=True,
-            is_cancelled=False,
-        ).exclude(id__in=cancelled_group_class_ids)
-
-        private_classes = private_classes.filter(
-            trainer_id__in=absent_trainer_ids,
-            substitute_trainer__isnull=True,
-            is_cancelled=False,
-        ).exclude(id__in=cancelled_private_class_ids)
-
-    else:
-        group_classes = group_classes.filter(
-            Q(id__in=cancelled_group_class_ids) |
-            Q(is_cancelled=True) |
-            Q(substitute_trainer__isnull=False, trainer_id__in=absent_trainer_ids) |
-            Q(trainer_id__in=absent_trainer_ids)
-        )
-        private_classes = private_classes.filter(
-            Q(id__in=cancelled_private_class_ids) |
-            Q(is_cancelled=True) |
-            Q(substitute_trainer__isnull=False, trainer_id__in=absent_trainer_ids) |
-            Q(trainer_id__in=absent_trainer_ids)
-        )
-
     group_classes = group_classes.distinct().order_by('-start_date', '-start_time')
     private_classes = private_classes.distinct().order_by('-start_date', '-start_time')
+
+    if selected_pool_id is not None:
+        selected_pool_id_value = str(selected_pool_id)
+    else:
+        selected_pool_id_value = ''
+
+    if section in {'all', 'group'}:
+        visible_group_classes = group_classes
+    else:
+        visible_group_classes = []
+
+    if section in {'all', 'private'}:
+        visible_private_classes = private_classes
+    else:
+        visible_private_classes = []
 
     return render(
         request,
@@ -939,15 +905,12 @@ def class_and_private_classes_cancellation_and_substitute_history(request):
             'today': today,
             'from_date': from_date,
             'to_date': to_date,
-            'event_type': event_type,
             'section': section,
-            'pool_id': str(selected_pool_id) if selected_pool_id is not None else '',
+            'pool_id': selected_pool_id_value,
             'trainer_q': trainer_q,
             'pools': Pool.objects.all().order_by('name'),
-            'group_classes': group_classes if section in {'all', 'group'} else [],
-            'private_classes': private_classes if section in {'all', 'private'} else [],
-            'cancelled_group_class_ids': cancelled_group_class_ids,
-            'cancelled_private_class_ids': cancelled_private_class_ids,
+            'group_classes': visible_group_classes,
+            'private_classes': visible_private_classes
         },
     )
 
@@ -964,11 +927,17 @@ def admin_group_class_activity_detail(request, class_session_id):
     date_to = request.GET.get('date_to')
 
     try:
-        from_date = datetime.strptime(date_from, '%Y-%m-%d').date() if date_from else today
+        if date_from:
+            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+        else:
+            from_date = today
     except ValueError:
         from_date = today
     try:
-        to_date = datetime.strptime(date_to, '%Y-%m-%d').date() if date_to else today
+        if date_to:
+            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
+        else:
+            to_date = today
     except ValueError:
         to_date = today
     if from_date > to_date:
@@ -982,17 +951,21 @@ def admin_group_class_activity_detail(request, class_session_id):
         date__gte=active_from,
         date__lte=active_to,
     )
-    trainer_status_map = {record.date: record.status for record in trainer_records}
-    trainer_dates = {record.date for record in trainer_records}
+    trainer_status_map = {}
+    trainer_dates = set()
+    for record in trainer_records:
+        trainer_status_map[record.date] = record.status
+        trainer_dates.add(record.date)
 
-    cancelled_dates = set(
-        ClassSessionAttendance.objects.filter(
-            class_session=class_session,
-            date__gte=active_from,
-            date__lte=active_to,
-            status='class_cancelled',
-        ).values_list('date', flat=True).distinct()
-    )
+    cancelled_dates = set()
+    cancelled_date_rows = ClassSessionAttendance.objects.filter(
+        class_session=class_session,
+        date__gte=active_from,
+        date__lte=active_to,
+        status='class_cancelled',
+    ).values_list('date', flat=True).distinct()
+    for cancelled_date in cancelled_date_rows:
+        cancelled_dates.add(cancelled_date)
 
     candidate_dates = sorted(trainer_dates.union(cancelled_dates), reverse=True)
     daily_rows = []
@@ -1012,15 +985,17 @@ def admin_group_class_activity_detail(request, class_session_id):
         elif trainer_status_raw == 'absent' and not has_substitute:
             status = 'Not Conducted'
         else:
-            status = 'Happened'
+            status = 'Conducted'
+
+        if has_substitute:
+            substitute_name = class_session.substitute_trainer.full_name or class_session.substitute_trainer.username
+        else:
+            substitute_name = '-'
 
         daily_rows.append({
             'date': class_date,
             'main_trainer_status': trainer_status,
-            'substitute_name': (
-                (class_session.substitute_trainer.full_name or class_session.substitute_trainer.username)
-                if has_substitute else '-'
-            ),
+            'substitute_name': substitute_name,
             'status': status,
         })
 
@@ -1048,11 +1023,17 @@ def admin_private_class_activity_detail(request, private_class_id):
     date_to = request.GET.get('date_to')
 
     try:
-        from_date = datetime.strptime(date_from, '%Y-%m-%d').date() if date_from else today
+        if date_from:
+            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+        else:
+            from_date = today
     except ValueError:
         from_date = today
     try:
-        to_date = datetime.strptime(date_to, '%Y-%m-%d').date() if date_to else today
+        if date_to:
+            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
+        else:
+            to_date = today
     except ValueError:
         to_date = today
     if from_date > to_date:
@@ -1066,17 +1047,21 @@ def admin_private_class_activity_detail(request, private_class_id):
         date__gte=active_from,
         date__lte=active_to,
     )
-    trainer_status_map = {record.date: record.status for record in trainer_records}
-    trainer_dates = {record.date for record in trainer_records}
+    trainer_status_map = {}
+    trainer_dates = set()
+    for record in trainer_records:
+        trainer_status_map[record.date] = record.status
+        trainer_dates.add(record.date)
 
-    cancelled_dates = set(
-        PrivateClassAttendance.objects.filter(
-            private_class=private_class,
-            date__gte=active_from,
-            date__lte=active_to,
-            status='class_cancelled',
-        ).values_list('date', flat=True).distinct()
-    )
+    cancelled_dates = set()
+    cancelled_date_rows = PrivateClassAttendance.objects.filter(
+        private_class=private_class,
+        date__gte=active_from,
+        date__lte=active_to,
+        status='class_cancelled',
+    ).values_list('date', flat=True).distinct()
+    for cancelled_date in cancelled_date_rows:
+        cancelled_dates.add(cancelled_date)
 
     candidate_dates = sorted(trainer_dates.union(cancelled_dates), reverse=True)
     daily_rows = []
@@ -1096,15 +1081,17 @@ def admin_private_class_activity_detail(request, private_class_id):
         elif trainer_status_raw == 'absent' and not has_substitute:
             status = 'Not Conducted'
         else:
-            status = 'Happened'
+            status = 'Conducted'
+
+        if has_substitute:
+            substitute_name = private_class.substitute_trainer.full_name or private_class.substitute_trainer.username
+        else:
+            substitute_name = '-'
 
         daily_rows.append({
             'date': class_date,
             'main_trainer_status': trainer_status,
-            'substitute_name': (
-                (private_class.substitute_trainer.full_name or private_class.substitute_trainer.username)
-                if has_substitute else '-'
-            ),
+            'substitute_name': substitute_name,
             'status': status,
         })
 

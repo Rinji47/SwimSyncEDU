@@ -19,7 +19,7 @@
             <button class="btn-primary" id="addTrainerBtn" onclick="openAddTrainerModal()">Add New Trainer</button>
         </div>
 
-        <form class="filter-bar" method="GET">
+        <form class="filter-bar" method="GET" action="{% url 'manage_trainers' %}">
             <div class="filter-main">
                 <div class="filter-search">
                     <input type="text" class="filter-input" name="q" placeholder="Search trainers..." value="{{ request.GET.q|default_if_none:'' }}">

@@ -45,10 +45,10 @@
                 <p><strong>Certificate Issued:</strong> {{ item.certificate.issued_at|date:"M d, Y" }}</p>
 
                 <div class="card-actions" style="margin-top: 0.8rem;">
-                    <a href="{% url 'review_trainer' item.certificate.id %}" class="btn-sm btn-primary">
+                    <a href="{% url 'user_review_trainer' item.certificate.id %}" class="btn-sm btn-primary">
                         {% if item.review %}View Review{% else %}Write Review{% endif %}
                     </a>
-                    <a href="{% url 'view_certificate' item.certificate.id %}" class="btn-sm btn-secondary">
+                    <a href="{% url 'user_view_certificate' item.certificate.id %}" class="btn-sm btn-secondary">
                         View Certificate
                     </a>
                 </div>

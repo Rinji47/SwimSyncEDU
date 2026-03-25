@@ -4,17 +4,68 @@
 {% block title %}Select A Trainer - Private Class{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/landing.css' %}">
 <link rel="stylesheet" href="{% static 'css/pools.css' %}">
 <link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
 <link rel="stylesheet" href="{% static 'css/message.css' %}">
+<style>
+    .trainer-select-shell {
+        background: #f8fafc;
+    }
+
+    .trainer-select-hero {
+        margin-bottom: 1.25rem;
+        padding: 1.45rem 1.5rem;
+        border-radius: 24px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+    }
+
+    .trainer-select-hero h1 {
+        font-size: clamp(2rem, 4vw, 3.1rem);
+        line-height: 0.98;
+        margin-bottom: 0.45rem;
+    }
+
+    .trainer-select-grid .pool-card {
+        border-radius: 22px;
+        padding: 1.35rem;
+        box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07);
+    }
+
+    .trainer-select-grid .pool-card-header h3 {
+        font-size: 1.35rem;
+        line-height: 1.05;
+    }
+
+    .trainer-select-grid .btn-primary {
+        width: 100%;
+        justify-content: center;
+        border-radius: 14px;
+        margin-top: 0.35rem;
+    }
+
+    .trainer-select-note {
+        margin-top: 0.85rem;
+        padding: 0.85rem 0.95rem;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: var(--text-secondary);
+        font-size: 0.92rem;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<section class="page-shell">
+{% include 'components/public_nav.html' with active='pools' %}
+
+<section class="page-shell trainer-select-shell">
     <div class="container two-col">
         <div>
             {% include "components/message.html" %}
-            <div class="page-head">
+            <div class="page-head trainer-select-hero">
                 <div>
                     <h1>Select A Trainer</h1>
                     <p class="subtitle">Private class at {{ pool.name }}. Check conflicts by date and pick quickly.</p>
@@ -22,22 +73,19 @@
                 <a class="btn-secondary" href="{% url 'pool_class_types' pool.pool_id %}"><i class="fa-solid fa-arrow-left"></i> Back</a>
             </div>
 
-            <div class="pools-grid">
-                {% for row in trainer_cards %}
+            <div class="pools-grid trainer-select-grid">
+                {% for trainer in trainers %}
                 <article class="pool-card">
                     <div class="pool-card-header">
-                        <h3>{{ row.trainer.full_name|default:row.trainer.username }}</h3>
+                        <h3>{{ trainer.full_name|default:trainer.username }}</h3>
                         <span class="pool-status open">Available</span>
                     </div>
-                    <p class="pool-meta"><strong>Email:</strong> {{ row.trainer.email }}</p>
-                    <div class="slot-list tight">
-                        {% for slot in row.unavailable_slots %}
-                        <span class="slot-chip" title="{{ slot }}">{{ slot }}</span>
-                        {% empty %}
-                        <span class="slot-chip slot-empty">No conflicts for selected scope</span>
-                        {% endfor %}
+                    <p class="pool-meta"><strong>Email:</strong> {{ trainer.email }}</p>
+                    <p class="pool-meta"><strong>Specialization:</strong> {{ trainer.specialization|default:"Not specified" }}</p>
+                    <div class="trainer-select-note">
+                        Busy slots and schedule conflicts are shown on the next step before you confirm the booking.
                     </div>
-                    <a class="btn-primary" href="{% url 'book_private_class' pool.pool_id row.trainer.pk %}">Select Trainer</a>
+                    <a class="btn-primary" href="{% url 'book_private_class' pool.pool_id trainer.pk %}">Select Trainer</a>
                 </article>
                 {% empty %}
                 <p class="pools-empty">No trainers available for this pool.</p>

@@ -26,19 +26,16 @@
 
         <div class="two-col">
             <div class="dashboard-section card-grid" style="margin:0;">
-                {% for row in trainer_cards %}
+                {% for trainer in trainers %}
                 <article class="class-card">
-                    <h3>{{ row.trainer.full_name|default:row.trainer.username }}</h3>
-                    <p><strong>Email:</strong> {{ row.trainer.email }}</p>
-                    <div class="slot-list tight">
-                        {% for slot in row.unavailable_slots %}
-                        <span class="slot-chip" title="{{ slot }}">{{ slot }}</span>
-                        {% empty %}
-                        <span class="slot-chip slot-empty">No conflicts for selected scope</span>
-                        {% endfor %}
-                    </div>
+                    <h3>{{ trainer.full_name|default:trainer.username }}</h3>
+                    <p><strong>Email:</strong> {{ trainer.email }}</p>
+                    <p><strong>Specialization:</strong> {{ trainer.specialization|default:"Not specified" }}</p>
+                    <p class="subtitle" style="margin:0.75rem 0 0;">
+                        Schedule conflict details are shown on the next step before class creation.
+                    </p>
                     <div class="card-actions">
-                        <a href="{% url 'create_class_session_for_pool' pool.pool_id row.trainer.pk %}" class="btn-primary btn-sm">Select Trainer</a>
+                        <a href="{% url 'create_class_session_for_pool' pool.pool_id trainer.pk %}" class="btn-primary btn-sm">Select Trainer</a>
                     </div>
                 </article>
                 {% empty %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Select Private Class - Student Lists{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/trainer_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="attendance-hero">
+            <h2>Private Class Student Lists</h2>
+            <p class="attendance-meta">Choose one of your assigned or substitute private classes to view the student details.</p>
+        </div>
+
+        <div class="dashboard-section card-grid">
+            {% for private_class in private_classes %}
+            <div class="class-card">
+                <h3>{{ private_class.user.full_name|default:private_class.user.username }}</h3>
+                <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
+                <p><strong>Time:</strong> {{ private_class.start_time }} - {{ private_class.end_time }}</p>
+                <p><strong>Dates:</strong> {{ private_class.start_date }} to {{ private_class.end_date }}</p>
+                <p><strong>Role:</strong> {% if private_class.trainer == request.user %}Main trainer{% else %}Substitute trainer{% endif %}</p>
+                <div class="card-actions">
+                    <a href="{% url 'students_list_for_private_class' private_class.id %}" class="btn-sm btn-primary">View Student</a>
+                </div>
+            </div>
+            {% empty %}
+            <p>No private classes are available for your student lists.</p>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

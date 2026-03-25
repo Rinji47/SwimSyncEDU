@@ -8,35 +8,8 @@
 {% endblock %}
 
 {% block content %}
-<!-- Navigation -->
-<nav class="navbar">
-    <div class="container">
-        <div class="nav-brand">SwimSync EDU</div>
-        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
-        <ul class="nav-menu" id="navMenu">
-            <li><a href="#features">Features</a></li>
-            <li><a href="#roles">For You</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="{% url 'nearby_pools' %}">Pools</a></li>
-            <li><a href="{% url 'pool_quality_today_list' %}">Pool Quality</a></li>
-            {% if request.user.is_authenticated %}
-                {% if request.user.role == 'admin' %}
-                    <li><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
-                {% elif request.user.role == 'trainer' %}
-                    <li><a href="{% url 'trainer_dashboard' %}">Dashboard</a></li>
-                {% else %}
-                    <li><a href="{% url 'user_dashboard' %}">Dashboard</a></li>
-                {% endif %}
-                <li><a href="{% url 'logout' %}" class="btn-primary">Logout</a></li>
-            {% else %}
-                <li><a href="{% url 'login' %}">Login</a></li>
-                <li><a href="{% url 'signup' %}" class="btn-primary">Get Started</a></li>
-            {% endif %}
-        </ul>
-    </div>
-</nav>
+{% include 'components/public_nav.html' with active='home' %}
 
-<!-- Hero Section -->
 <section class="hero">
     <div class="container">
         <div class="hero-content">
@@ -64,7 +37,6 @@
     </div>
 </section>
 
-<!-- Features Section -->
 <section id="features" class="features">
     <div class="container">
         <h2 class="section-title">Why Choose SwimSync EDU</h2>
@@ -103,7 +75,6 @@
     </div>
 </section>
 
-<!-- Roles Section -->
 <section id="roles" class="roles">
     <div class="container">
         <h2 class="section-title">Built for Everyone</h2>
@@ -150,7 +121,6 @@
     </div>
 </section>
 
-<!-- About Section -->
 <section id="about" class="about">
     <div class="container">
         <h2 class="section-title">About SwimSync EDU</h2>
@@ -172,7 +142,6 @@
     </div>
 </section>
 
-<!-- Footer -->
 <footer class="footer">
     <div class="container">
         <div class="footer-content">
@@ -200,4 +169,3 @@
     </div>
 </footer>
 {% endblock %}
-

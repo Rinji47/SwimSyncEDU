@@ -13,9 +13,13 @@
         {% url 'manage_class_types' as manage_class_types_url %}
         {% url 'manage_classes' as manage_classes_url %}
         {% url 'select_trainer_for_attendance' as select_trainer_for_attendance_url %}
+        {% url 'select_session_to_view_students_list' as select_session_to_view_students_list_url %}
+        {% url 'select_private_class_to_view_students_list' as select_private_class_to_view_students_list_url %}
         {% url 'list_ongoing_classes_of_absent_trainer' as absent_group_classes_url %}
         {% url 'list_ongoing_private_classes_of_absent_trainer' as absent_private_classes_url %}
         {% url 'class_private_activity_history' as class_private_activity_history_url %}
+        {% url 'admin_all_trainer_reviews' as admin_all_trainer_reviews_url %}
+        {% url 'admin_payment_report' as admin_payment_report_url %}
 
         <a href="{{ admin_dashboard_url }}" class="nav-item {% if request.path == admin_dashboard_url %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
@@ -53,6 +57,14 @@
             <span class="nav-icon"><i class="fa-solid fa-user-check"></i></span>
             Trainer Attendance
         </a>
+        <a href="{{ select_session_to_view_students_list_url }}" class="nav-item {% if request.path == select_session_to_view_students_list_url or '/classes/student-lists/group/' in request.path %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-address-book"></i></span>
+            Group Student Lists
+        </a>
+        <a href="{{ select_private_class_to_view_students_list_url }}" class="nav-item {% if request.path == select_private_class_to_view_students_list_url or '/classes/student-lists/private/' in request.path %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-id-card"></i></span>
+            Private Student Lists
+        </a>
         <a href="{{ absent_group_classes_url }}" class="nav-item {% if request.path == absent_group_classes_url %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-user-xmark"></i></span>
             Absent Group Classes
@@ -64,6 +76,14 @@
         <a href="{{ class_private_activity_history_url }}" class="nav-item {% if request.path == class_private_activity_history_url %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
             Class Activity History
+        </a>
+        <a href="{{ admin_payment_report_url }}" class="nav-item {% if request.path == admin_payment_report_url %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-wallet"></i></span>
+            Payment Reports
+        </a>
+        <a href="{{ admin_all_trainer_reviews_url }}" class="nav-item {% if request.path == admin_all_trainer_reviews_url %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-comments"></i></span>
+            Trainer Reviews
         </a>
         <a href="{% url 'assign_trainer_manager' %}" class="nav-item {% if request.path == '/pool/admin/assign_trainer_manager/' %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-user-gear"></i></span>

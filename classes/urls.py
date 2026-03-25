@@ -48,4 +48,13 @@ urlpatterns = [
     path('trainer/certificates/group/issue/<int:booking_id>/', views.issue_group_class_completion_certificate, name='issue_group_class_completion_certificate'),
     path('trainer/certificates/private/', views.pending_private_certificates, name='pending_private_certificates'),
     path('trainer/certificates/private/issue/<int:private_class_id>/', views.issue_private_class_completion_certificate, name='issue_private_class_completion_certificate'),
+
+    # Student list management
+    path('student-lists/group/', views.select_session_to_view_students_list, name='select_session_to_view_students_list'),
+    path('student-lists/group/<int:class_session_id>/', views.students_list_for_class_session, name='students_list_for_class_session'),
+    path('student-lists/private/', views.select_private_class_to_view_students_list, name='select_private_class_to_view_students_list'),
+    path('student-lists/private/<int:private_class_id>/', views.students_list_for_private_class, name='students_list_for_private_class'),
+
+    # Today's Classes and Private Classes for users
+    path('today_classes/', views.todays_classes, name='todays_classes'),
 ]

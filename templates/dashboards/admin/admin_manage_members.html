@@ -19,7 +19,7 @@
             <button class="btn-primary" type="button">Add Member</button>
         </div>
 
-        <form class="filter-bar" method="GET">
+        <form class="filter-bar" method="GET" action="{% url 'manage_members' %}">
             <div class="filter-main">
                 <div class="filter-search">
                     <input type="text" class="filter-input" name="q" placeholder="Search members..." value="{{ request.GET.q|default_if_none:'' }}">

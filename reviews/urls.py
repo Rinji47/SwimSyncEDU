@@ -2,12 +2,15 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.select_trainer_from_certificate, name='select_trainer_from_certificate'),
-    path('certificate/<int:certificate_id>/review/', views.review_trainer, name='review_trainer'),
-    path('certificate/<int:certificate_id>/review/new/', views.create_review, name='create_review'),
-    path('certificate/<int:certificate_id>/review/view/', views.view_review, name='view_review'),
-    path('certificate/<int:certificate_id>/review/edit/', views.edit_review, name='edit_review'),
-    path('certificate/<int:certificate_id>/review/delete/', views.delete_review, name='delete_review'),
-    path('certificate/<int:certificate_id>/view/', views.view_certificate, name='view_certificate'),
-    path('certificate/<int:certificate_id>/export/pdf/', views.export_certificate_pdf, name='export_certificate_pdf'),
+    path('', views.user_select_trainer_from_certificate, name='user_select_trainer_from_certificate'),
+    path('trainers/', views.public_select_trainer_for_reviews, name='public_select_trainer_for_reviews'),
+    path('trainers/<int:trainer_id>/reviews/', views.public_trainer_review_list, name='public_trainer_review_list'),
+    path('trainer/my-reviews/', views.trainer_my_reviews, name='trainer_my_reviews'),
+    path('admin/all-reviews/', views.admin_all_trainer_reviews, name='admin_all_trainer_reviews'),
+    path('certificate/<int:certificate_id>/review/', views.user_review_trainer, name='user_review_trainer'),
+    path('certificate/<int:certificate_id>/review/new/', views.user_create_review, name='user_create_review'),
+    path('certificate/<int:certificate_id>/review/view/', views.user_view_review, name='user_view_review'),
+    path('certificate/<int:certificate_id>/review/edit/', views.user_edit_review, name='user_edit_review'),
+    path('certificate/<int:certificate_id>/review/delete/', views.user_delete_review, name='user_delete_review'),
+    path('certificate/<int:certificate_id>/view/', views.user_view_certificate, name='user_view_certificate'),
 ]

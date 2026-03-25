@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}All Trainer Reviews - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+<style>
+    .admin-review-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1rem;
+    }
+
+    .admin-review-card {
+        padding: 1.2rem 1.25rem;
+        border-radius: 22px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    }
+
+    .admin-review-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        align-items: flex-start;
+        margin-bottom: 0.9rem;
+    }
+
+    .admin-review-head h3 {
+        margin: 0 0 0.2rem;
+        font-size: 1.2rem;
+    }
+
+    .admin-review-sub {
+        color: var(--text-secondary);
+        font-size: 0.92rem;
+    }
+
+    .admin-review-rating {
+        padding: 0.42rem 0.8rem;
+        border-radius: 999px;
+        background: #fff7ed;
+        color: #b45309;
+        border: 1px solid #fed7aa;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .admin-review-meta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.7rem;
+        margin-bottom: 0.95rem;
+    }
+
+    .admin-review-meta div {
+        padding: 0.8rem 0.9rem;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .admin-review-meta span {
+        display: block;
+        color: var(--text-secondary);
+        font-size: 0.82rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .admin-review-meta strong {
+        color: var(--text-primary);
+        line-height: 1.45;
+    }
+
+    .admin-review-comment {
+        padding: 0.95rem 1rem;
+        border-radius: 18px;
+        border: 1px solid #e2e8f0;
+        background: #fcfdff;
+        line-height: 1.6;
+        color: #334155;
+    }
+
+    .admin-review-empty {
+        padding: 1.2rem 1.3rem;
+        border-radius: 18px;
+        border: 1px dashed #cbd5e1;
+        background: #ffffff;
+        color: var(--text-secondary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'dashboards/admin/components/admin_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include 'components/message.html' %}
+
+        <div class="dashboard-header">
+            <div>
+                <h1>All Trainer Reviews</h1>
+                <p style="color: var(--text-secondary); margin-top: 0.35rem;">
+                    Search and filter reviews across all trainers.
+                </p>
+            </div>
+        </div>
+
+        <section class="dashboard-section">
+            <form method="get" action="{% url 'admin_all_trainer_reviews' %}" class="filter-bar">
+                <div class="filter-main">
+                    <div class="filter-search">
+                        <input type="text" class="filter-input" name="q" value="{{ q }}" placeholder="Search trainer, member, class, comment...">
+                        <button type="submit" class="btn-secondary">Search</button>
+                    </div>
+                </div>
+                <div class="filter-advanced" style="display:grid;">
+                    <div class="filter-field">
+                        <label>Rating</label>
+                        <select name="rating" class="filter-select">
+                            <option value="">All</option>
+                            <option value="5" {% if selected_rating == '5' %}selected{% endif %}>5</option>
+                            <option value="4" {% if selected_rating == '4' %}selected{% endif %}>4</option>
+                            <option value="3" {% if selected_rating == '3' %}selected{% endif %}>3</option>
+                            <option value="2" {% if selected_rating == '2' %}selected{% endif %}>2</option>
+                            <option value="1" {% if selected_rating == '1' %}selected{% endif %}>1</option>
+                        </select>
+                    </div>
+                    <div class="filter-field">
+                        <label>Type</label>
+                        <select name="type" class="filter-select">
+                            <option value="">All</option>
+                            <option value="group" {% if selected_type == 'group' %}selected{% endif %}>Group</option>
+                            <option value="private" {% if selected_type == 'private' %}selected{% endif %}>Private</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section class="dashboard-section">
+            <div class="admin-review-grid">
+                {% for row in review_rows %}
+                <article class="admin-review-card">
+                    <div class="admin-review-head">
+                        <div>
+                            <h3>{{ row.trainer.full_name|default:row.trainer.username }}</h3>
+                            <div class="admin-review-sub">Reviewed by {{ row.review.user.full_name|default:row.review.user.username }}</div>
+                        </div>
+                        <span class="admin-review-rating">{{ row.review.rating }}/5</span>
+                    </div>
+
+                    <div class="admin-review-meta">
+                        <div>
+                            <span>Class</span>
+                            <strong>{{ row.source_label }}</strong>
+                        </div>
+                        <div>
+                            <span>Date</span>
+                            <strong>{{ row.review.created_at|date:"M d, Y" }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="admin-review-comment">
+                        {{ row.review.comment|default:"No comment provided." }}
+                    </div>
+                </article>
+                {% empty %}
+                <div class="admin-review-empty">No reviews match the current filters.</div>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}

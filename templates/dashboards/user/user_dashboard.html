@@ -5,132 +5,94 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-layout">
     {% include "dashboards/user/components/user_sidebar.html" %}
-    
-    <!-- Main Content -->
+
     <main class="dashboard-main">
+        {% include "components/message.html" %}
+
         <div class="dashboard-header">
-            <h1>Welcome, {{ user.username }}!</h1>
-            <button class="btn-primary">Book a Class</button>
+            <h1>Welcome, {{ request.user.full_name|default:request.user.username }}</h1>
+            <a href="{% url 'todays_classes' %}" class="btn-primary">Today's Schedule</a>
         </div>
-        
-        <!-- Stats Cards -->
+
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon"><i class="fa-solid fa-book-open"></i></div>
                 <div class="stat-content">
-                    <h3>{{ upcoming_classes }}</h3>
-                    <p>Upcoming Classes</p>
+                    <h3>{{ upcoming_bookings|length }}</h3>
+                    <p>Upcoming Group Classes</p>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">✅</div>
+                <div class="stat-icon"><i class="fa-solid fa-user-lock"></i></div>
                 <div class="stat-content">
-                    <h3>{{ completed_classes }}</h3>
-                    <p>Completed Classes</p>
+                    <h3>{{ upcoming_private_bookings|length }}</h3>
+                    <p>Upcoming Private Classes</p>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon"><i class="fa-solid fa-person-chalkboard"></i></div>
+                <div class="stat-icon"><i class="fa-solid fa-calendar-day"></i></div>
                 <div class="stat-content">
-                    <h3>{{ favorite_instructors }}</h3>
-                    <p>Favorite Instructors</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
-                <div class="stat-content">
-                    <h3>{{ reviews_given }}</h3>
-                    <p>Reviews Given</p>
+                    <h3>2</h3>
+                    <p>Schedule Sections</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Upcoming Classes -->
+
         <section class="dashboard-section">
-            <h2>Upcoming Classes</h2>
-            <div class="filter-bar">
-                <div class="filter-main">
-                    <div class="filter-search">
-                        <input type="text" class="filter-input" placeholder="Search bookings...">
-                        <button type="button" class="btn-secondary">Search</button>
-                        <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-user-upcoming">Filters v</button>
-                    </div>
-                </div>
-                <div class="filter-advanced" id="filters-user-upcoming">
-                    <div class="filter-field">
-                        <label>Status</label>
-                        <select class="filter-select">
-                            <option value="">All</option>
-                            <option value="active">Active</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-                    </div>
-                    <div class="filter-field">
-                        <label>Date</label>
-                        <input type="date" class="filter-date">
-                    </div>
-                </div>
+            <div class="dashboard-header" style="margin-bottom: 1rem;">
+                <h2 style="margin: 0;">Upcoming Group Classes</h2>
+                <a href="{% url 'my_bookings' %}" class="btn-secondary">View All</a>
             </div>
-            <div class="data-card-grid">
+
+            <div class="card-grid">
                 {% for booking in upcoming_bookings %}
-                <div class="data-card">
-                    <span class="data-card-status">{{ booking.status }}</span>
-                    <h3 class="data-card-title">{{ booking.class_name }}</h3>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Instructor:</span>
-                        <span>{{ booking.instructor_name }}</span>
-                    </div>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Facility:</span>
-                        <span>{{ booking.facility_name }}</span>
-                    </div>
-                    <div class="data-card-row">
-                        <span class="data-card-label">Date:</span>
-                        <span>{{ booking.datetime|date:"M d, Y - h:i A" }}</span>
-                    </div>
-                    <div class="data-card-actions">
-                        <button class="btn-sm btn-primary">View</button>
-                        <button class="btn-sm btn-secondary">Reschedule</button>
-                        <button class="btn-sm btn-danger">Cancel</button>
+                <div class="class-card">
+                    <h3>{{ booking.class_session.class_name }}</h3>
+                    <p><strong>Pool:</strong> {{ booking.class_session.pool.name }}</p>
+                    <p><strong>Trainer:</strong> {{ booking.class_session.trainer.full_name|default:booking.class_session.trainer.username }}</p>
+                    <p><strong>Dates:</strong> {{ booking.class_session.start_date|date:"M d, Y" }} to {{ booking.class_session.end_date|date:"M d, Y" }}</p>
+                    <p><strong>Time:</strong> {{ booking.class_session.start_time }} - {{ booking.class_session.end_time }}</p>
+                    <div class="card-actions">
+                        <a href="{% url 'my_bookings' %}" class="btn-sm btn-primary">Manage Booking</a>
                     </div>
                 </div>
                 {% empty %}
-                <p style="color: var(--text-secondary);">No upcoming classes. <a href="#" class="link">Book a class</a></p>
+                <p>No upcoming group classes booked.</p>
                 {% endfor %}
             </div>
         </section>
-        
-        <!-- Available Classes -->
+
         <section class="dashboard-section">
-            <h2>Available Classes Near You</h2>
-            <div class="classes-grid">
-                {% for class in available_classes %}
+            <div class="dashboard-header" style="margin-bottom: 1rem;">
+                <h2 style="margin: 0;">Upcoming Private Classes</h2>
+                <a href="{% url 'my_private_classes' %}" class="btn-secondary">View All</a>
+            </div>
+
+            <div class="card-grid">
+                {% for private_class in upcoming_private_bookings %}
                 <div class="class-card">
-                    <div class="class-header">
-                        <h3>{{ class.name }}</h3>
-                        <span class="class-level">{{ class.level }}</span>
-                    </div>
-                    <p class="class-instructor">Instructor: {{ class.instructor_name }}</p>
-                    <p class="class-facility">📍 {{ class.facility_name }}</p>
-                    <p class="class-time"><i class="fa-solid fa-calendar-days"></i> {{ class.datetime|date:"M d, Y - h:i A" }}</p>
-                    <p class="class-price">Rs. {{ class.price }}</p>
-                    <div class="class-footer">
-                        <div class="class-rating"><i class="fa-solid fa-star"></i> {{ class.rating }} ({{ class.reviews }} reviews)</div>
-                        <button class="btn-primary btn-sm">Book Now</button>
+                    <h3>Private Class</h3>
+                    <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
+                    <p><strong>Trainer:</strong> {{ private_class.trainer.full_name|default:private_class.trainer.username }}</p>
+                    <p><strong>Dates:</strong> {{ private_class.start_date|date:"M d, Y" }} to {{ private_class.end_date|date:"M d, Y" }}</p>
+                    <p><strong>Time:</strong> {{ private_class.start_time|time:"H:i" }} - {{ private_class.end_time|time:"H:i" }}</p>
+                    <div class="card-actions">
+                        <a href="{% url 'my_private_classes' %}" class="btn-sm btn-primary">Manage Class</a>
                     </div>
                 </div>
                 {% empty %}
-                <p>No classes available at the moment.</p>
+                <p>No upcoming private classes booked.</p>
                 {% endfor %}
             </div>
         </section>
     </main>
 </div>
 {% endblock %}
-

@@ -29,7 +29,7 @@
             <button class="btn-primary" onclick="toggleModal('poolModal')">Add New Pool</button>
         </div>
 
-        <form class="filter-bar" method="GET">
+        <form class="filter-bar" method="GET" action="{% url 'manage_pools' %}">
             <div class="filter-main">
                 <div class="filter-search">
                     <input type="text" class="filter-input" name="q" placeholder="Search pools..." value="{{ request.GET.q|default_if_none:'' }}">

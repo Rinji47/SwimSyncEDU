@@ -23,7 +23,7 @@
             <a href="{% url 'manage_classes' %}" class="btn-secondary">Back</a>
         </div>
 
-        <form class="quick-filter" method="get">
+        <form class="quick-filter" method="get" action="{% url 'select_pool_for_class_session' %}">
             <input type="text" class="filter-input" name="q" placeholder="Search pool name or address" value="{{ request.GET.q|default:'' }}">
             <button type="submit" class="btn-secondary">Filter</button>
         </form>

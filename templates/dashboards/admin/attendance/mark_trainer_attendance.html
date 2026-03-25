@@ -31,7 +31,7 @@
                 Marking this trainer absent will clear those substitute assignments.
             </div>
 
-            <form method="post" class="attendance-actions" style="margin-bottom: 1rem;">
+            <form method="post" action="{% url 'mark_trainer_attendance' trainer.user_id %}" class="attendance-actions" style="margin-bottom: 1rem;">
                 {% csrf_token %}
                 <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
                 <input type="hidden" name="status" value="absent">
@@ -42,7 +42,7 @@
             {% endif %}
 
             <div class="attendance-form-row">
-                <form method="post" class="attendance-form-row">
+                <form method="post" action="{% url 'mark_trainer_attendance' trainer.user_id %}" class="attendance-form-row">
                     {% csrf_token %}
                     <div class="attendance-form-group">
                         <label>Date</label>

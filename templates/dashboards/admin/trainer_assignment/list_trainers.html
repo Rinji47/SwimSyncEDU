@@ -24,7 +24,7 @@
             <a href="{% url 'list_pools' %}" class="btn-secondary">Back</a>
         </div>
 
-        <form class="quick-filter range-filter" method="get">
+        <form class="quick-filter range-filter" method="get" action="{% url 'list_trainers' pool.pool_id %}">
             <input type="text" name="q" class="filter-input" placeholder="Search trainers" value="{{ request.GET.q|default_if_none:'' }}">
             <select name="assignment" class="filter-select">
                 <option value="">All Assignment Status</option>

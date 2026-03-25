@@ -19,7 +19,7 @@
             <a href="{% url 'select_pool_for_class_session' %}" class="btn-primary">Schedule New Class</a>
         </div>
 
-        <form class="filter-bar" method="GET">
+        <form class="filter-bar" method="GET" action="{% url 'manage_classes' %}">
             <div class="filter-main">
                 <div class="filter-search">
                     <input type="text" class="filter-input" name="q" placeholder="Search classes..." value="{{ request.GET.q|default_if_none:'' }}">

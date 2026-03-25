@@ -4,6 +4,18 @@ from django.db.models import Q
 from .models import User
 from django.contrib.auth import login, logout, authenticate
 
+from datetime import date
+from decimal import Decimal
+
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q, Sum
+from django.utils import timezone
+
+from classes.models import ClassBooking, ClassSession, PrivateClass
+from payments.models import Payment
+from pool.models import PoolQuality
+
+
 # Create your views here.
 def index(request):
     print("is_authenticated:", request.user.is_authenticated)
@@ -27,11 +39,12 @@ def login_view(request):
             }
 
             if user.role == 'admin':
-                return render(request, 'dashboards/admin/admin_dashboard.html', context)
+                return redirect('admin_dashboard')
             elif user.role == 'trainer':
-                return render(request, 'dashboards/trainer/trainer_dashboard.html', context)
+                return redirect('trainer_dashboard')
             else:
-                return render(request, 'dashboards/user/user_dashboard.html', context)
+                return redirect('user_dashboard')
+
         else:
             context = {
                 'messages': [
@@ -108,16 +121,6 @@ def logout_view(request):
         ]
     }
     return render(request, 'auth/login.html', context)
-
-#Users dashboards
-def user_dashboard(request):
-    return render(request, 'dashboards/user/user_dashboard.html')
-
-def trainer_dashboard(request):
-    return render(request, 'dashboards/trainer/trainer_dashboard.html')
-
-def admin_dashboard(request):
-    return render(request, 'dashboards/admin/admin_dashboard.html')
 
 # Manage Members page (placeholder)
 def manage_members(request):
@@ -302,3 +305,105 @@ def edit_member(request, member_id):
     
     messages.error(request, 'Invalid request.')
     return redirect('manage_members')
+
+@login_required
+def admin_dashboard(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'Access denied. Admins only.')
+        return redirect('index')
+    
+    today = date.today()
+    now = timezone.now()
+
+    total_users = User.objects.filter(role='user').count()
+    total_trainers = User.objects.filter(role='trainer').count()
+
+    active_classes = ClassSession.objects.filter(start_date__lte=today, end_date__gte=today).count()
+    active_private_classes = PrivateClass.objects.filter(start_date__lte=today, end_date__gte=today).count()
+
+    monthly_revenue = Payment.objects.filter(
+        payment_status='completed',
+        payment_date__year=now.year,
+        payment_date__month=now.month
+    ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
+    total_revenue = Payment.objects.aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
+
+    pending_payments = Payment.objects.filter(payment_status='pending').count()
+    pool_quality = PoolQuality.objects.order_by('-created_at')[:5]
+
+    if pool_quality is None:
+        pool_quality = "No pool quality records found."
+
+    recent_bookings = ClassBooking.objects.select_related("user", "class_session", "class_session__trainer", "class_session__pool").order_by('-booking_date')[:5]
+
+    context = {
+        'total_users': total_users,
+        'total_trainers': total_trainers,
+        'active_classes': active_classes,
+        'active_private_classes': active_private_classes,
+        'monthly_revenue': monthly_revenue,
+        'total_revenue': total_revenue,
+        'pending_payments': pending_payments,
+        'recent_pool_quality': pool_quality,
+        'recent_bookings': recent_bookings,
+    }
+    return render(request, 'dashboards/admin/admin_dashboard.html', context)
+
+@login_required
+def trainer_dashboard(request):
+    if request.user.role != 'trainer':
+        messages.error(request, 'Access denied. Trainers only.')
+        return redirect('index')
+    
+    trainer = request.user
+    today = date.today()
+
+    upcoming_classes = ClassSession.objects.filter(
+        trainer=trainer,
+        end_date__gte=today
+    ).order_by('start_date', 'start_time')[:5]
+
+    upcoming_private_classes = PrivateClass.objects.filter(
+        trainer=trainer,
+        end_date__gte=today
+    ).order_by('start_date', 'start_time')[:5]
+
+    is_weekend = today.weekday() >= 5
+    if is_weekend:
+        today_group_classes = "No group classes scheduled for today (weekends)."
+    else:
+        today_group_classes = ClassSession.objects.filter(trainer=trainer, start_date__lte=today, end_date__gte=today)[:5]
+
+    context = {
+        'upcoming_classes': upcoming_classes,
+        'upcoming_private_classes': upcoming_private_classes,
+        'today_group_classes': today_group_classes,
+    }
+    return render(request, 'dashboards/trainer/trainer_dashboard.html', context)
+
+@login_required
+def user_dashboard(request):
+    if request.user.role != 'user':
+        messages.error(request, 'Access denied. Members only.')
+        return redirect('index')
+    
+    user = request.user
+    today = date.today()
+
+    upcoming_bookings = ClassBooking.objects.filter(
+        user=user,
+        class_session__end_date__gte=today,
+        is_cancelled=False
+    ).select_related('class_session', 'class_session__trainer', 'class_session__pool').order_by('class_session__start_date', 'class_session__start_time')[:5]
+
+    upcoming_private_bookings = PrivateClass.objects.filter(
+        user=user,
+        end_date__gte=today,
+        is_cancelled=False
+    ).select_related('trainer', 'pool').order_by('start_date', 'start_time')[:5]
+
+    context = {
+        'upcoming_bookings': upcoming_bookings,
+        'upcoming_private_bookings': upcoming_private_bookings,
+    }
+    return render(request, 'dashboards/user/user_dashboard.html', context)

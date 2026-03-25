@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Review - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+<style>
+    .delete-review-shell {
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        border-radius: 22px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+    }
+
+    .delete-review-shell p {
+        margin: 0 0 1rem;
+        color: var(--text-primary);
+        line-height: 1.6;
+    }
+
+    .delete-review-meta {
+        margin-bottom: 1.25rem;
+        padding: 1rem;
+        border-radius: 18px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+
+    .delete-review-meta strong {
+        display: block;
+        margin-bottom: 0.35rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'dashboards/user/components/user_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include 'components/message.html' %}
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Delete Review</h1>
+                <p style="color: var(--text-secondary); margin-top: 0.35rem;">
+                    Confirm removal of your review for {{ trainer.full_name|default:trainer.username }}.
+                </p>
+            </div>
+            <a href="{% url 'user_view_review' certificate.id %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="dashboard-section" style="display:flex; justify-content:center;">
+            <div class="delete-review-shell">
+                <p>This action will permanently delete your review.</p>
+
+                <div class="delete-review-meta">
+                    <strong>Trainer:</strong>
+                    <span>{{ trainer.full_name|default:trainer.username }}</span>
+                    <strong style="margin-top: 0.9rem;">Rating:</strong>
+                    <span>{{ review.rating }}/5</span>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="modal-footer">
+                        <a href="{% url 'user_view_review' certificate.id %}" class="btn-secondary">Cancel</a>
+                        <button type="submit" class="btn-primary">Delete Review</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

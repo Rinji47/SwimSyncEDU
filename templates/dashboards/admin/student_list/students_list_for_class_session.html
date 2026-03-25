@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Students - {{ class_session.class_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../components/admin_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../components/message.html' %}
+
+        <div class="dashboard-header">
+            <h1>{{ class_session.class_name }} Students</h1>
+            <a href="{% url 'select_session_to_view_students_list' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="attendance-hero">
+            <h2>{{ bookings|length }} Student{{ bookings|length|pluralize }}</h2>
+            <p class="attendance-meta">Trainer: {{ class_session.trainer.full_name|default:class_session.trainer.username }} | {{ class_session.pool.name }} | {{ class_session.class_type.name }} | {{ class_session.start_time }} - {{ class_session.end_time }}</p>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="student-list">
+                {% for booking in bookings %}
+                <div class="student-row">
+                    <div class="student-meta">
+                        <strong>{{ booking.user.full_name|default:booking.user.username }}</strong>
+                        <span>{{ booking.user.email }}</span>
+                    </div>
+                    <div>
+                        <span class="attendance-status present">Booked</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

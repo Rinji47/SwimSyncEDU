@@ -628,15 +628,17 @@ def list_trainers(request, pool_id):
         busy_from=busy_from,
         busy_to=busy_to,
     )
-    trainer_cards = [
-        {
+    trainer_cards = []
+    for trainer in trainers:
+        unavailable_slots = unavailability_map.get(trainer.pk, [])
+        unavailable_total = total_map.get(trainer.pk, 0)
+        unavailable_more = max(unavailable_total - len(unavailable_slots), 0)
+        trainer_cards.append({
             'trainer': trainer,
-            'unavailable_slots': unavailability_map.get(trainer.pk, []),
-            'unavailable_total': total_map.get(trainer.pk, 0),
-            'unavailable_more': max(total_map.get(trainer.pk, 0) - len(unavailability_map.get(trainer.pk, [])), 0),
-        }
-        for trainer in trainers
-    ]
+            'unavailable_slots': unavailable_slots,
+            'unavailable_total': unavailable_total,
+            'unavailable_more': unavailable_more,
+        })
 
     context = {
         'pool': pool,

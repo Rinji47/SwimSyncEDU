@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Payment Report - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin.css' %}">
+<link rel="stylesheet" href="{% static 'css/payments.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+
+    <main class="dashboard-main">
+        <div class="dashboard-header payment-report-header">
+            <div>
+                <h1>Payment Report</h1>
+                <p class="payment-report-subtitle">System-wide payment history across members, class bookings, and private sessions.</p>
+            </div>
+            <a class="btn-secondary" href="{% url 'admin_dashboard' %}">Back to Dashboard</a>
+        </div>
+
+        {% include "components/message.html" %}
+
+        <section class="stats-grid payment-stats-grid">
+            <article class="stat-card">
+                <div class="stat-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <div class="stat-content">
+                    <h3>{{ summary.total_records|default:0 }}</h3>
+                    <p>Total payment records</p>
+                </div>
+            </article>
+            <article class="stat-card">
+                <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+                <div class="stat-content">
+                    <h3>{{ summary.completed_count|default:0 }}</h3>
+                    <p>Completed payments</p>
+                </div>
+            </article>
+            <article class="stat-card">
+                <div class="stat-icon"><i class="fa-solid fa-ban"></i></div>
+                <div class="stat-content">
+                    <h3>{{ summary.cancelled_count|default:0 }}</h3>
+                    <p>Cancelled payments</p>
+                </div>
+            </article>
+            <article class="stat-card">
+                <div class="stat-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+                <div class="stat-content">
+                    <h3>Rs. {{ summary.collected_total|default_if_none:"0.00" }}</h3>
+                    <p>Total collected revenue</p>
+                </div>
+            </article>
+        </section>
+
+        <section class="dashboard-section">
+            <div class="payment-section-head">
+                <div>
+                    <h2>All Transactions</h2>
+                    <p class="payment-report-subtitle">Pending records older than 15 minutes are automatically marked cancelled before this report loads.</p>
+                </div>
+                <div class="payment-status-legend">
+                    <span class="payment-chip payment-chip-success">Completed</span>
+                    <span class="payment-chip payment-chip-pending">Pending</span>
+                    <span class="payment-chip payment-chip-cancelled">Cancelled</span>
+                    <span class="payment-chip payment-chip-failed">Failed</span>
+                </div>
+            </div>
+
+            {% if payments %}
+            <div class="table-container payment-table-wrap">
+                <table class="data-table payment-data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Transaction</th>
+                            <th>Purpose</th>
+                            <th>Method</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr>
+                            <td>
+                                <div class="payment-user">{{ payment.user.username }}</div>
+                            </td>
+                            <td>
+                                <div class="payment-id">{{ payment.uid }}</div>
+                            </td>
+                            <td>{{ payment.get_purpose_display }}</td>
+                            <td>{{ payment.get_payment_method_display }}</td>
+                            <td class="payment-amount">Rs. {{ payment.total_amount }}</td>
+                            <td>
+                                <span class="payment-chip payment-chip-{{ payment.payment_status|lower }}">{{ payment.get_payment_status_display }}</span>
+                            </td>
+                            <td>{{ payment.payment_date|date:"M d, Y, h:i A" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="data-card-grid payment-card-grid">
+                {% for payment in payments %}
+                <article class="data-card payment-record-card">
+                    <span class="payment-chip payment-chip-{{ payment.payment_status|lower }}">{{ payment.get_payment_status_display }}</span>
+                    <h3 class="data-card-title">{{ payment.user.username }}</h3>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Transaction:</span>
+                        <span class="payment-id">{{ payment.uid }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Purpose:</span>
+                        <span>{{ payment.get_purpose_display }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Method:</span>
+                        <span>{{ payment.get_payment_method_display }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Total:</span>
+                        <span class="payment-amount">Rs. {{ payment.total_amount }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Date:</span>
+                        <span>{{ payment.payment_date|date:"M d, Y, h:i A" }}</span>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="payment-empty-state">
+                <div class="payment-empty-icon"><i class="fa-solid fa-money-check-dollar"></i></div>
+                <h3>No payment records found</h3>
+                <p>Once users start checking out classes or private sessions, transaction history will appear here.</p>
+            </div>
+            {% endif %}
+        </section>
+    </main>
+</div>
+{% endblock %}

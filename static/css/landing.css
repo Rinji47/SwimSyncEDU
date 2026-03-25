@@ -6,6 +6,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  min-height: 74px;
 }
 
 .navbar .container {
@@ -15,6 +16,7 @@
   padding: 0.65rem 1.5rem;
   max-width: none;
   width: 100%;
+  min-height: 74px;
 }
 
 .nav-brand {
@@ -42,6 +44,9 @@
   padding: 0.4rem 0.6rem;
   border-radius: 10px;
   transition: color 0.2s ease, background-color 0.2s ease;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .nav-menu li a:hover {
@@ -53,6 +58,7 @@
   color: white;
   background-color: var(--primary);
   border-radius: 10px;
+  padding: 0.55rem 0.95rem;
 }
 
 .nav-menu li a.btn-primary:hover {

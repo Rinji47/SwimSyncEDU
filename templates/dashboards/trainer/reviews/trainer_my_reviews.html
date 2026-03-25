@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reviews About Me - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'dashboards/trainer/components/trainer_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include 'components/message.html' %}
+
+        <div class="dashboard-header">
+            <div>
+                <h1>Reviews About Me</h1>
+                <p style="color: var(--text-secondary); margin-top: 0.35rem;">
+                    {% if average_rating %}{{ average_rating }}/5 average from {{ total_reviews }} review{{ total_reviews|pluralize }}{% else %}No reviews yet{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="dashboard-section card-grid">
+            {% for row in review_rows %}
+            <div class="class-card compact">
+                <span class="class-status status-open">{{ row.review.rating }}/5</span>
+
+                <h3>{{ row.review.user.full_name|default:row.review.user.username }}</h3>
+                <p><strong>Class:</strong> {{ row.source_label }}</p>
+                <p><strong>Reviewed On:</strong> {{ row.review.created_at|date:"M d, Y" }}</p>
+                <p><strong>Comment:</strong></p>
+                <p>{{ row.review.comment|default:"No comment provided." }}</p>
+            </div>
+            {% empty %}
+            <p>No reviews have been written about you yet.</p>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

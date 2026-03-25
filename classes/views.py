@@ -5,9 +5,11 @@ from urllib3 import request
 from .models import ClassSession, ClassType, ClassBooking, PrivateClass, PrivateClassDetails, CompletionCertificate
 from pool.models import Pool, TrainerPoolAssignment
 from accounts.models import User
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from decimal import Decimal, ROUND_HALF_UP
+from attendance.models import ClassSessionAttendance, PrivateClassAttendance
 
 # Create your views here.
 def _parse_busy_range(raw_from, raw_to):
@@ -78,7 +80,10 @@ def _build_trainer_unavailability(trainers, busy_from=None, busy_to=None, max_it
     for trainer_id in list(busy.keys()):
         deduped = list(dict.fromkeys(busy[trainer_id]))
         totals[trainer_id] = len(deduped)
-        visible[trainer_id] = deduped[:max_items] if max_items else deduped
+        if max_items:
+            visible[trainer_id] = deduped[:max_items]
+        else:
+            visible[trainer_id] = deduped
 
     return visible, totals
 
@@ -117,6 +122,7 @@ def manage_class_types(request, class_type_id=None):
 
     if request.method == 'POST':
         name = request.POST.get('name')
+        duration_days = request.POST.get('duration_days')
         description = request.POST.get('description')
         cost = request.POST.get('cost')
         if class_type is not None:
@@ -131,6 +137,7 @@ def manage_class_types(request, class_type_id=None):
         if class_type:
             class_type.name = name
             class_type.description = description
+            class_type.duration_days = duration_days
             class_type.cost = cost
             class_type.save()
             messages.success(request, 'Class type updated successfully.')
@@ -138,6 +145,7 @@ def manage_class_types(request, class_type_id=None):
             ClassType.objects.create(
                 name=name,
                 description=description,
+                duration_days=duration_days,
                 cost=cost
             )
             messages.success(request, 'New class type added successfully.')
@@ -221,8 +229,6 @@ def manage_class_sessions(request):
         'trainers': trainers
     })
 
-
-
 def select_pool_for_class_session(request):
     if not request.user.is_authenticated or request.user.role != 'admin':
         messages.error(request, 'You do not have permission to access this page.')
@@ -241,26 +247,9 @@ def select_trainer_for_class_session(request, pool_id):
     
     pool = get_object_or_404(Pool, pk=pool_id, is_closed=False)
     trainers = User.objects.filter(role='trainer', trainerpoolassignment__pool=pool, trainerpoolassignment__is_active=True).distinct()
-    busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
-    unavailability_map, total_map = _build_trainer_unavailability(
-        trainers,
-        busy_from=busy_from,
-        busy_to=busy_to,
-    )
-    trainer_cards = [
-        {
-            'trainer': trainer,
-            'unavailable_slots': unavailability_map.get(trainer.pk, []),
-            'unavailable_total': total_map.get(trainer.pk, 0),
-            'unavailable_more': max(total_map.get(trainer.pk, 0) - len(unavailability_map.get(trainer.pk, [])), 0),
-        }
-        for trainer in trainers
-    ]
     return render(request, 'dashboards/admin/class_management/class_session_management/select_trainer_for_class_session.html', {
         'pool': pool,
-        'trainer_cards': trainer_cards,
-        'busy_from': busy_from,
-        'busy_to': busy_to,
+        'trainers': trainers,
     })
 
 def create_class_session_for_pool(request, pool_id, trainer_id):
@@ -269,7 +258,6 @@ def create_class_session_for_pool(request, pool_id, trainer_id):
         return redirect('index')
     pool = get_object_or_404(Pool, pk=pool_id, is_closed=False)
     trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
-    
     
     if request.method == 'POST':
         try:
@@ -451,11 +439,6 @@ def my_bookings(request):
     return render(request, 'dashboards/user/my_classes_bookings.html', {'bookings': bookings, 'today': today})
 
 
-
-###########################
-# Private Class Management#
-###########################
-
 def manage_private_class_prices(request):
     private_class_details = PrivateClassDetails.objects.order_by('-created_at').first()
     price_history = PrivateClassDetails.objects.order_by('-created_at')
@@ -531,24 +514,6 @@ def manage_private_classes(request):
         'trainers': trainers
     })
 
-# def edit_private_class_price(request, class_id):
-#     class_session = get_object_or_404(ClassSession, pk=class_id, class_type__duration_days=0)
-    
-#     if request.method == 'POST':
-#         try:
-#             new_price = request.POST.get('total_price')
-#             if not new_price:
-#                 messages.error(request, 'Price is required.')
-#                 return redirect('manage_private_classes')
-            
-#             class_session.total_price = float(new_price)
-#             class_session.save(update_fields=['total_price'])
-#             messages.success(request, 'Private class price updated successfully.')
-#         except (ValueError, TypeError):
-#             messages.error(request, 'Invalid price value.')
-    
-#     return redirect('manage_private_classes')
-
 def select_trainer_for_private_class(request, pool_id):
     if not request.user.is_authenticated:
         messages.error(request, 'You do not have permission to access this page.')
@@ -556,26 +521,9 @@ def select_trainer_for_private_class(request, pool_id):
     
     pool = get_object_or_404(Pool, pk=pool_id, is_closed=False)
     trainers = User.objects.filter(role='trainer', trainerpoolassignment__pool=pool, trainerpoolassignment__is_active=True).distinct()
-    busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
-    unavailability_map, total_map = _build_trainer_unavailability(
-        trainers,
-        busy_from=busy_from,
-        busy_to=busy_to,
-    )
-    trainer_cards = [
-        {
-            'trainer': trainer,
-            'unavailable_slots': unavailability_map.get(trainer.pk, []),
-            'unavailable_total': total_map.get(trainer.pk, 0),
-            'unavailable_more': max(total_map.get(trainer.pk, 0) - len(unavailability_map.get(trainer.pk, [])), 0),
-        }
-        for trainer in trainers
-    ]
     return render(request, 'classes/select_trainer_for_private_class.html', {
         'pool': pool,
-        'trainer_cards': trainer_cards,
-        'busy_from': busy_from,
-        'busy_to': busy_to,
+        'trainers': trainers,
     })
 
 
@@ -990,3 +938,205 @@ def select_student_for_group_certificate(request, class_session_id):
         }
     )
 
+
+@login_required
+def todays_classes(request):
+    if request.user.role != 'user':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+    
+    today = timezone.localdate()
+    now_time = timezone.localtime().time()
+    is_weekday = today.weekday() < 5
+
+    group_bookings = ClassBooking.objects.filter(
+        user=request.user,
+        is_cancelled=False,
+        class_session__is_cancelled=False,
+        class_session__start_date__lte=today,
+        class_session__end_date__gte=today,
+    ).select_related(
+        'class_session',
+        'class_session__trainer',
+        'class_session__pool',
+        'class_session__class_type',
+    )
+
+    private_classes = PrivateClass.objects.none()
+    if is_weekday:
+        private_classes = PrivateClass.objects.filter(
+            user=request.user,
+            is_cancelled=False,
+            start_date__lte=today,
+            end_date__gte=today,
+        ).select_related(
+            'trainer',
+            'pool',
+            'substitute_trainer',
+        )
+
+    group_class_ids = []
+    for booking in group_bookings:
+        group_class_ids.append(booking.class_session_id)
+
+    group_attendance_records = ClassSessionAttendance.objects.filter(
+        student=request.user,
+        date=today,
+        class_session_id__in=group_class_ids,
+    )
+    group_attendance_map = {}
+    for record in group_attendance_records:
+        group_attendance_map[record.class_session_id] = record.status
+
+    private_class_ids = []
+    for private_class in private_classes:
+        private_class_ids.append(private_class.id)
+
+    private_attendance_records = PrivateClassAttendance.objects.filter(
+        student=request.user,
+        date=today,
+        private_class_id__in=private_class_ids,
+    )
+    private_attendance_map = {}
+    for record in private_attendance_records:
+        private_attendance_map[record.private_class_id] = record.status
+
+    cards = []
+
+    for booking in group_bookings:
+        session = booking.class_session
+        attendance_status = group_attendance_map.get(session.id)
+
+        if attendance_status == 'class_cancelled':
+            status = 'Cancelled Today'
+        elif attendance_status in {'present', 'absent'}:
+            status = 'Completed Today'
+        elif session.start_time > now_time:
+            status = 'Upcoming Today'
+        else:
+            status = 'Ongoing'
+        
+        cards.append({
+            'type': 'group',
+            'status': status,
+            'start_time': session.start_time,
+            'booking': booking,
+            'session': session,
+        })
+
+    for private_class in private_classes:
+        attendance_status = private_attendance_map.get(private_class.id)
+
+        if attendance_status == 'class_cancelled':
+            status = 'Cancelled Today'
+        elif attendance_status in {'present', 'absent'}:
+            status = 'Completed Today'
+        elif private_class.start_time > now_time:
+            status = 'Upcoming Today'
+        else:
+            status = 'Ongoing'
+
+        cards.append({
+            'type': 'private',
+            'status': status,
+            'start_time': private_class.start_time,
+            'private_class': private_class,
+        })
+    
+    def get_start_time(card):
+        return card['start_time']
+
+    cards.sort(key=get_start_time)
+    
+    context = {
+        'today': today,
+        'cards': cards,
+        'is_weekday': is_weekday,
+
+    }
+    return render(request, 'dashboards/user/todays_classes.html', context)
+
+@login_required
+def select_session_to_view_students_list(request):
+    if request.user.role != 'trainer' and request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+    
+    if request.user.role == 'trainer':
+        sessions = ClassSession.objects.filter(
+            Q(trainer=request.user) | Q(substitute_trainer=request.user)
+        ).select_related('pool', 'class_type', 'trainer', 'substitute_trainer').order_by('-end_date')
+        return render(request, 'dashboards/trainer/student_list/select_session_to_view_students_list.html', {'sessions': sessions})
+    else:
+        sessions = ClassSession.objects.all().select_related('pool', 'class_type', 'trainer', 'substitute_trainer').order_by('-end_date')
+        return render(request, 'dashboards/admin/student_list/select_session_to_view_students_list.html', {'sessions': sessions})
+
+@login_required
+def students_list_for_class_session(request, class_session_id):
+    class_session = get_object_or_404(
+        ClassSession.objects.select_related('pool', 'class_type', 'trainer', 'substitute_trainer'),
+        pk=class_session_id
+    )
+    
+    if request.user.role != 'trainer' and request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    if request.user.role == 'trainer' and class_session.trainer != request.user and class_session.substitute_trainer != request.user:
+        messages.error(request, 'You can only view students list for your own classes or substitute class.')
+        return redirect('index')
+    
+    bookings = ClassBooking.objects.filter(class_session=class_session, is_cancelled=False).select_related('user')
+    if not bookings.exists():
+        messages.info(request, 'No students have booked this class session.')
+        return redirect('select_session_to_view_students_list')
+    
+    if request.user.role == 'trainer':
+        return render(request, 'dashboards/trainer/student_list/students_list_for_class_session.html', {
+            'class_session': class_session,
+            'bookings': bookings,
+        })
+    else:
+        return render(request, 'dashboards/admin/student_list/students_list_for_class_session.html', {
+            'class_session': class_session,
+            'bookings': bookings,
+        })
+
+@login_required
+def select_private_class_to_view_students_list(request):
+    if request.user.role != 'trainer' and request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+    if request.user.role == 'trainer':
+        private_classes = PrivateClass.objects.filter(
+            Q(trainer=request.user) | Q(substitute_trainer=request.user)
+        ).select_related('pool', 'user', 'trainer', 'substitute_trainer').order_by('-end_date')
+        return render(request, 'dashboards/trainer/student_list/select_private_class_to_view_students_list.html', {'private_classes': private_classes})
+    else:
+        private_classes = PrivateClass.objects.all().select_related('pool', 'user', 'trainer', 'substitute_trainer').order_by('-end_date')
+        return render(request, 'dashboards/admin/student_list/select_private_class_to_view_students_list.html', {'private_classes': private_classes})
+
+@login_required
+def students_list_for_private_class(request, private_class_id):
+    private_class = get_object_or_404(
+        PrivateClass.objects.select_related('pool', 'user', 'trainer', 'substitute_trainer'),
+        pk=private_class_id
+    )
+    
+    if request.user.role != 'trainer' and request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    if request.user.role == 'trainer' and private_class.trainer != request.user and private_class.substitute_trainer != request.user:
+        messages.error(request, 'You can only view students list for your own classes or substitute class.')
+        return redirect('index')
+    
+    if request.user.role == 'trainer':
+        return render(request, 'dashboards/trainer/student_list/students_list_for_private_class.html', {
+            'private_class': private_class,
+        })
+    else:
+        return render(request, 'dashboards/admin/student_list/students_list_for_private_class.html', {
+            'private_class': private_class,
+        })
+    

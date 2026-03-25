@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Review Trainer - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+<style>
+    .review-form-shell {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 0;
+        border-radius: 24px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+    }
+
+    .review-form-top {
+        padding: 1.4rem 1.5rem 1.2rem;
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .review-form-title-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.8rem;
+        justify-items: center;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+    .review-trainer-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.55rem 0.9rem;
+        border-radius: 999px;
+        border: 1px solid #dbeafe;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-weight: 700;
+    }
+
+    .review-context-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .review-context-card {
+        padding: 0.9rem 0.95rem;
+        border-radius: 18px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .review-context-card span {
+        display: block;
+        color: var(--text-secondary);
+        font-size: 0.82rem;
+        margin-bottom: 0.22rem;
+    }
+
+    .review-context-card strong {
+        color: var(--text-primary);
+        line-height: 1.45;
+    }
+
+    .review-form-body {
+        padding: 1.4rem 1.5rem 1.5rem;
+        background: #fcfdff;
+    }
+
+    .rating-label {
+        display: block;
+        margin-bottom: 0.7rem;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        text-align: center;
+    }
+
+    .rating-grid {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.35rem;
+    }
+
+    .rating-grid input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .rating-option {
+        display: block;
+        cursor: pointer;
+        flex: 0 0 150px;
+        max-width: 150px;
+        position: relative;
+    }
+
+    .rating-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 96px;
+        padding: 0.9rem 0.8rem;
+        border-radius: 18px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        text-align: center;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .rating-card strong {
+        display: block;
+        font-size: 1.15rem;
+        color: var(--text-primary);
+    }
+
+    .rating-card span {
+        display: block;
+        margin-top: 0.28rem;
+        color: var(--text-secondary);
+        font-size: 0.86rem;
+    }
+
+    .rating-card i {
+        display: inline-block;
+        margin-bottom: 0.45rem;
+        color: #f59e0b;
+        font-size: 1rem;
+    }
+
+    .rating-option:hover .rating-card {
+        transform: translateY(-2px);
+        border-color: #fdba74;
+        box-shadow: 0 12px 24px rgba(245, 158, 11, 0.12);
+    }
+
+    .rating-grid input[type="radio"]:checked + .rating-card {
+        border-color: #fb923c;
+        background: #fff7ed;
+        box-shadow: 0 14px 28px rgba(245, 158, 11, 0.14);
+    }
+
+    .comment-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 0.65rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .comment-hint {
+        color: var(--text-secondary);
+        font-size: 0.84rem;
+        font-weight: 500;
+    }
+
+    .review-comment-box {
+        width: 100%;
+        min-height: 210px;
+        padding: 1rem 1rem 1.05rem;
+        border-radius: 20px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        font-size: 1rem;
+        line-height: 1.65;
+        resize: vertical;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .review-comment-box:focus {
+        outline: none;
+        border-color: #0ea5e9;
+        box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12);
+    }
+
+    .review-form-actions {
+        margin-top: 1.35rem;
+    }
+
+    @media (max-width: 760px) {
+        .rating-grid {
+            justify-content: stretch;
+        }
+
+        .rating-option {
+            flex: 1 1 100%;
+            max-width: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'dashboards/user/components/user_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include 'components/message.html' %}
+
+        <div class="dashboard-header">
+            <div>
+                <h1>{% if review %}Edit Review{% else %}Review Trainer{% endif %}</h1>
+                <p style="color: var(--text-secondary); margin-top: 0.35rem;">
+                    {% if review %}
+                    Update your feedback for {{ trainer.full_name|default:trainer.username }}.
+                    {% else %}
+                    Share your feedback for {{ trainer.full_name|default:trainer.username }}.
+                    {% endif %}
+                </p>
+            </div>
+            <a href="{% if review %}{% url 'user_view_review' certificate.id %}{% else %}{% url 'user_select_trainer_from_certificate' %}{% endif %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="dashboard-section" style="display:flex; justify-content:center;">
+            <div class="modal-content review-form-shell" style="position: static; transform: none;">
+                <form method="POST" action="{% if review %}{% url 'user_edit_review' certificate.id %}{% else %}{% url 'user_create_review' certificate.id %}{% endif %}">
+                    {% csrf_token %}
+
+                    <div class="review-form-top">
+                        <div class="review-form-title-row">
+                            <div class="review-trainer-chip">
+                                <i class="fa-solid fa-star"></i>
+                                {{ trainer.full_name|default:trainer.username }}
+                            </div>
+                            <span style="color: var(--text-secondary); font-size: 0.92rem;">
+                                Write about the teaching quality, communication, and overall experience.
+                            </span>
+                        </div>
+
+                        <div class="review-context-grid">
+                            <div class="review-context-card">
+                                <span>Certificate Issued</span>
+                                <strong>{{ certificate.issued_at|date:"M d, Y" }}</strong>
+                            </div>
+
+                            {% if certificate.class_booking %}
+                            <div class="review-context-card">
+                                <span>Class Type</span>
+                                <strong>Group Class</strong>
+                            </div>
+                            <div class="review-context-card">
+                                <span>Class Name</span>
+                                <strong>{{ certificate.class_booking.class_session.class_name }}</strong>
+                            </div>
+                            <div class="review-context-card">
+                                <span>Pool</span>
+                                <strong>{{ certificate.class_booking.class_session.pool.name }}</strong>
+                            </div>
+                            <div class="review-context-card">
+                                <span>Schedule</span>
+                                <strong>{{ certificate.class_booking.class_session.start_date|date:"M d, Y" }} - {{ certificate.class_booking.class_session.end_date|date:"M d, Y" }}</strong>
+                            </div>
+                            {% elif certificate.private_class %}
+                            <div class="review-context-card">
+                                <span>Class Type</span>
+                                <strong>Private Class</strong>
+                            </div>
+                            <div class="review-context-card">
+                                <span>Pool</span>
+                                <strong>{{ certificate.private_class.pool.name }}</strong>
+                            </div>
+                            <div class="review-context-card">
+                                <span>Dates</span>
+                                <strong>{{ certificate.private_class.start_date|date:"M d, Y" }} - {{ certificate.private_class.end_date|date:"M d, Y" }}</strong>
+                            </div>
+                            <div class="review-context-card">
+                                <span>Time</span>
+                                <strong>{{ certificate.private_class.start_time|time:"H:i" }} - {{ certificate.private_class.end_time|time:"H:i" }}</strong>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="review-form-body">
+                        <label class="rating-label">Rate your experience</label>
+                        <div class="rating-grid">
+                            <label class="rating-option">
+                                <input type="radio" name="rating" value="5" {% if review and review.rating == 5 %}checked{% endif %} required>
+                                <span class="rating-card">
+                                    <i class="fa-solid fa-star"></i>
+                                    <strong>5</strong>
+                                    <span>Excellent</span>
+                                </span>
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="rating" value="4" {% if review and review.rating == 4 %}checked{% endif %} required>
+                                <span class="rating-card">
+                                    <i class="fa-solid fa-star"></i>
+                                    <strong>4</strong>
+                                    <span>Very Good</span>
+                                </span>
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="rating" value="3" {% if review and review.rating == 3 %}checked{% endif %} required>
+                                <span class="rating-card">
+                                    <i class="fa-solid fa-star"></i>
+                                    <strong>3</strong>
+                                    <span>Good</span>
+                                </span>
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="rating" value="2" {% if review and review.rating == 2 %}checked{% endif %} required>
+                                <span class="rating-card">
+                                    <i class="fa-solid fa-star"></i>
+                                    <strong>2</strong>
+                                    <span>Fair</span>
+                                </span>
+                            </label>
+                            <label class="rating-option">
+                                <input type="radio" name="rating" value="1" {% if review and review.rating == 1 %}checked{% endif %} required>
+                                <span class="rating-card">
+                                    <i class="fa-solid fa-star"></i>
+                                    <strong>1</strong>
+                                    <span>Poor</span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="comment" class="comment-label">
+                                <span>Comment</span>
+                                <span class="comment-hint">Tell future swimmers what stood out.</span>
+                            </label>
+                            <textarea id="comment" class="review-comment-box" name="comment" rows="6" placeholder="Share anything helpful about the trainer, communication, confidence-building, punctuality, and the overall learning experience.">{% if review %}{{ review.comment }}{% endif %}</textarea>
+                        </div>
+
+                        <div class="modal-footer review-form-actions">
+                            <a href="{% if review %}{% url 'user_view_review' certificate.id %}{% else %}{% url 'user_select_trainer_from_certificate' %}{% endif %}" class="btn-secondary">Cancel</a>
+                            <button type="submit" class="btn-primary">{% if review %}Save Changes{% else %}Submit Review{% endif %}</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

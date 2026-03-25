@@ -29,7 +29,7 @@
                 <div class="info-card" style="margin:0 0 1rem; background:#fffbeb; border-color:#fde68a;">
                     <p style="margin:0; color:#92400e;"><strong>Note:</strong> End date stays open until manual unassignment.</p>
                 </div>
-                <form method="post" class="split-form">
+                <form method="post" action="{% url 'assign_trainer' pool.pool_id trainer.user_id %}" class="split-form">
                     {% csrf_token %}
                     <div class="full-span">
                         <label for="start_date">Start Date</label>
@@ -50,7 +50,7 @@
                     <li><strong>Email:</strong> {{ trainer.email }}</li>
                 </ul>
 
-                <form method="get" class="quick-filter range-filter" style="margin-top:0.9rem;">
+                <form method="get" action="{% url 'assign_trainer' pool.pool_id trainer.user_id %}" class="quick-filter range-filter" style="margin-top:0.9rem;">
                     <label><strong>Busy Range:</strong></label>
                     <input class="compact-input" type="date" name="busy_from" value="{% if busy_from %}{{ busy_from|date:'Y-m-d' }}{% endif %}">
                     <input class="compact-input" type="date" name="busy_to" value="{% if busy_to %}{{ busy_to|date:'Y-m-d' }}{% endif %}">

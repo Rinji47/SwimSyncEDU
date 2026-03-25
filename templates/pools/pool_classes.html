@@ -7,25 +7,52 @@
 <link rel="stylesheet" href="{% static 'css/landing.css' %}">
 <link rel="stylesheet" href="{% static 'css/pools.css' %}">
 <link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<style>
+    .session-shell {
+        background: #f8fafc;
+    }
+
+    .session-hero {
+        margin-bottom: 1.2rem;
+        padding: 1.45rem 1.5rem;
+        border-radius: 24px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+    }
+
+    .session-hero h1 {
+        font-size: clamp(2rem, 4vw, 3.1rem);
+        line-height: 0.98;
+        margin-bottom: 0.45rem;
+    }
+
+    .session-grid .pool-card {
+        border-radius: 22px;
+        padding: 1.35rem;
+        box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07);
+    }
+
+    .session-grid .pool-card h3 {
+        font-size: 1.3rem;
+    }
+
+    .session-grid .btn-primary {
+        width: 100%;
+        justify-content: center;
+        border-radius: 14px;
+        margin-top: 0.35rem;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<nav class="navbar">
-    <div class="container">
-        <a class="nav-brand" href="{% url 'index' %}">SwimSync EDU</a>
-        <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
-        <ul class="nav-menu" id="navMenu">
-            <li><a href="{% url 'nearby_pools' %}" class="active-link">Pools</a></li>
-            <li><a href="{% url 'pool_quality_today_list' %}">Pool Quality</a></li>
-            <li><a href="{% url 'index' %}#about">About</a></li>
-        </ul>
-    </div>
-</nav>
+{% include 'components/public_nav.html' with active='pools' %}
 
-<section class="page-shell">
+<section class="page-shell session-shell">
     <div class="container two-col">
         <div>
-            <div class="page-head">
+            <div class="page-head session-hero">
                 <div>
                     <h1>{{ class_type.name }}</h1>
                     <p class="subtitle">Choose an available session and book instantly.</p>
@@ -36,7 +63,7 @@
                 </div>
             </div>
 
-            <div class="pools-grid">
+            <div class="pools-grid session-grid">
                 {% for class_item in classes %}
                 <article class="pool-card">
                     <div class="pool-card-header">

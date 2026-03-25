@@ -249,9 +249,24 @@ function renderExistingPoolImages(images) {
 // openEditClassModal removed: class session editing is not handled here
 
 // CLASS TYPE MODAL
+function openAddClassTypeModal() {
+    const modal = document.getElementById("classTypeModal");
+    const form = modal.querySelector("form");
+    const note = modal.querySelector("#class_type_duration_note");
+
+    form.action = "";
+    form.reset();
+    modal.querySelector("#duration_days").value = 0;
+    modal.querySelector("h2").textContent = "Add Class Type";
+    note.textContent = "This duration is used when creating future class sessions.";
+
+    toggleModal("classTypeModal");
+}
+
 function openEditClassTypeModal(btn) {
     const modal = document.getElementById("classTypeModal");
     const type = JSON.parse(btn.dataset.classType);
+    const note = modal.querySelector("#class_type_duration_note");
 
     modal.querySelector("#type_name").value = type.name;
     modal.querySelector("#cost").value = type.cost;
@@ -260,6 +275,7 @@ function openEditClassTypeModal(btn) {
 
     modal.querySelector("form").action = btn.dataset.url;
     modal.querySelector("h2").textContent = "Edit Class Type";
+    note.textContent = "Changing duration updates this class type for future class sessions. Existing sessions keep their current dates.";
 
     toggleModal("classTypeModal");
 }

@@ -24,7 +24,7 @@
             <a href="{% url 'list_pools' %}" class="btn-primary">Assign New Trainer</a>
         </div>
 
-        <form class="quick-filter" method="get">
+        <form class="quick-filter" method="get" action="{% url 'assign_trainer_manager' %}">
             <select name="pool" class="filter-select">
                 <option value="">All Pools</option>
                 {% for pool in pools %}
