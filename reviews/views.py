@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404, render
-from classes.models import CompletionCertificate
+from certificate.models import CompletionCertificate
 from .models import Review
 from django.contrib import messages
 from django.shortcuts import redirect
@@ -363,20 +363,6 @@ def user_edit_review(request, certificate_id):
         'review': review,
     }
     return render(request, 'dashboards/user/reviews/user_review_trainer.html', context)
-
-
-@login_required
-def user_view_certificate(request, certificate_id):
-    certificate, trainer = get_certificate_and_trainer(request, certificate_id)
-    if not trainer:
-        messages.error(request, "Invalid certificate.")
-        return redirect('user_select_trainer_from_certificate')
-
-    context = {
-        'certificate': certificate,
-        'trainer': trainer
-    }
-    return render(request, 'dashboards/user/reviews/user_view_certificate.html', context)
 
 
 @login_required

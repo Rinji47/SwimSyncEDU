@@ -23,19 +23,29 @@
 
         <div class="attendance-hero">
             <h2>{{ private_class.user.full_name|default:private_class.user.username }}</h2>
-            <p class="attendance-meta">{{ private_class.pool.name }} | {{ private_class.start_date }} to {{ private_class.end_date }} | {{ private_class.start_time }} - {{ private_class.end_time }}</p>
+            <p class="attendance-meta">
+                {{ private_class.pool.name }} |
+                {{ private_class.start_date|date:"M d, Y" }} to {{ private_class.end_date|date:"M d, Y" }} |
+                {{ private_class.start_time|time:"H:i" }} - {{ private_class.end_time|time:"H:i" }}
+            </p>
         </div>
 
         <div class="dashboard-section">
-            <div class="student-list">
-                <div class="student-row">
-                    <div class="student-meta">
-                        <strong>{{ private_class.user.full_name|default:private_class.user.username }}</strong>
-                        <span>{{ private_class.user.email }}</span>
-                    </div>
-                    <div>
-                        <span class="attendance-status present">Enrolled</span>
-                    </div>
+            <h2>Class Details</h2>
+            <div class="data-card-grid">
+                <div class="data-card">
+                    <h3 class="data-card-title">Schedule</h3>
+                    <p class="data-card-row"><span class="data-card-label">Pool:</span> {{ private_class.pool.name }}</p>
+                    <p class="data-card-row"><span class="data-card-label">Dates:</span> {{ private_class.start_date|date:"M d, Y" }} to {{ private_class.end_date|date:"M d, Y" }}</p>
+                    <p class="data-card-row"><span class="data-card-label">Time:</span> {{ private_class.start_time|time:"H:i" }} - {{ private_class.end_time|time:"H:i" }}</p>
+                    <p class="data-card-row"><span class="data-card-label">Your Role:</span> {% if private_class.trainer == request.user %}Main trainer{% else %}Substitute trainer{% endif %}</p>
+                </div>
+                <div class="data-card">
+                    <h3 class="data-card-title">Student</h3>
+                    <p class="data-card-row"><span class="data-card-label">Name:</span> {{ private_class.user.full_name|default:private_class.user.username }}</p>
+                    <p class="data-card-row"><span class="data-card-label">Username:</span> {{ private_class.user.username }}</p>
+                    <p class="data-card-row"><span class="data-card-label">Email:</span> {{ private_class.user.email|default:'-' }}</p>
+                    <p class="data-card-row"><span class="data-card-label">Status:</span> <span class="attendance-status present">Enrolled</span></p>
                 </div>
             </div>
         </div>

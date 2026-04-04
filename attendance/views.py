@@ -600,7 +600,6 @@ def assign_substitute_trainer_for_private_class(request, private_class_id):
         },
     )
 
-
 @login_required
 def choose_substitute_trainer_for_private_class(request, private_class_id):
     if request.user.role != 'admin':
@@ -625,7 +624,6 @@ def choose_substitute_trainer_for_private_class(request, private_class_id):
         'dashboards/admin/attendance/choose_substitute_trainer_for_private_class.html',
         {'private_class': private_class, 'today': today, 'candidate_rows': candidate_rows},
     )
-
 
 @login_required
 def cancel_group_class_for_today(request, class_session_id):
@@ -729,86 +727,58 @@ def list_trainer_classes(request, trainer_id):
 
 @login_required
 def class_session_attendance_history(request, class_session_id):
-    if request.user.role != 'trainer':
+    if request.user.role != 'trainer' and request.user.role != 'admin':
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('index')
 
     class_session = get_object_or_404(ClassSession, id=class_session_id)
 
-    if class_session.trainer != request.user and class_session.substitute_trainer != request.user:
-        messages.error(request, 'You can only view attendance history for your own classes or subsitute class.')
-        return redirect('select_class_for_attendance')
+    if request.user.role == 'trainer':
+            if class_session.trainer != request.user and class_session.substitute_trainer != request.user:
+                messages.error(request, 'You can only view attendance history for your own classes or substitute classes.')
+                return redirect('select_class_for_attendance')
 
     attendance_records = ClassSessionAttendance.objects.filter(class_session=class_session).order_by('-date')
+    
+    template=''
+    if request.user.role == 'admin':
+        template = 'dashboards/admin/attendance/class_session_attendance_history.html'
+    else:
+        template = 'dashboards/trainer/attendance/class_session_attendance_history.html'
     return render(
         request,
-        'dashboards/trainer/attendance/class_session_attendance_history.html',
+        template,
         {'class_session': class_session, 'attendance_records': attendance_records},
     )
 
 
 @login_required
 def private_class_attendance_history(request, private_class_id):
-    if request.user.role != 'trainer':
+    if request.user.role != 'trainer' and request.user.role != 'admin':
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('index')
 
     private_class = get_object_or_404(PrivateClass, id=private_class_id)
 
-    if private_class.trainer != request.user and private_class.substitute_trainer != request.user:
-        messages.error(request, 'You can only view attendance history for your own classes or subsitute class.')
-        return redirect('select_private_class_for_attendance')
+    if request.user.role == 'trainer':
+        if private_class.trainer != request.user and private_class.substitute_trainer != request.user:
+            messages.error(request, 'You can only view attendance history for your own classes or subsitute class.')
+            return redirect('select_private_class_for_attendance')
 
     attendance_records = PrivateClassAttendance.objects.filter(private_class=private_class).order_by('-date')
+    
+    template=''
+    if request.user.role == 'admin':
+        template = 'dashboards/admin/attendance/private_class_attendance_history.html'
+    else:
+        template = 'dashboards/trainer/attendance/private_class_attendance_history.html'
     return render(
         request,
-        'dashboards/trainer/attendance/private_class_attendance_history.html',
+        template,
         {'private_class': private_class, 'attendance_records': attendance_records},
     )
 
 
-@login_required
-def admin_private_class_attendance_history(request, private_class_id):
-    if request.user.role != 'admin':
-        messages.error(request, 'You do not have permission to access this page.')
-        return redirect('index')
-
-    private_class = get_object_or_404(PrivateClass, id=private_class_id)
-    attendance_records = PrivateClassAttendance.objects.filter(private_class=private_class).order_by('-date')
-    return render(
-        request,
-        'dashboards/admin/attendance/private_class_attendance_history.html',
-        {'private_class': private_class, 'attendance_records': attendance_records},
-    )
-
-
-@login_required
-def admin_class_session_attendance_history(request, class_session_id):
-    if request.user.role != 'admin':
-        messages.error(request, 'You do not have permission to access this page.')
-        return redirect('index')
-
-    class_session = get_object_or_404(ClassSession, id=class_session_id)
-    attendance_records = ClassSessionAttendance.objects.filter(class_session=class_session).order_by('-date')
-    return render(
-        request,
-        'dashboards/admin/attendance/class_session_attendance_history.html',
-        {'class_session': class_session, 'attendance_records': attendance_records},
-    )
-
-@login_required
-def trainer_attendance_history(request, trainer_id):
-    if request.user.role != 'admin' and request.user.pk != trainer_id:
-        messages.error(request, 'You do not have permission to access this page.')
-        return redirect('index')
-
-    trainer = get_object_or_404(User, pk=trainer_id)
-    attendance_records = TrainerAttendanceRecord.objects.filter(trainer=trainer).order_by('-date')
-    return render(
-        request,
-        'dashboards/admin/attendance/trainer_attendance_history.html',
-        {'trainer': trainer, 'attendance_records': attendance_records},
-    )
 
 
 @login_required
@@ -1104,4 +1074,58 @@ def admin_private_class_activity_detail(request, private_class_id):
             'to_date': to_date,
             'daily_rows': daily_rows,
         },
+    )
+
+@login_required
+def select_trainer_for_attendance_history(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    trainers = User.objects.filter(role='trainer').order_by('full_name')
+    return render(
+        request,
+        'dashboards/admin/attendance/trainer/select_trainer_for_attendance_history.html',
+        {'trainers': trainers},
+    )
+
+@login_required
+def trainers_attandance_history(request, trainer_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    trainer = get_object_or_404(User, pk=trainer_id)
+    attendance_records = TrainerAttendanceRecord.objects.filter(trainer=trainer).order_by('-date')
+    return render(
+        request,
+        'dashboards/admin/attendance/trainer/trainer_attendance_history.html',
+        {'trainer': trainer, 'attendance_records': attendance_records},
+    )
+
+@login_required
+def admin_class_session_list_for_attendance_history(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    class_session = ClassSession.objects.all().order_by('-start_date', '-start_time')
+    return render(
+        request,
+        'dashboards/admin/attendance/class_session/select_class_session_for_attendance_history.html',
+        {'class_sessions': class_session},
+    )
+
+
+@login_required
+def admin_private_class_list_for_attendance_history(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    private_classes = PrivateClass.objects.all().order_by('-start_date', '-start_time')
+    return render(
+        request,
+        'dashboards/admin/attendance/private_class/select_private_class_for_attendance_history.html',
+        {'private_classes': private_classes},
     )

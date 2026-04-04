@@ -20,6 +20,7 @@
         <div class="dashboard-header">
             <h1>Trainer Attendance ({{ today }})</h1>
             <div class="quick-links">
+                <a href="{% url 'select_trainer_for_attendance_history' %}" class="btn-secondary">Attendance History</a>
                 <a href="{% url 'list_ongoing_classes_of_absent_trainer' %}" class="btn-secondary">Absent Group Classes</a>
                 <a href="{% url 'list_ongoing_private_classes_of_absent_trainer' %}" class="btn-secondary">Absent Private Classes</a>
             </div>

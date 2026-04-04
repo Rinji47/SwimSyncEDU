@@ -31,12 +31,7 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user and user.check_password(password):
             login(request, user)
-            context = {
-                'messages': [
-                    {'tags': 'success', 'message': 'Login successful.'}
-                ], 
-                'user': user
-            }
+            messages.success(request, f'Welcome back, {user.full_name}!')
 
             if user.role == 'admin':
                 return redirect('admin_dashboard')
@@ -46,12 +41,7 @@ def login_view(request):
                 return redirect('user_dashboard')
 
         else:
-            context = {
-                'messages': [
-                    {'tags': 'error', 'message': 'Invalid username or password.'}
-                ]
-            }
-            return render(request, 'auth/login.html', context)
+            messages.error(request, 'Invalid username or password.')
     return render(request, 'auth/login.html')
 
 def signup_view(request):
@@ -63,64 +53,48 @@ def signup_view(request):
         confirm_password = request.POST.get('confirm_password')
         phone = request.POST.get('phone')
         gender = request.POST.get('gender')
-        date_of_birth = request.POST.get('date_of_birth', None)
+        date_of_birth = request.POST.get('date_of_birth')
         profile_picture = request.FILES.get('profile_picture', None)
 
-        if date_of_birth == '':
-            date_of_birth = None
-
         if password != confirm_password:
-            context = {
-                'messages': [
-                    {'tags': 'error', 'message': 'Passwords do not match.'}
-                ]
-            }
-            return render(request, 'auth/signup.html', context)
+            messages.error(request, 'Passwords do not match.')
+            return redirect('signup')
         
         if User.objects.filter(username=username).exists():
-            context = {
-                'messages': [
-                    {'tags': 'error', 'message': 'Username already taken.'}
-                ]
-            }
-            return render(request, 'auth/signup.html', context)
+            messages.error(request, 'Username already taken.')
+            return redirect('signup')
         
         if User.objects.filter(email=email).exists():
-            context = {
-                'messages': [
-                    {'tags': 'error', 'message': 'Email already registered.'}
-                ]
-            }
-            return render(request, 'auth/signup.html', context)
-        
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password,
-            full_name=full_name,
-            phone=phone,
-            gender=gender,
-            date_of_birth=date_of_birth,
-            profile_picture=profile_picture,
-            role='user'   # always member
-        )
+            messages.error(request, 'Email already registered.')
+            return redirect('signup')
 
-        context = {
-            'messages': [
-                {'tags': 'success', 'message': 'Account created successfully. Please log in.'}
-            ]
-        }
-        return render(request, 'auth/login.html', context)
+        try:
+            User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                full_name=full_name,
+                phone=phone,
+                gender=gender,
+                date_of_birth=date_of_birth,
+                profile_picture=profile_picture,
+                role='user'
+            )
+
+            messages.success(request, 'Account created successfully. Please log in.')
+            return render(request, 'auth/login.html')
+        except ValueError as e:
+            messages.error(request, str(e))
+            return redirect('signup')
+        except Exception:
+            messages.error(request, 'An error occurred while creating the account. Please try again')
+            return redirect('signup')
     return render(request, 'auth/signup.html')
 
 def logout_view(request):
     logout(request)
-    context = {
-        'messages': [
-            {'tags': 'success', 'message': 'Logged out successfully.'}
-        ]
-    }
-    return render(request, 'auth/login.html', context)
+    messages.success(request, 'You have logged out successfully')
+    return render(request, 'auth/login.html')
 
 # Manage Members page (placeholder)
 def manage_members(request):
@@ -186,10 +160,11 @@ def add_trainer(request):
         email = request.POST.get('email')
         phone = request.POST.get('phone')
         gender = request.POST.get('gender')
+        digital_signature = request.FILES.get('digital_signature', None)
         specialization = request.POST.get('specialization')
         experience_years = request.POST.get('experience_years') or None
         profile_picture = request.FILES.get('profile_picture', None)
-        password = request.POST.get('password') or 'trainer123'  # default password
+        password = request.POST.get('password') or 'trainer123'
 
         # Check for username/email conflicts
         if User.objects.filter(username=username).exists():
@@ -198,20 +173,37 @@ def add_trainer(request):
         if User.objects.filter(email=email).exists():
             messages.error(request, 'Email already registered.')
             return redirect('manage_trainers')
-
-        trainer = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password,
-            full_name=full_name,
-            phone=phone,
-            gender=gender,
-            specialization=specialization,
-            experience_years=experience_years,
-            profile_picture=profile_picture,
-            role='trainer',
-            is_active=True
-        )
+        if not digital_signature:
+            messages.error(request, 'Digital signature is required for trainers.')
+            return redirect('manage_trainers')
+        if experience_years is not None:
+            try:
+                experience_years = int(experience_years)
+            except:
+                messages.error(request, 'Experience years must be a valid integer.')
+                return redirect('manage_trainers')
+    
+        try:
+            trainer = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                full_name=full_name,
+                phone=phone,
+                gender=gender,
+                specialization=specialization,
+                experience_years=experience_years,
+                profile_picture=profile_picture,
+                digital_signature=digital_signature,
+                role='trainer',
+                is_active=True
+            )
+        except ValueError as e:
+            messages.error(request, str(e))
+            return redirect('manage_trainers')
+        except Exception:
+            messages.error(request, 'An error occurred while creating the trainer. Please try again.')
+            return redirect('manage_trainers')
 
         messages.success(request, f'Trainer "{trainer.username}" added successfully.')
         return redirect('manage_trainers')
@@ -232,7 +224,8 @@ def edit_trainer(request, trainer_id):
         specialization = request.POST.get('specialization')
         experience_years = request.POST.get('experience_years') or None
         profile_picture = request.FILES.get('profile_picture', None)
-
+        digital_signature = request.FILES.get('digital_signature', None)
+        
         # Check for conflicts excluding this trainer
         if User.objects.filter(username=username).exclude(pk=trainer_id).exists():
             messages.error(request, 'Username already exists.')
@@ -240,6 +233,25 @@ def edit_trainer(request, trainer_id):
         if User.objects.filter(email=email).exclude(pk=trainer_id).exists():
             messages.error(request, 'Email already registered.')
             return redirect('manage_trainers')
+        
+        if not full_name:
+            messages.error(request, 'Full name is required.')
+            return redirect('manage_trainers')
+
+        if not gender:
+            messages.error(request, 'Gender is required.')
+            return redirect('manage_trainers')
+
+        if not trainer.digital_signature and not digital_signature:
+            messages.error(request, 'Digital signature is required for trainers.')
+            return redirect('manage_trainers')
+
+        if experience_years is None:
+            try:
+                experience_years = int(experience_years)
+            except:
+                messages.error(request, 'Experience years must be a valid integer.')
+                return redirect('manage_trainers')
 
         trainer.username = username
         trainer.full_name = full_name
@@ -250,6 +262,8 @@ def edit_trainer(request, trainer_id):
         trainer.experience_years = experience_years
         if profile_picture:
             trainer.profile_picture = profile_picture
+        if digital_signature:
+            trainer.digital_signature = digital_signature
 
         trainer.save()
         messages.success(request, f'Trainer "{trainer.username}" updated successfully.')
@@ -289,13 +303,12 @@ def edit_member(request, member_id):
             messages.error(request, 'Email already registered.')
             return redirect('manage_members')
         
+        
         user.username = username
         user.full_name = full_name
         user.email = email
         user.phone = phone
         user.gender = gender
-        if date_of_birth == '':
-            date_of_birth = None
         user.date_of_birth = date_of_birth
         if profile_picture:
             user.profile_picture = profile_picture 
@@ -407,3 +420,186 @@ def user_dashboard(request):
         'upcoming_private_bookings': upcoming_private_bookings,
     }
     return render(request, 'dashboards/user/user_dashboard.html', context)
+
+@login_required
+def user_profile(request):
+    if request.user.role != 'user':
+        messages.error(request, 'Access denied. Members only.')
+        return redirect('index')
+    
+    user = request.user
+    if request.method == 'POST':
+        profile_picture = request.FILES.get('profile_picture', None)
+        full_name = request.POST.get('full_name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        gender = request.POST.get('gender')
+        date_of_birth = request.POST.get('date_of_birth')
+
+        if not full_name:
+            messages.error(request, 'Full name is required.')
+            return redirect('user_profile')
+
+        if not email:
+            messages.error(request, 'Email is required.')
+            return redirect('user_profile')
+
+        if not gender:
+            messages.error(request, 'Gender is required.')
+            return redirect('user_profile')
+
+        if not date_of_birth:
+            messages.error(request, 'Date of birth is required.')
+            return redirect('user_profile')
+
+        if User.objects.filter(email=email).exclude(pk=user.pk).exists():
+            messages.error(request, 'Email already registered.')
+            return redirect('user_profile')
+        
+        if profile_picture:
+            user.profile_picture = profile_picture
+        user.full_name = full_name
+        user.email = email
+        user.phone = phone
+        user.gender = gender
+        user.date_of_birth = date_of_birth
+
+        user.save()
+        messages.success(request, 'Profile updated successfully.')
+        return redirect('user_profile')
+    
+    return render(request, 'dashboards/user/user_profile.html')
+
+@login_required
+def trainer_profile(request):
+    if request.user.role != 'trainer':
+        messages.error(request, 'Access denied. Trainers only.')
+        return redirect('index')
+    
+    user = request.user
+    if request.method == 'POST':
+        profile_picture = request.FILES.get('profile_picture', None)
+        full_name = request.POST.get('full_name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        gender = request.POST.get('gender')
+        date_of_birth = request.POST.get('date_of_birth')
+        specialization = request.POST.get('specialization') or None
+        experience_years = request.POST.get('experience_years') or None
+
+        if not full_name:
+            messages.error(request, 'Full name is required.')
+            return redirect('trainer_profile')
+
+        if not email:
+            messages.error(request, 'Email is required.')
+            return redirect('trainer_profile')
+
+        if not gender:
+            messages.error(request, 'Gender is required.')
+            return redirect('trainer_profile')
+
+        if not date_of_birth:
+            messages.error(request, 'Date of birth is required.')
+            return redirect('trainer_profile')
+
+        if User.objects.filter(email=email).exclude(pk=user.pk).exists():
+            messages.error(request, 'Email already registered.')
+            return redirect('trainer_profile')
+        
+        if profile_picture:
+            user.profile_picture = profile_picture
+        user.full_name = full_name
+        user.email = email
+        user.phone = phone
+        user.gender = gender
+        user.date_of_birth = date_of_birth
+        user.specialization = specialization
+        user.experience_years = experience_years
+
+        user.save()
+        messages.success(request, 'Profile updated successfully.')
+        return redirect('trainer_profile')
+    return render(request, 'dashboards/trainer/trainer_profile.html')
+
+@login_required
+def admin_profile(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'Access denied. Admins only.')
+        return redirect('index')
+    
+    user = request.user
+    if request.method == 'POST':
+        profile_picture = request.FILES.get('profile_picture', None)
+        full_name = request.POST.get('full_name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        gender = request.POST.get('gender')
+        date_of_birth = request.POST.get('date_of_birth')
+
+        if not full_name:
+            messages.error(request, 'Full name is required.')
+            return redirect('admin_profile')
+
+        if not email:
+            messages.error(request, 'Email is required.')
+            return redirect('admin_profile')
+
+        if not gender:
+            messages.error(request, 'Gender is required.')
+            return redirect('admin_profile')
+
+        if not date_of_birth:
+            messages.error(request, 'Date of birth is required.')
+            return redirect('admin_profile')
+
+        if User.objects.filter(email=email).exclude(pk=user.pk).exists():
+            messages.error(request, 'Email already registered.')
+            return redirect('admin_profile')
+        
+        if profile_picture:
+            user.profile_picture = profile_picture
+        user.full_name = full_name
+        user.email = email
+        user.phone = phone
+        user.gender = gender
+        user.date_of_birth = date_of_birth
+
+        user.save()
+        messages.success(request, 'Profile updated successfully.')
+        return redirect('admin_profile')
+    return render(request, 'dashboards/admin/admin_profile.html')
+
+def _role_check_for_change_password(user):
+    if user.role == 'admin':
+        return redirect('admin_dashboard')
+    elif user.role == 'trainer':
+        return redirect('trainer_dashboard')
+    return redirect('user_profile')
+
+@login_required
+def change_password(request):
+    user = request.user
+    if request.method == 'POST':
+        current_password = request.POST.get('current_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        if not user.check_password(current_password):
+            messages.error(request, 'Current password is incorrect.')
+            return _role_check_for_change_password(user)
+        
+        if new_password != confirm_password:
+            messages.error(request, 'New passwords do not match.')
+            return _role_check_for_change_password(user)
+        
+        if not new_password:
+            messages.error(request, 'New password cannot be empty.')
+            return _role_check_for_change_password(user)
+        
+        user.set_password(new_password)
+        user.save()
+
+        logout(request)
+        messages.success(request, 'Password changed successfully. Please login again.')
+        return redirect('login')
+    return _role_check_for_change_password(user)

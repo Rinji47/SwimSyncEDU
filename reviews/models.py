@@ -4,7 +4,7 @@ from accounts.models import User
 class Review(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews')
     certificate = models.OneToOneField(
-        'classes.CompletionCertificate',
+        'certificate.CompletionCertificate',
         on_delete=models.CASCADE,
         related_name='review'
     )

@@ -23,28 +23,29 @@
             <div class="class-card compact">
 
                 <!-- ✅ STATUS BADGE -->
-                <span class="class-status 
-                    {% if private_class.is_cancelled %}
-                        status-cancelled
-                    {% elif private_class.end_date < today %}
-                        status-completed
-                    {% elif private_class.start_date > today %}
-                        status-upcoming
-                    {% else %}
-                        status-ongoing
-                    {% endif %}">
-                    {% if private_class.is_cancelled %}
-                        Cancelled
-                    {% elif private_class.end_date < today %}
-                        Completed
-                    {% elif private_class.start_date > today %}
-                        Upcoming
-                    {% else %}
-                        Ongoing
-                    {% endif %}
-                </span>
-
-                <h3 style="font-size:1rem;margin-bottom:0.3rem;">Private Class</h3>
+                <h3 style="font-size:1rem;margin-bottom:0.3rem;">
+                    <span class="class-status 
+                        {% if private_class.is_cancelled %}
+                            status-cancelled
+                        {% elif private_class.end_date < today %}
+                            status-completed
+                        {% elif private_class.start_date > today %}
+                            status-upcoming
+                        {% else %}
+                            status-ongoing
+                        {% endif %}">
+                        {% if private_class.is_cancelled %}
+                            Cancelled
+                        {% elif private_class.end_date < today %}
+                            Completed
+                        {% elif private_class.start_date > today %}
+                            Upcoming
+                        {% else %}
+                            Ongoing
+                        {% endif %}
+                    </span>
+                    Private Class
+                </h3>
 
                 <div style="font-size:0.92rem;line-height:1.3;">
                     <strong>Pool:</strong> {{ private_class.pool.name }}<br>

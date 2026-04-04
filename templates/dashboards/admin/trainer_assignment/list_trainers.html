@@ -40,11 +40,13 @@
         <div class="dashboard-section card-grid">
             {% for row in trainer_cards %}
             <article class="class-card">
-                <span class="class-status {% if row.trainer.is_active %}status-open{% else %}status-cancelled{% endif %}">
-                    {% if row.trainer.is_active %}Active{% else %}Inactive{% endif %}
-                    {% if row.trainer.user_id in trainers_assigned_id %} | Assigned{% else %} | Not Assigned{% endif %}
-                </span>
-                <h3>{{ row.trainer.full_name|default:row.trainer.username }}</h3>
+                <h3>
+                    <span class="class-status {% if row.trainer.is_active %}status-open{% else %}status-cancelled{% endif %}">
+                        {% if row.trainer.is_active %}Active{% else %}Inactive{% endif %}
+                        {% if row.trainer.user_id in trainers_assigned_id %} | Assigned{% else %} | Not Assigned{% endif %}
+                    </span>
+                    {{ row.trainer.full_name|default:row.trainer.username }}
+                </h3>
                 <p><strong>Email:</strong> {{ row.trainer.email }}</p>
                 <div class="slot-list tight">
                     {% for slot in row.unavailable_slots %}

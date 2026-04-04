@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Change Trainer - {{ class_session.class_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Select Trainer</h1>
+                <p class="subtitle">Change trainer for <strong>{{ class_session.class_name }}</strong> at {{ class_session.pool.name }}.</p>
+            </div>
+            <a href="{% url 'edit_class_session' class_session.id %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="two-col">
+            <div class="dashboard-section card-grid" style="margin:0;">
+                {% for trainer in trainers %}
+                <article class="class-card">
+                    <h3>{{ trainer.full_name|default:trainer.username }}</h3>
+                    <p><strong>Email:</strong> {{ trainer.email }}</p>
+                    <p><strong>Specialization:</strong> {{ trainer.specialization|default:"Not specified" }}</p>
+                    <div class="card-actions">
+                        <a href="{% url 'edit_class_session' class_session.id %}?trainer_id={{ trainer.pk }}" class="btn-primary btn-sm">Select Trainer</a>
+                    </div>
+                </article>
+                {% empty %}
+                <article class="class-card"><p>No trainers assigned to this pool.</p></article>
+                {% endfor %}
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-circle-info"></i> Current Selection</h3>
+                <ul class="side-list">
+                    <li><strong>Pool:</strong> {{ class_session.pool.name }}</li>
+                    <li><strong>Address:</strong> {{ class_session.pool.address }}</li>
+                    <li><strong>Current Trainer:</strong> {{ class_session.trainer.full_name|default:class_session.trainer.username }}</li>
+                </ul>
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}

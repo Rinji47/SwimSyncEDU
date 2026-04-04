@@ -32,12 +32,14 @@
             <div class="card-grid">
                 {% for price in price_history %}
                 <div class="class-card">
-                    {% if not price.end_date %}
-                        <span class="class-status status-open">Active</span>
-                    {% else %}
-                        <span class="class-status status-cancelled">Ended</span>
-                    {% endif %}
-                    <h3>Private Class Price</h3>
+                    <h3>
+                        {% if not price.end_date %}
+                            <span class="class-status status-open">Active</span>
+                        {% else %}
+                            <span class="class-status status-cancelled">Ended</span>
+                        {% endif %}
+                        Private Class Price
+                    </h3>
                     <p><strong>Price Per Day:</strong> Rs. {{ price.private_class_price_per_day }}</p>
                     <p><strong>Set On:</strong> {{ price.created_at|date:"M d, Y H:i" }}</p>
                     <p><strong>Ended On:</strong>

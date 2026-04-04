@@ -37,8 +37,10 @@
         <div class="dashboard-section card-grid">
             {% for pool in pools %}
             <article class="class-card">
-                <span class="class-status {% if not pool.is_closed %}status-open{% else %}status-cancelled{% endif %}">{% if pool.is_closed %}Closed{% else %}Open{% endif %}</span>
-                <h3>{{ pool.name }}</h3>
+                <h3>
+                    <span class="class-status {% if not pool.is_closed %}status-open{% else %}status-cancelled{% endif %}">{% if pool.is_closed %}Closed{% else %}Open{% endif %}</span>
+                    {{ pool.name }}
+                </h3>
                 <p><strong>Address:</strong> {{ pool.address }}</p>
                 <p><strong>Capacity:</strong> {{ pool.capacity }}</p>
                 <div class="card-actions">

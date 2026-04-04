@@ -55,10 +55,12 @@
             <div class="data-card-grid">
                 {% for quality in qualities %}
                 <div class="data-card">
-                    <span class="data-card-status">
-                        {% if quality.cleanliness_rating >= 4 %}Excellent{% elif quality.cleanliness_rating >= 3 %}Good{% else %}Needs Attention{% endif %}
-                    </span>
-                    <h3 class="data-card-title">{{ quality.pool.name }}</h3>
+                    <h3 class="data-card-title">
+                        <span class="data-card-status">
+                            {% if quality.cleanliness_rating >= 4 %}Excellent{% elif quality.cleanliness_rating >= 3 %}Good{% else %}Needs Attention{% endif %}
+                        </span>
+                        {{ quality.pool.name }}
+                    </h3>
                     <div class="data-card-row">
                         <span class="data-card-label">Date:</span>
                         <span>{{ quality.date|date:"M d, Y" }}</span>

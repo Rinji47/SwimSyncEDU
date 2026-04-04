@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trainer Profile - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/trainer/components/trainer_sidebar.html" %}
+
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <section class="page-banner">
+            <div class="page-banner-copy">
+                <span class="page-banner-kicker">Trainer Account</span>
+                <h1>Trainer Profile</h1>
+                <p>Update your trainer profile to help members learn about your expertise.</p>
+            </div>
+        </section>
+
+        <section class="dashboard-section">
+            <div class="section-head">
+                <div>
+                    <h2>Profile Details</h2>
+                    <p>Keep your contact information and trainer details up to date.</p>
+                </div>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" action="{% url 'trainer_profile' %}" class="profile-form">
+                {% csrf_token %}
+                <div class="profile-grid">
+                    <div class="profile-card">
+                        <div class="profile-avatar">
+                            {% if request.user.profile_picture %}
+                                <img src="{{ request.user.profile_picture.url }}" alt="{{ request.user.full_name|default:request.user.username }}">
+                            {% else %}
+                                <div class="profile-avatar-placeholder">{{ request.user.full_name|default:request.user.username|slice:":1" }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="profile-meta">
+                            <h3>{{ request.user.full_name|default:request.user.username }}</h3>
+                            <p>Trainer account</p>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="profile_picture">Profile Picture <span class="optional">(Optional)</span></label>
+                            <input type="file" id="profile_picture" name="profile_picture" accept="image/*">
+                            <small class="form-hint">A professional headshot builds trust with members.</small>
+                        </div>
+                    </div>
+
+                    <div class="profile-card">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="full_name">Full Name <span class="required">*</span></label>
+                                <input type="text" id="full_name" name="full_name" value="{{ request.user.full_name }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Email <span class="required">*</span></label>
+                                <input type="email" id="email" name="email" value="{{ request.user.email }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">Phone Number</label>
+                                <input type="tel" id="phone" name="phone" value="{{ request.user.phone|default_if_none:'' }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="gender">Gender <span class="required">*</span></label>
+                                <select id="gender" name="gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="male" {% if request.user.gender == 'male' %}selected{% endif %}>Male</option>
+                                    <option value="female" {% if request.user.gender == 'female' %}selected{% endif %}>Female</option>
+                                    <option value="other" {% if request.user.gender == 'other' %}selected{% endif %}>Other</option>
+                                    <option value="prefer_not_to_say" {% if request.user.gender == 'prefer_not_to_say' %}selected{% endif %}>Prefer not to say</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="date_of_birth">Date of Birth <span class="required">*</span></label>
+                                <input type="date" id="date_of_birth" name="date_of_birth" value="{{ request.user.date_of_birth|date:'Y-m-d' }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="specialization">Specialization <span class="optional">(Optional)</span></label>
+                                <input type="text" id="specialization" name="specialization" value="{{ request.user.specialization|default_if_none:'' }}" placeholder="Beginner coaching, freestyle, etc.">
+                            </div>
+                            <div class="form-group">
+                                <label for="experience_years">Experience (Years) <span class="optional">(Optional)</span></label>
+                                <input type="number" id="experience_years" name="experience_years" min="0" value="{{ request.user.experience_years|default_if_none:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="dashboard-section">
+            <div class="section-head">
+                <div>
+                    <h2>Change Password</h2>
+                    <p>Keep your trainer account safe with a fresh password.</p>
+                </div>
+            </div>
+
+            <form method="post" action="{% url 'change_password' %}" class="profile-form">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="current_password">Current Password <span class="required">*</span></label>
+                        <input type="password" id="current_password" name="current_password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_password">New Password <span class="required">*</span></label>
+                        <input type="password" id="new_password" name="new_password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password">Confirm New Password <span class="required">*</span></label>
+                        <input type="password" id="confirm_password" name="confirm_password" required>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-secondary">Update Password</button>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+{% endblock %}

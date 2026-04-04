@@ -83,20 +83,22 @@
         <div class="dashboard-section today-grid">
             {% for card in cards %}
             <article class="class-card compact">
-                <span class="class-status
-                    {% if 'Cancelled' in card.status %}status-cancelled
-                    {% elif 'Completed' in card.status %}today-status-completed
-                    {% elif 'Upcoming' in card.status %}today-status-upcoming
-                    {% else %}today-status-ongoing{% endif %}">
-                    {{ card.status }}
-                </span>
 
                 {% if card.type == 'group' %}
                 <div class="today-type">
                     <i class="fa-solid fa-users"></i>
                     Group Class
                 </div>
-                <h3>{{ card.session.class_name }}</h3>
+                <h3>
+                    <span class="class-status
+                        {% if 'Cancelled' in card.status %}status-cancelled
+                        {% elif 'Completed' in card.status %}today-status-completed
+                        {% elif 'Upcoming' in card.status %}today-status-upcoming
+                        {% else %}today-status-ongoing{% endif %}">
+                        {{ card.status }}
+                    </span>
+                    {{ card.session.class_name }}
+                </h3>
                 <div class="today-card-meta">
                     <strong>Pool:</strong> {{ card.session.pool.name }}<br>
                     <strong>Trainer:</strong> {{ card.session.trainer.full_name|default:card.session.trainer.username }}<br>
@@ -126,7 +128,16 @@
                     <i class="fa-solid fa-user-lock"></i>
                     Private Class
                 </div>
-                <h3>Private Class</h3>
+                <h3>
+                    <span class="class-status
+                        {% if 'Cancelled' in card.status %}status-cancelled
+                        {% elif 'Completed' in card.status %}today-status-completed
+                        {% elif 'Upcoming' in card.status %}today-status-upcoming
+                        {% else %}today-status-ongoing{% endif %}">
+                        {{ card.status }}
+                    </span>
+                    Private Class
+                </h3>
                 <div class="today-card-meta">
                     <strong>Pool:</strong> {{ card.private_class.pool.name }}<br>
                     <strong>Trainer:</strong> {{ card.private_class.trainer.full_name|default:card.private_class.trainer.username }}<br>

@@ -411,6 +411,8 @@ function openAddQualityModal() {
 function openEditTrainerModal(btn) {
     const modal = document.getElementById("trainerModal");
     const trainer = JSON.parse(btn.dataset.trainer);
+    const signatureInput = modal.querySelector("#digital_signature");
+    const signaturePreview = modal.querySelector("#digitalSignaturePreview");
 
     modal.querySelector("#username").value = trainer.username;
     modal.querySelector("#email").value = trainer.email;
@@ -427,6 +429,21 @@ function openEditTrainerModal(btn) {
         modal.querySelector("#password").removeAttribute("required");
     }
 
+    if (signatureInput) {
+        signatureInput.required = false;
+        signatureInput.value = "";
+    }
+
+    if (signaturePreview) {
+        if (trainer.digital_signature && trainer.digital_signature !== "null") {
+            signaturePreview.src = trainer.digital_signature;
+            signaturePreview.style.display = "block";
+        } else {
+            signaturePreview.removeAttribute("src");
+            signaturePreview.style.display = "none";
+        }
+    }
+
     // Set form action to edit URL
     modal.querySelector("form").action = btn.dataset.url;
     modal.querySelector("h2").textContent = "Edit Trainer";
@@ -437,6 +454,8 @@ function openEditTrainerModal(btn) {
 // Open modal for adding a new trainer
 function openAddTrainerModal() {
     const modal = document.getElementById("trainerModal");
+    const signatureInput = modal.querySelector("#digital_signature");
+    const signaturePreview = modal.querySelector("#digitalSignaturePreview");
 
     // Reset all fields
     resetModalFields(modal);
@@ -446,6 +465,15 @@ function openAddTrainerModal() {
     if (passwordField) {
         passwordField.style.display = "block";
         modal.querySelector("#password").setAttribute("required", "required");
+    }
+
+    if (signatureInput) {
+        signatureInput.setAttribute("required", "required");
+    }
+
+    if (signaturePreview) {
+        signaturePreview.removeAttribute("src");
+        signaturePreview.style.display = "none";
     }
 
     // ✅ Get the Add URL from the form's data attribute
@@ -472,6 +500,8 @@ function openPoolViewModal(btn) {
 function openTrainerViewModal(btn) {
     if (!btn || !btn.dataset || !btn.dataset.trainer) return;
     const trainer = JSON.parse(btn.dataset.trainer);
+    const signatureImg = document.getElementById("trainer_view_signature");
+    const signatureEmpty = document.getElementById("trainer_view_signature_empty");
 
     document.getElementById("trainer_view_name").textContent = trainer.full_name || trainer.username || "Trainer Details";
     document.getElementById("trainer_view_status").textContent = trainer.status || "";
@@ -480,6 +510,18 @@ function openTrainerViewModal(btn) {
     document.getElementById("trainer_view_gender").textContent = trainer.gender || "-";
     document.getElementById("trainer_view_specialization").textContent = trainer.specialization || "-";
     document.getElementById("trainer_view_experience").textContent = trainer.experience_years ? `${trainer.experience_years} years` : "-";
+
+    if (signatureImg && signatureEmpty) {
+        if (trainer.digital_signature && trainer.digital_signature !== "null") {
+            signatureImg.src = trainer.digital_signature;
+            signatureImg.style.display = "block";
+            signatureEmpty.style.display = "none";
+        } else {
+            signatureImg.removeAttribute("src");
+            signatureImg.style.display = "none";
+            signatureEmpty.style.display = "inline";
+        }
+    }
 
     toggleModal("trainerViewModal");
 }

@@ -21,9 +21,9 @@
 }
 
 .class-card h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
-  color: var(--text-primary);
+    margin: 0px 0 0.5rem 0;
+    font-size: 1.1rem;
+    color: var(--text-primary);
 }
 
 .class-card p {
@@ -33,9 +33,7 @@
 }
 
 .class-status {
-  position: absolute;
-  top: 0.9rem;
-  right: 0.9rem;
+  position: static;
   padding: 0.2rem 0.7rem;
   border-radius: 999px;
   font-size: 0.75rem;
@@ -62,6 +60,16 @@
   margin-top: 0.8rem;
   display: flex;
   gap: 0.5rem;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.form-actions .reset-btn {
+  margin-left: auto;
 }
 
 /* ------------------ MODAL ------------------ */

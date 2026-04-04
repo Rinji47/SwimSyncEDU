@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
 from django.db.models import Q
 from urllib3 import request
-from .models import ClassSession, ClassType, ClassBooking, PrivateClass, PrivateClassDetails, CompletionCertificate
+from .models import ClassSession, ClassType, ClassBooking, PrivateClass, PrivateClassDetails
 from pool.models import Pool, TrainerPoolAssignment
 from accounts.models import User
 from datetime import date, datetime, timedelta
@@ -168,6 +168,17 @@ def close_class_type(request, class_type_id):
     class_type.save()
     return redirect('manage_class_types')
 
+def open_class_type(request, class_type_id):
+    class_type = get_object_or_404(ClassType, pk=class_type_id)
+    if class_type.is_closed == False:
+        messages.error(request, 'Class type is already open.')
+        return redirect('manage_class_types')
+    
+    class_type.is_closed = False
+    if class_type.is_closed == False:
+        messages.success(request, 'Class type has been opened successfully.')
+    class_type.save()
+    return redirect('manage_class_types')
 
 
 
@@ -384,6 +395,18 @@ def create_class_session_for_pool(request, pool_id, trainer_id):
         'busy_to': busy_to,
     })
 
+
+def open_class_session(request, class_id):
+    class_session = get_object_or_404(ClassSession, pk=class_id)
+    if class_session.is_cancelled == False:
+        messages.error(request, 'Class session is already open.')
+        return redirect('manage_classes')
+    
+    class_session.is_cancelled = False
+    if class_session.is_cancelled == False:
+        messages.success(request, 'Class session has been opened successfully.')
+    class_session.save()
+    return redirect('manage_classes')
 
 def close_class_session(request, class_id):
     class_session = get_object_or_404(ClassSession, pk=class_id)
@@ -789,154 +812,6 @@ def trainer_susitute_private_classes_list(request):
     return render(request, 'dashboards/trainer/attendance/substitute_private_classes.html', {'substitute_private_classes': substitute_private_classes})
 
 
-@login_required
-def issue_group_class_completion_certificate(request, booking_id):
-    booking = get_object_or_404(ClassBooking, pk=booking_id, is_cancelled=False)
-
-    if booking.class_session.trainer != request.user and booking.class_session.substitute_trainer != request.user:
-        messages.error(request, 'You can only issue certificates for your own classes or substitute class.')
-        return redirect('manage_trainer_class_session')
-
-    if booking.class_session.end_date >= datetime.now().date():
-        messages.error(request, 'Cannot issue certificates for a class session that has not ended yet.')
-        return redirect('manage_trainer_class_session')
-    
-
-    if hasattr(booking, 'completion_certificate'):
-        messages.error(request, 'Certificate has already been issued for this booking.')
-        return redirect('manage_trainer_class_session')
-    
-    CompletionCertificate.objects.create(
-        user=booking.user,
-        trainer=request.user,
-        class_booking=booking
-    )
-    messages.success(request, 'Completion certificate issued successfully.')
-    return redirect('select_student_for_group_certificate', class_session_id=booking.class_session_id)
-
-@login_required
-def issue_private_class_completion_certificate(request, private_class_id):
-    private_class = get_object_or_404(PrivateClass, pk=private_class_id, is_cancelled=False)
-
-    if private_class.trainer != request.user and private_class.substitute_trainer != request.user:
-        messages.error(request, 'You can only issue certificates for your own classes or substitute class.')
-        return redirect('manage_trainer_private_classes')
-    
-    if private_class.end_date >= datetime.now().date():
-        messages.error(request, 'Cannot issue certificates for a private class that has not ended yet.')
-        return redirect('manage_trainer_private_classes')
-    
-    if hasattr(private_class, 'completion_certificate'):
-        messages.error(request, 'Certificate has already been issued for this private class.')
-        return redirect('manage_trainer_private_classes')
-    
-    CompletionCertificate.objects.create(
-        user=private_class.user,
-        trainer=request.user,
-        private_class=private_class
-    )
-    messages.success(request, 'Completion certificate issued successfully.')
-    return redirect('pending_private_certificates')
-
-@login_required
-def pending_group_certificate_sessions(request):
-    if request.user.role != 'trainer':
-        messages.error(request, 'You do not have permission to access this page.')
-        return redirect('index')
-    
-    today = datetime.now().date()
-
-    completed_sessions = ClassSession.objects.filter(
-        is_cancelled=False,
-        end_date__lt=today
-    ).filter(
-        Q(trainer=request.user) | Q(substitute_trainer=request.user)
-    ).select_related('pool', 'class_type').order_by('-end_date')
-    pending_sessions = []
-    for class_session in completed_sessions:
-        bookings = ClassBooking.objects.filter(
-            class_session = class_session,
-            is_cancelled=False
-        )
-
-        has_uncertified_students = False
-
-        for booking in bookings:
-            if not hasattr(booking, 'completion_certificate'):
-                has_uncertified_students = True
-                break
-
-        if has_uncertified_students:
-            pending_sessions.append(class_session)
-
-    return render(
-            request,
-            'dashboards/trainer/pending_group_certificate_sessions.html',
-            {
-                'pending_sessions': pending_sessions,
-            }
-        )
-
-@login_required
-def pending_private_certificates(request):
-    if request.user.role != 'trainer':
-        messages.error(request, 'You do not have permission to access this page.')
-        return redirect('index')
-
-    today = datetime.now().date()
-
-    completed_private_classes = PrivateClass.objects.filter(
-        is_cancelled=False,
-        end_date__lt=today
-    ).filter(
-        Q(trainer=request.user) | Q(substitute_trainer=request.user)
-    ).select_related('user', 'pool').order_by('-end_date')
-
-    pending_private_classes = []
-
-    for private_class in completed_private_classes:
-        if not hasattr(private_class, 'completion_certificate'):
-            pending_private_classes.append(private_class)
-
-    return render(
-        request,
-        'dashboards/trainer/pending_private_certificates.html',
-        {
-            'pending_private_classes': pending_private_classes,
-        }
-    )
-
-@login_required
-def select_student_for_group_certificate(request, class_session_id):
-    class_session = get_object_or_404(ClassSession, pk=class_session_id, is_cancelled=False)
-
-    if class_session.trainer != request.user and class_session.substitute_trainer != request.user:
-        messages.error(request, 'You can only issue certificates for your own classes or substitute class.')
-        return redirect('manage_trainer_class_session')
-    
-    if class_session.end_date >= datetime.now().date():
-        messages.error(request, 'This class session has not been completed yet.')
-        return redirect('pending_group_certificate_sessions')
-
-    bookings = ClassBooking.objects.filter(
-        class_session=class_session,
-        is_cancelled=False
-    ).select_related('user')
-
-    pending_bookings = []
-    
-    for booking in bookings:
-        if not hasattr(booking, 'completion_certificate'):
-            pending_bookings.append(booking)
-
-    return render(
-        request,
-        'dashboards/trainer/select_students_for_group_certificate.html',
-        {
-            'class_session': class_session,
-            'pending_bookings': pending_bookings,
-        }
-    )
 
 
 @login_required
@@ -1140,3 +1015,84 @@ def students_list_for_private_class(request, private_class_id):
             'private_class': private_class,
         })
     
+@login_required
+def edit_class_session(request, class_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+    
+    class_session = get_object_or_404(ClassSession, pk=class_id)
+
+    selected_trainer = None
+    trainer_id = request.GET.get('trainer_id')
+    if trainer_id:
+        try:
+            trainer_id = int(trainer_id)
+            selected_trainer = User.objects.filter(pk=trainer_id, role='trainer').first()
+        except (ValueError, TypeError):
+            selected_trainer = None
+
+    if selected_trainer and not TrainerPoolAssignment.objects.filter(trainer=selected_trainer, pool=class_session.pool, is_active=True).exists():
+        messages.error(request, 'The selected trainer is not assigned to the pool for this class session.')
+        return redirect('select_trainer_for_edit_class_session', class_id=class_id)
+    
+    if selected_trainer == class_session.trainer:
+        messages.info(request, 'The selected trainer is already assigned to this class session.')
+        return redirect('select_trainer_for_edit_class_session', class_id=class_id)
+
+    if request.method == 'POST':
+        try:
+            class_session.class_name = request.POST.get('class_name')
+            class_session.seats = int(request.POST.get('seats'))
+            class_session.start_date = datetime.strptime(request.POST.get('start_date'), '%Y-%m-%d').date()
+            class_session.end_date = datetime.strptime(request.POST.get('end_date'), '%Y-%m-%d').date()
+            class_session.start_time = datetime.strptime(request.POST.get('start_time'), '%H:%M').time()
+            class_session.end_time = datetime.strptime(request.POST.get('end_time'), '%H:%M').time()
+
+            trainer_id = int(request.POST.get('trainer_id')) or class_session.trainer_id
+            trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
+            class_session.trainer = trainer
+
+            class_session.save()
+            messages.success(request, 'Class session updated successfully.')
+            return redirect('manage_classes')
+        except (ValueError, TypeError) as e:
+            print(e)
+            messages.error(request, 'Invalid input. Please check your data and try again.')
+            return redirect('edit_class', class_id=class_id)
+    
+    return render(
+        request,
+        'dashboards/admin/class_management/class_session_management/edit_class_session.html',
+        {
+            'class_session': class_session,
+            'selected_trainer': selected_trainer,
+        }
+    )
+
+
+@login_required
+def select_trainer_for_edit_class_session(request, class_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+    
+    class_session = get_object_or_404(ClassSession, pk=class_id)
+    pool = class_session.pool
+    trainers = User.objects.filter(
+        role='trainer',
+        trainerpoolassignment__pool=pool,
+        trainerpoolassignment__is_active=True
+    ).distinct()
+    if not trainers.exists():
+        messages.error(request, 'No trainers are currently assigned to the pool for this class session. Please assign a trainer to the pool before selecting a trainer for this class session.')
+        return redirect('edit_class_session', class_id=class_id)
+    
+    return render(
+        request, 
+        'dashboards/admin/class_management/class_session_management/select_trainer_for_edit_class_session.html',
+        {
+            'class_session': class_session,
+            'trainers': trainers,
+        }
+    )

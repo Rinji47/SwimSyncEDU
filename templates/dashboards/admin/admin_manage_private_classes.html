@@ -63,10 +63,12 @@
         <div class="dashboard-section card-grid">
             {% for session in private_classes %}
             <div class="class-card">
-            <span class="class-status {% if session.is_cancelled %}status-cancelled{% else %}status-open{% endif %}">
-                {% if session.is_cancelled %}Cancelled{% else %}Active{% endif %}
-            </span>
-            <h3>Private: {{ session.user.full_name|default:session.user.username }}</h3>
+            <h3>
+                <span class="class-status {% if session.is_cancelled %}status-cancelled{% else %}status-open{% endif %}">
+                    {% if session.is_cancelled %}Cancelled{% else %}Active{% endif %}
+                </span>
+                Private: {{ session.user.full_name|default:session.user.username }}
+            </h3>
             <p><strong>Pool:</strong> {{ session.pool.name }}</p>
             <p><strong>Trainer:</strong> {{ session.trainer.full_name|default:session.trainer.username }}</p>
             <p><strong>Dates:</strong> {{ session.start_date|date:"M d" }} - {{ session.end_date|date:"M d" }}</p>

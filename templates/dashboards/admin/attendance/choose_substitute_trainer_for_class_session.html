@@ -29,10 +29,12 @@
         <div class="dashboard-section card-grid">
             {% for row in candidate_rows %}
             <article class="class-card">
-                <span class="class-status {% if row.is_available %}status-open{% else %}status-cancelled{% endif %}">
-                    {{ row.conflict_label }}
-                </span>
-                <h3>{{ row.trainer.full_name|default:row.trainer.username }}</h3>
+                <h3>
+                    <span class="class-status {% if row.is_available %}status-open{% else %}status-cancelled{% endif %}">
+                        {{ row.conflict_label }}
+                    </span>
+                    {{ row.trainer.full_name|default:row.trainer.username }}
+                </h3>
                 <p><strong>Email:</strong> {{ row.trainer.email }}</p>
 
                 <div class="card-actions">

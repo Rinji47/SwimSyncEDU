@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Select Trainer Attendance History{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../../components/admin_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../../components/message.html' %}
+
+        <div class="dashboard-header">
+            <h1>Trainer Attendance History</h1>
+            <a href="{% url 'select_trainer_for_attendance' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="attendance-hero">
+                <h2>Select a trainer</h2>
+                <p class="attendance-meta">Open the full present and absent history for any trainer.</p>
+            </div>
+
+            <div class="card-grid">
+                {% for trainer in trainers %}
+                <div class="class-card">
+                    <h3>{{ trainer.full_name|default:trainer.username }}</h3>
+                    <p><strong>Username:</strong> {{ trainer.username }}</p>
+                    <p><strong>Email:</strong> {{ trainer.email|default:'-' }}</p>
+                    <div class="card-actions">
+                        <a href="{% url 'trainers_attandance_history' trainer.pk %}" class="btn-sm btn-secondary">View History</a>
+                    </div>
+                </div>
+                {% empty %}
+                <p>No trainers found.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

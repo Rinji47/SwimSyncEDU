@@ -81,6 +81,7 @@
         {% include "components/message.html" %}
         <div class="page-head pool-browse-hero">
             <div>
+                <span class="page-kicker">Pool Finder</span>
                 <h1>Find A Pool</h1>
                 <p class="subtitle">Browse pools near your location and quickly jump to available class types.</p>
             </div>
@@ -154,7 +155,15 @@
                 <a class="btn-primary" href="{% url 'pool_class_types' pool.pool_id %}">View Classes</a>
             </article>
             {% empty %}
-            <p class="pools-empty">No pools available.</p>
+            <div class="pool-empty-state">
+                <div class="pool-empty-icon"><i class="fa-solid fa-person-swimming"></i></div>
+                <h3>No pools available</h3>
+                <p>We could not find any pools for the current location or filter. Try changing the radius or showing all pools.</p>
+                <div class="inline-actions">
+                    <a class="btn-secondary" href="{% url 'nearby_pools' %}">Show All Pools</a>
+                    <button class="btn-primary" type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' });">Adjust Search</button>
+                </div>
+            </div>
             {% endfor %}
         </div>
     </div>

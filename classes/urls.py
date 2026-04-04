@@ -5,21 +5,24 @@ urlpatterns = [
     # Manage Class Types
     path('manage_class_types/', views.manage_class_types, name='manage_class_types'),
     path('edit_class_types/<int:class_type_id>/', views.manage_class_types, name='edit_class_types'),
+    path('open_class_type/<int:class_type_id>/', views.open_class_type, name='open_class_type'),
     path('close_class_type/<int:class_type_id>/', views.close_class_type, name='close_class_type'),
 
     # Manage Class Sessions
     path('manage_classes/', views.manage_class_sessions, name='manage_classes'),
     path('edit_classes/<int:class_id>/', views.manage_class_sessions, name='edit_class'),
+    path('open_class_session/<int:class_id>/', views.open_class_session, name='open_class_session'),
     path('close_class_session/<int:class_id>/', views.close_class_session, name='close_class_session'),
 
     # Class Session Creation Flow
     path('select_pool_for_class_session/', views.select_pool_for_class_session, name='select_pool_for_class_session'),
     path('select_trainer_for_class_session/<int:pool_id>/', views.select_trainer_for_class_session, name='select_trainer_for_class_session'),
     path('create_class_session_for_pool/<int:pool_id>/<int:trainer_id>/', views.create_class_session_for_pool, name='create_class_session_for_pool'),
+    path('class-session/<int:class_id>/edit/', views.edit_class_session, name='edit_class_session'),
+    path('class-session/<int:class_id>/edit/select-trainer/', views.select_trainer_for_edit_class_session, name='select_trainer_for_edit_class_session'),
 
     # Manage Private Classes
     path('manage_private_classes/', views.manage_private_classes, name='manage_private_classes'),
-    # path('edit_private_class_price/<int:class_id>/', views.edit_private_class_price, name='edit_private_class_price'),
 
     # Manage Private Class Prices
     path('manage_private_class_prices/', views.manage_private_class_prices, name='manage_private_class_prices'),
@@ -43,12 +46,6 @@ urlpatterns = [
     path('trainer/manage/private-class/<int:private_class_id>/attendance-history/', views.select_private_classes_for_attendance_history, name='select_private_classes_for_attendance_history'),
     path('trainer/manage/substitute-group-classes/', views.trainer_susitute_class_sessions_list, name='trainer_susitute_class_sessions_list'),
     path('trainer/manage/substitute-private-classes/', views.trainer_susitute_private_classes_list, name='trainer_susitute_private_classes_list'),
-    path('trainer/certificates/group/', views.pending_group_certificate_sessions, name='pending_group_certificate_sessions'),
-    path('trainer/certificates/group/<int:class_session_id>/', views.select_student_for_group_certificate, name='select_student_for_group_certificate'),
-    path('trainer/certificates/group/issue/<int:booking_id>/', views.issue_group_class_completion_certificate, name='issue_group_class_completion_certificate'),
-    path('trainer/certificates/private/', views.pending_private_certificates, name='pending_private_certificates'),
-    path('trainer/certificates/private/issue/<int:private_class_id>/', views.issue_private_class_completion_certificate, name='issue_private_class_completion_certificate'),
-
     # Student list management
     path('student-lists/group/', views.select_session_to_view_students_list, name='select_session_to_view_students_list'),
     path('student-lists/group/<int:class_session_id>/', views.students_list_for_class_session, name='students_list_for_class_session'),

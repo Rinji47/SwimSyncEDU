@@ -17,10 +17,17 @@
     <main class="dashboard-main">
         {% include "components/message.html" %}
 
-        <div class="dashboard-header">
-            <h1>Welcome, {{ request.user.full_name|default:request.user.username }}</h1>
-            <a href="{% url 'todays_classes' %}" class="btn-primary">Today's Schedule</a>
-        </div>
+        <section class="page-banner">
+            <div class="page-banner-copy">
+                <span class="page-banner-kicker">Member Dashboard</span>
+                <h1>Welcome, {{ request.user.full_name|default:request.user.username }}</h1>
+                <p>Review your next sessions, jump into today&apos;s schedule, and keep your bookings organized from one place.</p>
+            </div>
+            <div class="page-banner-actions">
+                <a href="{% url 'todays_classes' %}" class="btn-primary">Today's Schedule</a>
+                <a href="{% url 'nearby_pools' %}" class="btn-secondary">Browse Pools</a>
+            </div>
+        </section>
 
         <div class="stats-grid">
             <div class="stat-card">
@@ -28,6 +35,7 @@
                 <div class="stat-content">
                     <h3>{{ upcoming_bookings|length }}</h3>
                     <p>Upcoming Group Classes</p>
+                    <small class="stat-note">Your next booked sessions with trainers</small>
                 </div>
             </div>
             <div class="stat-card">
@@ -35,61 +43,91 @@
                 <div class="stat-content">
                     <h3>{{ upcoming_private_bookings|length }}</h3>
                     <p>Upcoming Private Classes</p>
+                    <small class="stat-note">One-to-one sessions you have lined up</small>
                 </div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon"><i class="fa-solid fa-calendar-day"></i></div>
                 <div class="stat-content">
-                    <h3>2</h3>
-                    <p>Schedule Sections</p>
+                    {% with group_total=upcoming_bookings|length private_total=upcoming_private_bookings|length %}
+                    <h3>{{ group_total|add:private_total }}</h3>
+                    {% endwith %}
+                    <p>Upcoming Sessions Shown</p>
+                    <small class="stat-note">Quick snapshot of what is coming up</small>
                 </div>
             </div>
         </div>
 
         <section class="dashboard-section">
-            <div class="dashboard-header" style="margin-bottom: 1rem;">
-                <h2 style="margin: 0;">Upcoming Group Classes</h2>
+            <div class="section-head">
+                <div>
+                    <h2>Upcoming Group Classes</h2>
+                    <p>Your current class bookings that are still ahead.</p>
+                </div>
                 <a href="{% url 'my_bookings' %}" class="btn-secondary">View All</a>
             </div>
 
             <div class="card-grid">
                 {% for booking in upcoming_bookings %}
                 <div class="class-card">
-                    <h3>{{ booking.class_session.class_name }}</h3>
-                    <p><strong>Pool:</strong> {{ booking.class_session.pool.name }}</p>
-                    <p><strong>Trainer:</strong> {{ booking.class_session.trainer.full_name|default:booking.class_session.trainer.username }}</p>
-                    <p><strong>Dates:</strong> {{ booking.class_session.start_date|date:"M d, Y" }} to {{ booking.class_session.end_date|date:"M d, Y" }}</p>
-                    <p><strong>Time:</strong> {{ booking.class_session.start_time }} - {{ booking.class_session.end_time }}</p>
+                    <h3>
+                        <span class="class-status">Group</span>
+                        {{ booking.class_session.class_name }}
+                    </h3>
+                    <div class="class-meta-list">
+                        <p><strong>Pool:</strong> {{ booking.class_session.pool.name }}</p>
+                        <p><strong>Trainer:</strong> {{ booking.class_session.trainer.full_name|default:booking.class_session.trainer.username }}</p>
+                        <p><strong>Dates:</strong> {{ booking.class_session.start_date|date:"M d, Y" }} to {{ booking.class_session.end_date|date:"M d, Y" }}</p>
+                        <p><strong>Time:</strong> {{ booking.class_session.start_time|time:"H:i" }} - {{ booking.class_session.end_time|time:"H:i" }}</p>
+                    </div>
                     <div class="card-actions">
                         <a href="{% url 'my_bookings' %}" class="btn-sm btn-primary">Manage Booking</a>
                     </div>
                 </div>
                 {% empty %}
-                <p>No upcoming group classes booked.</p>
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fa-solid fa-book-open"></i></div>
+                    <h3>No upcoming group classes</h3>
+                    <p>You have not booked any future group classes yet.</p>
+                    <a href="{% url 'nearby_pools' %}" class="btn-secondary">Explore Classes</a>
+                </div>
                 {% endfor %}
             </div>
         </section>
 
         <section class="dashboard-section">
-            <div class="dashboard-header" style="margin-bottom: 1rem;">
-                <h2 style="margin: 0;">Upcoming Private Classes</h2>
+            <div class="section-head">
+                <div>
+                    <h2>Upcoming Private Classes</h2>
+                    <p>Your booked one-to-one sessions and trainer schedule.</p>
+                </div>
                 <a href="{% url 'my_private_classes' %}" class="btn-secondary">View All</a>
             </div>
 
             <div class="card-grid">
                 {% for private_class in upcoming_private_bookings %}
                 <div class="class-card">
-                    <h3>Private Class</h3>
-                    <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
-                    <p><strong>Trainer:</strong> {{ private_class.trainer.full_name|default:private_class.trainer.username }}</p>
-                    <p><strong>Dates:</strong> {{ private_class.start_date|date:"M d, Y" }} to {{ private_class.end_date|date:"M d, Y" }}</p>
-                    <p><strong>Time:</strong> {{ private_class.start_time|time:"H:i" }} - {{ private_class.end_time|time:"H:i" }}</p>
+                    <h3>
+                        <span class="class-status">Private</span>
+                        Private Session
+                    </h3>
+                    <div class="class-meta-list">
+                        <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
+                        <p><strong>Trainer:</strong> {{ private_class.trainer.full_name|default:private_class.trainer.username }}</p>
+                        <p><strong>Dates:</strong> {{ private_class.start_date|date:"M d, Y" }} to {{ private_class.end_date|date:"M d, Y" }}</p>
+                        <p><strong>Time:</strong> {{ private_class.start_time|time:"H:i" }} - {{ private_class.end_time|time:"H:i" }}</p>
+                    </div>
                     <div class="card-actions">
                         <a href="{% url 'my_private_classes' %}" class="btn-sm btn-primary">Manage Class</a>
                     </div>
                 </div>
                 {% empty %}
-                <p>No upcoming private classes booked.</p>
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fa-solid fa-user-lock"></i></div>
+                    <h3>No upcoming private classes</h3>
+                    <p>You have not scheduled any private sessions yet.</p>
+                    <a href="{% url 'nearby_pools' %}" class="btn-secondary">Book A Private Class</a>
+                </div>
                 {% endfor %}
             </div>
         </section>

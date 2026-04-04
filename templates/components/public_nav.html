@@ -3,13 +3,13 @@
         <a class="nav-brand" href="{% url 'index' %}">SwimSync EDU</a>
         <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
         <ul class="nav-menu" id="navMenu">
-            {% if active == 'home' %}
+            {% if request.resolver_match.url_name == 'index' %}
             <li><a href="{% url 'index' %}#features">Features</a></li>
             <li><a href="{% url 'index' %}#roles">For You</a></li>
             {% endif %}
-            <li><a href="{% url 'nearby_pools' %}" {% if active == 'pools' %}class="active-link"{% endif %}>Pools</a></li>
-            <li><a href="{% url 'pool_quality_today_list' %}" {% if active == 'quality' %}class="active-link"{% endif %}>Pool Quality</a></li>
-            <li><a href="{% url 'public_select_trainer_for_reviews' %}" {% if active == 'reviews' %}class="active-link"{% endif %}>Reviews</a></li>
+            <li><a href="{% url 'nearby_pools' %}" {% if request.resolver_match.url_name == 'nearby_pools' or request.resolver_match.url_name == 'pool_class_types' or request.resolver_match.url_name == 'pool_classes' %}class="active-link"{% endif %}>Pools</a></li>
+            <li><a href="{% url 'pool_quality_today_list' %}" {% if request.resolver_match.url_name == 'pool_quality_today_list' or request.resolver_match.url_name == 'pool_quality_today_detail' %}class="active-link"{% endif %}>Pool Quality</a></li>
+            <li><a href="{% url 'public_select_trainer_for_reviews' %}" {% if request.resolver_match.url_name == 'public_select_trainer_for_reviews' or request.resolver_match.url_name == 'public_trainer_review_list' %}class="active-link"{% endif %}>Reviews</a></li>
             <li><a href="{% url 'index' %}#about">About</a></li>
             {% if request.user.is_authenticated %}
                 {% if request.user.role == 'admin' %}

@@ -87,7 +87,7 @@
 /* Hero Section */
 .hero {
   padding: 4rem 0;
-  background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
+  background: #ecfeff;
 }
 
 .hero .container {
@@ -98,6 +98,20 @@
 
 .hero-content {
   flex: 1;
+}
+
+.hero-eyebrow {
+  display: inline-block;
+  margin-bottom: 1rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid #bae6fd;
+  color: #0e7490;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .hero h1 {
@@ -178,11 +192,13 @@
   border-radius: 12px;
   text-align: center;
   transition: transform 0.3s, box-shadow 0.3s;
+  border: 1px solid transparent;
 }
 
 .feature-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 10px 30px var(--shadow);
+  border-color: #dbeafe;
 }
 
 .feature-icon {
@@ -222,6 +238,14 @@
   border-radius: 12px;
   box-shadow: 0 4px 16px var(--shadow);
   text-align: center;
+  border: 1px solid transparent;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.role-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 26px var(--shadow);
+  border-color: #dbeafe;
 }
 
 .role-icon {
@@ -281,6 +305,13 @@
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 2rem;
   margin-top: 3rem;
+}
+
+.stat-item {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem 1rem;
 }
 
 .stat-item h3 {

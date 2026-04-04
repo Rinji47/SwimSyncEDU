@@ -26,16 +26,18 @@
         <div class="dashboard-section card-grid">
             {% for private_class in private_classes %}
             <div class="class-card">
-                <span class="class-status {% if private_class.is_cancelled %}status-cancelled{% elif private_class.end_date|date:'Y-m-d' < today_str %}status-completed{% else %}status-open{% endif %}">
-                    {% if private_class.is_cancelled %}
-                        Cancelled
-                    {% elif private_class.end_date|date:'Y-m-d' < today_str %}
-                        Completed
-                    {% else %}
-                        Active
-                    {% endif %}
-                </span>
-                <h3>Private Class - {{ private_class.user.full_name|default:private_class.user.username }}</h3>
+                <h3>
+                    <span class="class-status {% if private_class.is_cancelled %}status-cancelled{% elif private_class.end_date|date:'Y-m-d' < today_str %}status-completed{% else %}status-open{% endif %}">
+                        {% if private_class.is_cancelled %}
+                            Cancelled
+                        {% elif private_class.end_date|date:'Y-m-d' < today_str %}
+                            Completed
+                        {% else %}
+                            Active
+                        {% endif %}
+                    </span>
+                    Private Class - {{ private_class.user.full_name|default:private_class.user.username }}
+                </h3>
                 <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
                 <p><strong>Dates:</strong> {{ private_class.start_date }} to {{ private_class.end_date }}</p>
                 <p><strong>Time:</strong> {{ private_class.start_time }} - {{ private_class.end_time }}</p>

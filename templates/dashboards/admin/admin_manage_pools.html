@@ -64,10 +64,12 @@
             <div class="data-card-grid">
                 {% for pool in pools %}
                 <div class="data-card">
-                    <span class="data-card-status {% if pool.is_closed %}status-closed{% else %}status-open{% endif %}">
-                        {% if pool.is_closed %}Closed{% else %}Open{% endif %}
-                    </span>
-                    <h3 class="data-card-title">{{ pool.name }}</h3>
+                    <h3 class="data-card-title">
+                        <span class="data-card-status {% if pool.is_closed %}status-closed{% else %}status-open{% endif %}">
+                            {% if pool.is_closed %}Closed{% else %}Open{% endif %}
+                        </span>
+                        {{ pool.name }}
+                    </h3>
                     <div class="data-card-row">
                         <span class="data-card-label">Address:</span>
                         <span>{{ pool.address }}</span>

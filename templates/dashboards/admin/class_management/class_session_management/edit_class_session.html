@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Class Session{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Edit Class Session</h1>
+                <p class="subtitle">Update editable fields only. Core details stay read-only.</p>
+            </div>
+            <a href="{% url 'manage_classes' %}" class="btn-secondary">Back</a>
+        </div>
+        
+        
+
+        <div class="two-col">
+            <div class="info-card">
+                <form method="POST" class="split-form">
+                    {% csrf_token %}
+
+                    <div class="full-span">
+                        <label for="class_name">Class Name</label>
+                        <input type="text" id="class_name" name="class_name" value="{{ class_session.class_name }}" required>
+                    </div>
+
+                    <div class="full-span">
+                        <label>Trainer</label>
+                        <div class="compact-row" style="gap:0.6rem;align-items:center;">
+                            <span>{{ selected_trainer.full_name|default:class_session.trainer.username }}</span>
+                            <a href="{% url 'select_trainer_for_edit_class_session' class_session.id %}" class="btn-secondary btn-sm">Change Trainer</a>
+                        </div>
+                        <input type="hidden" name="trainer_id" value="{% if selected_trainer %}{{ selected_trainer.pk }}{% else %}{{ class_session.trainer.pk }}{% endif %}">
+                    </div>
+
+                    <div>
+                        <label for="seats">Available Seats</label>
+                        <input type="number" id="seats" name="seats" min="1" value="{{ class_session.seats }}" required>
+                    </div>
+                    <div></div>
+
+                    <div>
+                        <label for="start_date">Start Date</label>
+                        <input type="date" id="start_date" name="start_date" value="{{ class_session.start_date|date:'Y-m-d' }}" required>
+                    </div>
+                    <div>
+                        <label for="end_date">End Date</label>
+                        <input type="date" id="end_date" name="end_date" value="{{ class_session.end_date|date:'Y-m-d' }}" required>
+                    </div>
+
+                    <div>
+                        <label for="start_time">Start Time</label>
+                        <input type="time" id="start_time" name="start_time" value="{{ class_session.start_time|time:'H:i' }}" required>
+                    </div>
+                    <div>
+                        <label for="end_time">End Time</label>
+                        <input type="time" id="end_time" name="end_time" value="{{ class_session.end_time|time:'H:i' }}" required>
+                    </div>
+
+                    <div class="full-span form-actions">
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                        <a href="{% url 'edit_class_session' class_session.id %}" class="btn-secondary btn-sm reset-btn">Reset</a>
+                    </div>
+                </form>
+            </div>
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-circle-info"></i> Session Details (Read-only)</h3>
+                <ul class="side-list">
+                    <li><strong>Pool:</strong> {{ class_session.pool.name }}</li>
+                    <li><strong>Class Type:</strong> {{ class_session.class_type.name }}</li>
+                    <li><strong>Total Bookings:</strong> {{ class_session.total_bookings|default:0 }}</li>
+                    <li><strong>Total Price:</strong> Rs. {{ class_session.total_price }}</li>
+                    <li><strong>Status:</strong> {% if class_session.is_cancelled %}Cancelled{% else %}Open{% endif %}</li>
+                </ul>
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}

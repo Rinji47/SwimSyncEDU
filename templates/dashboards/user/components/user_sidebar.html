@@ -4,42 +4,35 @@
         <p class="user-role">User</p>
     </div>
     <nav class="sidebar-nav">
-        {% url 'user_dashboard' as user_dashboard_url %}
-        {% url 'todays_classes' as todays_classes_url %}
-        {% url 'my_bookings' as my_bookings_url %}
-        {% url 'my_private_classes' as my_private_classes_url %}
-        {% url 'user_select_trainer_from_certificate' as my_reviews_url %}
-        {% url 'payment_report' as payment_report_url %}
-
-        <a href="{{ user_dashboard_url }}" class="nav-item {% if request.path == user_dashboard_url %}active{% endif %}">
+        <a href="{% url 'user_dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'user_dashboard' %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
             Dashboard
         </a>
-        <a href="#" class="nav-item">
+        <a href="{% url 'nearby_pools' %}" class="nav-item">
             <span class="nav-icon"><i class="fa-solid fa-water-ladder"></i></span>
-            Browse Classes
+            Browse Pools
         </a>
-        <a href="{{ todays_classes_url }}" class="nav-item {% if request.path == todays_classes_url %}active{% endif %}">
+        <a href="{% url 'todays_classes' %}" class="nav-item {% if request.resolver_match.url_name == 'todays_classes' %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-calendar-day"></i></span>
             Today's Classes
         </a>
-        <a href="{{ my_bookings_url }}" class="nav-item {% if request.path == my_bookings_url %}active{% endif %}">
+        <a href="{% url 'my_bookings' %}" class="nav-item {% if request.resolver_match.url_name == 'my_bookings' %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-calendar-check"></i></span>
             My Bookings
         </a>
-        <a href="{{ my_private_classes_url }}" class="nav-item {% if request.path == my_private_classes_url %}active{% endif %}">
+        <a href="{% url 'my_private_classes' %}" class="nav-item {% if request.resolver_match.url_name == 'my_private_classes' %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-user-lock"></i></span>
             My Private Classes
         </a>
-        <a href="{{ payment_report_url }}" class="nav-item {% if request.path == payment_report_url %}active{% endif %}">
+        <a href="{% url 'payment_report' %}" class="nav-item {% if request.resolver_match.url_name == 'payment_report' %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-wallet"></i></span>
             My Payments
         </a>
-        <a href="{{ my_reviews_url }}" class="nav-item {% if request.path == my_reviews_url or '/reviews/certificate/' in request.path %}active{% endif %}">
+        <a href="{% url 'user_select_trainer_from_certificate' %}" class="nav-item {% if request.resolver_match.url_name == 'user_select_trainer_from_certificate' or request.resolver_match.url_name == 'user_review_trainer' or request.resolver_match.url_name == 'user_create_review' or request.resolver_match.url_name == 'user_view_review' or request.resolver_match.url_name == 'user_edit_review' or request.resolver_match.url_name == 'user_delete_review' or request.resolver_match.url_name == 'user_view_certificate' %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-star"></i></span>
             My Reviews
         </a>
-        <a href="#" class="nav-item">
+        <a href="{% url 'user_profile' %}" class="nav-item {% if request.resolver_match.url_name == 'user_profile' %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-user"></i></span>
             Profile
         </a>

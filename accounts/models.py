@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
 # Custom account manager
@@ -8,7 +9,13 @@ class UserManager(BaseUserManager):
             raise ValueError('Users must have an email')
         if not username:
             raise ValueError('Users must have a username')
-        
+        if not extra_fields.get('full_name'):
+            raise ValueError('Users must have a full name')
+        if not extra_fields.get('gender'):
+            raise ValueError('Users must have a gender')
+        if not extra_fields.get('date_of_birth'):
+            raise ValueError('Users must have a date of birth')
+
         email = self.normalize_email(email)
         user = self.model(username=username, email=email, role=role, **extra_fields)
         user.set_password(password)
@@ -21,7 +28,7 @@ class UserManager(BaseUserManager):
         user.is_superuser = True
         user.save(using=self._db)
         return user
-    
+
 class User(AbstractBaseUser):
     ROLE_CHOICES = (
         ('user', 'User'),
@@ -36,27 +43,29 @@ class User(AbstractBaseUser):
     objects = UserManager()
     
     #Optional field for all the users
-    full_name = models.CharField(max_length=100, blank=True)
+    full_name = models.CharField(max_length=100)
     profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
     phone = models.CharField(max_length=15, blank=True, null=True)
-    gender = models.CharField(max_length=10, blank=True, null=True)
-    date_of_birth = models.DateField(blank=True, null=True)
+    gender = models.CharField(max_length=10)
+    date_of_birth = models.DateField()
 
     #Trainer-specific fields
     experience_years = models.IntegerField(blank=True, null=True)
     specialization = models.CharField(max_length=100, blank=True, null=True)
+    digital_signature = models.ImageField(upload_to='signatures/', blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False)  # admin permissions
+    is_superuser = models.BooleanField(default=False)
 
     objects = UserManager()
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email']
+
 
     def has_perm(self, perm, obj=None):
         return self.is_superuser

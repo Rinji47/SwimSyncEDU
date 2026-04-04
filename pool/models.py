@@ -8,7 +8,6 @@ class Pool(models.Model):
     name = models.CharField(max_length=100)
     address = models.TextField()
     capacity = models.IntegerField()
-    image_url = models.URLField(max_length=200, blank=True, null=True)
     coordinates = models.CharField(max_length=100)
     is_closed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -16,7 +15,6 @@ class Pool(models.Model):
 
     def __str__(self):
         return self.name
-    
 
 class PoolImage(models.Model):
     image_id = models.AutoField(primary_key=True)
@@ -31,7 +29,6 @@ class PoolImage(models.Model):
 
     def __str__(self):
         return f"{self.pool.name} Image {self.image_id}"
-    
 
 class PoolQuality(models.Model):
     quality_id = models.AutoField(primary_key=True)

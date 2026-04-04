@@ -53,10 +53,12 @@
             <div class="data-card-grid">
                 {% for type in class_types %}
                 <div class="data-card">
-                    <span class="data-card-status {% if type.is_closed %}status-closed{% else %}status-open{% endif %}">
-                        {% if type.is_closed %}Closed{% else %}Open{% endif %}
-                    </span>
-                    <h3 class="data-card-title">{{ type.name }}</h3>
+                    <h3 class="data-card-title">
+                        <span class="data-card-status {% if type.is_closed %}status-closed{% else %}status-open{% endif %}">
+                            {% if type.is_closed %}Closed{% else %}Open{% endif %}
+                        </span>
+                        {{ type.name }}
+                    </h3>
                     <div class="data-card-row">
                         <span class="data-card-label">Description:</span>
                         <span>{{ type.description }}</span>
@@ -83,10 +85,17 @@
                                 "duration_days": "{{ type.duration_days }}"
                             }'
                         >Edit</button>
+                        {% if type.is_closed %}
+                        <button class="btn-sm btn-success">
+                            <a href="{% url 'open_class_type' type.class_type_id %}" style="text-decoration: none; color: white;"
+                            onclick="return confirm('Are you sure you want to open this class type?');">Open</a>
+                        </button>
+                        {% else %}
                         <button class="btn-sm btn-danger">
                             <a href="{% url 'close_class_type' type.class_type_id %}" style="text-decoration: none; color: white;"
                             onclick="return confirm('Are you sure you want to close this class type?');">Close</a>
                         </button>
+                        {% endif %}
                     </div>
                 </div>
                 {% empty %}

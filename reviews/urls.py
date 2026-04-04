@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from certificate.views import user_view_certificate
 
 urlpatterns = [
     path('', views.user_select_trainer_from_certificate, name='user_select_trainer_from_certificate'),
@@ -12,5 +13,5 @@ urlpatterns = [
     path('certificate/<int:certificate_id>/review/view/', views.user_view_review, name='user_view_review'),
     path('certificate/<int:certificate_id>/review/edit/', views.user_edit_review, name='user_edit_review'),
     path('certificate/<int:certificate_id>/review/delete/', views.user_delete_review, name='user_delete_review'),
-    path('certificate/<int:certificate_id>/view/', views.user_view_certificate, name='user_view_certificate'),
+    path('certificate/<int:certificate_id>/view/', user_view_certificate, name='user_view_certificate'),
 ]

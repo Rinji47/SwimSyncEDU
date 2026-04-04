@@ -39,10 +39,12 @@
         <div class="dashboard-section card-grid">
             {% for assignment in assigned_trainers %}
             <article class="class-card">
-                <span class="class-status {% if assignment.is_active %}status-open{% else %}status-cancelled{% endif %}">
-                    {% if assignment.is_active %}Active{% else %}Ended{% endif %}
-                </span>
-                <h3>{{ assignment.trainer.full_name|default:assignment.trainer.username }}</h3>
+                <h3>
+                    <span class="class-status {% if assignment.is_active %}status-open{% else %}status-cancelled{% endif %}">
+                        {% if assignment.is_active %}Active{% else %}Ended{% endif %}
+                    </span>
+                    {{ assignment.trainer.full_name|default:assignment.trainer.username }}
+                </h3>
                 <p><strong>Pool:</strong> {{ assignment.pool.name }}</p>
                 <p><strong>Start:</strong> {{ assignment.start_date }}</p>
                 <p><strong>End:</strong> {{ assignment.end_date|default:'-' }}</p>

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Certificates Granted{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'dashboards/trainer/components/trainer_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include 'components/message.html' %}
+
+        <div class="dashboard-header">
+            <h1>Certificates Granted</h1>
+            <a href="{% url 'pending_group_certificate_sessions' %}" class="btn-secondary">Grant More</a>
+        </div>
+
+        <div class="attendance-hero">
+            <h2>Your issued certificates</h2>
+            <p class="attendance-meta">This page shows every completion certificate you have granted for group and private classes.</p>
+        </div>
+
+        <div class="dashboard-section history-table-wrap">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Type</th>
+                        <th>Class</th>
+                        <th>Granted By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for certificate in certificates %}
+                    <tr>
+                        <td>{{ certificate.user.full_name|default:certificate.user.username }}</td>
+                        <td>
+                            {% if certificate.class_booking %}
+                                <span class="attendance-status present">Group</span>
+                            {% elif certificate.private_class %}
+                                <span class="attendance-status pending">Private</span>
+                            {% else %}
+                                <span class="attendance-status absent">Unknown</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if certificate.class_booking %}
+                                {{ certificate.class_booking.class_session.class_name }}
+                            {% elif certificate.private_class %}
+                                Private Class at {{ certificate.private_class.pool.name }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ certificate.trainer.full_name|default:certificate.trainer.username }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">No certificates granted yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+{% endblock %}

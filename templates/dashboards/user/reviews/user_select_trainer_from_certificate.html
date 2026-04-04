@@ -28,9 +28,10 @@
         <div class="dashboard-section card-grid">
             {% for item in certificate_card %}
             <div class="class-card compact">
-                <span class="class-status status-open">Certified</span>
-
-                <h3>{{ item.trainer.full_name|default:item.trainer.username }}</h3>
+                <h3>
+                    <span class="class-status status-open">Certified</span>
+                    {{ item.trainer.full_name|default:item.trainer.username }}
+                </h3>
 
                 {% if item.certificate.class_booking %}
                     <p><strong>Class Type:</strong> Group Class</p>

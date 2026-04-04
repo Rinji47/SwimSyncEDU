@@ -28,9 +28,10 @@
         <div class="dashboard-section card-grid">
             {% for row in review_rows %}
             <div class="class-card compact">
-                <span class="class-status status-open">{{ row.review.rating }}/5</span>
-
-                <h3>{{ row.review.user.full_name|default:row.review.user.username }}</h3>
+                <h3>
+                    <span class="class-status status-open">{{ row.review.rating }}/5</span>
+                    {{ row.review.user.full_name|default:row.review.user.username }}
+                </h3>
                 <p><strong>Class:</strong> {{ row.source_label }}</p>
                 <p><strong>Reviewed On:</strong> {{ row.review.created_at|date:"M d, Y" }}</p>
                 <p><strong>Comment:</strong></p>

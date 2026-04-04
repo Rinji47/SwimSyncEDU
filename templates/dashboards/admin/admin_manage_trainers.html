@@ -51,16 +51,18 @@
             <div class="data-card-grid">
                 {% for trainer in trainers %}
                 <div class="data-card">
-                    <span class="data-card-status {% if trainer.is_active %}status-open{% else %}status-closed{% endif %}">
-                        {% if trainer.is_active %}Active{% else %}Inactive{% endif %}
-                    </span>
                     <div class="data-card-header">
                         {% if trainer.profile_picture %}
                             <img src="{{ trainer.profile_picture.url }}" alt="{{ trainer.full_name }}" class="data-card-avatar">
                         {% else %}
                             <div class="data-card-avatar-placeholder">{{ trainer.username|slice:":1"|upper }}</div>
                         {% endif %}
-                        <h3 class="data-card-title">{{ trainer.full_name|default:trainer.username }}</h3>
+                        <h3 class="data-card-title">
+                            <span class="data-card-status {% if trainer.is_active %}status-open{% else %}status-closed{% endif %}">
+                                {% if trainer.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                            {{ trainer.full_name|default:trainer.username }}
+                        </h3>
                     </div>
                     <div class="data-card-row">
                         <span class="data-card-label">Email:</span>
@@ -87,6 +89,7 @@
                                 "full_name": "{{ trainer.full_name|escapejs }}",
                                 "phone": "{{ trainer.phone|default:""|escapejs }}",
                                 "gender": "{{ trainer.gender|default:""|escapejs }}",
+                                "digital_signature": "{% if trainer.digital_signature %}{{ trainer.digital_signature.url|escapejs }}{% else %}null{% endif %}",
                                 "specialization": "{{ trainer.specialization|default:""|escapejs }}",
                                 "experience_years": "{{ trainer.experience_years|default:"" }}",
                                 "status": "{% if trainer.is_active %}Active{% else %}Inactive{% endif %}"
@@ -100,6 +103,7 @@
                                 "full_name": "{{ trainer.full_name|escapejs }}",
                                 "phone": "{{ trainer.phone|default:""|escapejs }}",
                                 "gender": "{{ trainer.gender|default:""|escapejs }}",
+                                "digital_signature": "{% if trainer.digital_signature %}{{ trainer.digital_signature.url|escapejs }}{% else %}null{% endif %}",
                                 "specialization": "{{ trainer.specialization|default:""|escapejs }}",
                                 "experience_years": "{{ trainer.experience_years|default:"" }}"
                             }'
@@ -125,6 +129,13 @@
                             <div class="detail-item">
                                 <span class="detail-label">Status</span>
                                 <span class="detail-value" id="trainer_view_status"></span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Digital Signature</span>
+                                <div class="detail-value">
+                                    <img id="trainer_view_signature" alt="Trainer Signature" style="max-height: 80px; display: none;">
+                                    <span id="trainer_view_signature_empty">Not uploaded</span>
+                                </div>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Email</span>
@@ -165,7 +176,7 @@
                     <h2>Add New Trainer</h2>
                     <span class="close" id="closeTrainerModal" onclick="toggleModal('trainerModal')">&times;</span>
                 </div>
-                <form method="POST" id="trainerForm" data-add-url="{% url 'add_trainer' %}">
+                <form method="POST" id="trainerForm" data-add-url="{% url 'add_trainer' %}" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="form-grid">
                         <div class="form-group">
@@ -204,6 +215,11 @@
                         <div class="form-group" id="password-field">
                             <label for="password">Password</label>
                             <input type="password" name="password" id="password" required>
+                        </div>
+                        <div class="form-group" id="digital_signature-field">
+                            <label for="digital_signature">Digital Signature</label>
+                            <input type="file" name="digital_signature" id="digital_signature" accept=".png,.jpg,.jpeg">
+                            <img id="digitalSignaturePreview" alt="Digital Signature Preview" style="max-height: 80px; display: none; margin-top: 0.5rem;">
                         </div>
                     </div>
                     <div class="modal-footer">

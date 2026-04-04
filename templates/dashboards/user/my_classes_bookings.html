@@ -21,11 +21,10 @@
         <div class="dashboard-section card-grid">
             {% for booking in bookings %}
             <div class="class-card compact">
-                <span class="class-status {% if booking.class_session.is_cancelled %}status-cancelled{% else %}status-open{% endif %}">
-                    {% if booking.class_session.is_cancelled %}Cancelled{% else %}Open{% endif %}
-                </span>
-
                 <h3 style="font-size:1rem;margin-bottom:0.3rem;">
+                    <span class="class-status {% if booking.class_session.is_cancelled %}status-cancelled{% else %}status-open{% endif %}">
+                        {% if booking.class_session.is_cancelled %}Cancelled{% else %}Open{% endif %}
+                    </span>
                     {{ booking.class_session.class_name }}
                 </h3>
 
