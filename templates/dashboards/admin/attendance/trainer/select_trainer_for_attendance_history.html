@@ -28,6 +28,16 @@
                 <p class="attendance-meta">Open the full present and absent history for any trainer.</p>
             </div>
 
+            <form class="filter-bar" method="GET" action="{% url 'select_trainer_for_attendance_history' %}">
+                <div class="filter-main">
+                    <div class="filter-search">
+                        <input type="text" class="filter-input" name="q" placeholder="Search trainers..." value="{{ request.GET.q|default:'' }}">
+                        <button type="submit" class="btn-secondary">Search</button>
+                        <a href="{% url 'select_trainer_for_attendance_history' %}" class="btn-secondary">Clear</a>
+                    </div>
+                </div>
+            </form>
+
             <div class="card-grid">
                 {% for trainer in trainers %}
                 <div class="class-card">
@@ -46,3 +56,4 @@
     </main>
 </div>
 {% endblock %}
+

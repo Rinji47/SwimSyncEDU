@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Group Attendance History{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../../components/admin_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../../components/message.html' %}
+
+        <div class="dashboard-header">
+            <h1>{{ class_session.class_name }} - Attendance History</h1>
+            <a href="javascript:history.back()" class="btn-secondary">Back</a>
+        </div>
+
+        <form class="filter-bar" method="GET" action="{% url 'admin_class_session_attendance_history' class_session.id %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="student_and_trainer_name" placeholder="Search student or marker..." value="{{ request.GET.student_and_trainer_name|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-group-history">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.status or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-group-history">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="present" {% if request.GET.status == 'present' %}selected{% endif %}>Present</option>
+                        <option value="absent" {% if request.GET.status == 'absent' %}selected{% endif %}>Absent</option>
+                        <option value="class_cancelled" {% if request.GET.status == 'class_cancelled' %}selected{% endif %}>Class Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'admin_class_session_attendance_history' class_session.id %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
+        <div class="dashboard-section history-table-wrap">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Student</th>
+                        <th>Status</th>
+                        <th>Marked By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in attendance_records %}
+                    <tr>
+                        <td>{{ record.date }}</td>
+                        <td>{{ record.student.full_name|default:record.student.username }}</td>
+                        <td>
+                            <span class="attendance-status {% if record.status == 'present' %}present{% elif record.status == 'absent' %}absent{% else %}pending{% endif %}">{{ record.get_status_display }}</span>
+                        </td>
+                        <td>{{ record.marked_by.full_name|default:record.marked_by.username|default:'-' }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">No records found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+{% endblock %}

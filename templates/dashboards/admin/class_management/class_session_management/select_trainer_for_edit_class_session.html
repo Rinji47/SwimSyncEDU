@@ -24,8 +24,18 @@
             <a href="{% url 'edit_class_session' class_session.id %}" class="btn-secondary">Back</a>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'select_trainer_for_edit_class_session' class_session.id %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search trainers..." value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <a href="{% url 'select_trainer_for_edit_class_session' class_session.id %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="two-col">
-            <div class="dashboard-section card-grid" style="margin:0;">
+            <div class="dashboard-section card-grid" style="margin:0; flex: 2;">
                 {% for trainer in trainers %}
                 <article class="class-card">
                     <h3>{{ trainer.full_name|default:trainer.username }}</h3>
@@ -52,3 +62,4 @@
     </main>
 </div>
 {% endblock %}
+

@@ -12,6 +12,16 @@
         background: #f8fafc;
     }
 
+    .class-type-shell .two-col > div:first-child {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .class-type-shell .side-panel {
+        flex: 0 0 320px;
+        max-width: 320px;
+    }
+
     .class-type-hero {
         margin-bottom: 1.2rem;
         padding: 1.45rem 1.5rem;
@@ -19,6 +29,15 @@
         border: 1px solid #e2e8f0;
         background: #ffffff;
         box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+    }
+
+    .class-type-hero > div {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .class-type-hero .btn-secondary {
+        flex: 0 0 auto;
     }
 
     .class-type-hero h1 {
@@ -37,8 +56,29 @@
         padding: 1.2rem 1.3rem;
     }
 
+    .private-booking-card .page-head {
+        display: block;
+    }
+
+    .private-booking-card .btn-primary,
+    .private-booking-card .btn-secondary {
+        width: 100%;
+        margin-top: 1rem;
+        justify-content: center;
+        border-radius: 14px;
+    }
+
     .class-type-grid .pool-card h3 {
         font-size: 1.3rem;
+    }
+
+    .pool-card-header h3 {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .pool-card-header .pool-status {
+        flex: 0 0 auto;
     }
 
     .class-type-grid .btn-secondary,
@@ -47,6 +87,7 @@
         justify-content: center;
         border-radius: 14px;
     }
+    
 </style>
 {% endblock %}
 
@@ -63,6 +104,18 @@
                 </div>
                 <a class="btn-secondary" href="{% url 'nearby_pools' %}"><i class="fa-solid fa-arrow-left"></i> Back</a>
             </div>
+
+            <form class="quick-filter" method="GET" action="{% url 'pool_class_types' pool.pool_id %}">
+                <input
+                    type="text"
+                    name="q"
+                    class="compact-input"
+                    placeholder="Search class type or description..."
+                    value="{{ request.GET.q|default_if_none:'' }}"
+                >
+                <button type="submit" class="btn-secondary">Search</button>
+                <a class="btn-secondary" href="{% url 'pool_class_types' pool.pool_id %}">Clear</a>
+            </form>
 
             <div class="info-card private-booking-card" style="margin-bottom:1rem;">
                 <div class="page-head" style="margin:0;">
@@ -89,7 +142,13 @@
                     <a class="btn-secondary" href="{% url 'pool_classes' pool.pool_id class_item.class_type_id %}">View Sessions</a>
                 </article>
                 {% empty %}
-                <p class="pools-empty">No class types available yet.</p>
+                <p class="pools-empty">
+                    {% if request.GET.q %}
+                    No class types matched your search.
+                    {% else %}
+                    No class types available yet.
+                    {% endif %}
+                </p>
                 {% endfor %}
             </div>
         </div>

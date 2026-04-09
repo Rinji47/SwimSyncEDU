@@ -30,6 +30,8 @@
             <div class="info-card">
                 <form method="POST" class="split-form">
                     {% csrf_token %}
+                    <input type="hidden" name="busy_from" value="{{ request.GET.busy_from|default:'' }}">
+                    <input type="hidden" name="busy_to" value="{{ request.GET.busy_to|default:'' }}">
 
                     <div class="full-span">
                         <label for="class_name">Class Name</label>
@@ -47,7 +49,7 @@
 
                     <div>
                         <label for="seats">Available Seats</label>
-                        <input type="number" id="seats" name="seats" min="1" value="{{ class_session.seats }}" required>
+                        <input type="number" id="seats" name="seats" min="1" max="{{ class_session.pool.capacity }}" value="{{ class_session.seats }}" required>
                     </div>
                     <div></div>
 
@@ -57,7 +59,7 @@
                     </div>
                     <div>
                         <label for="end_date">End Date</label>
-                        <input type="date" id="end_date" name="end_date" value="{{ class_session.end_date|date:'Y-m-d' }}" required>
+                        <input type="date" id="end_date" name="end_date" value="{{ class_session.end_date|date:'Y-m-d' }}" readonly required>
                     </div>
 
                     <div>
@@ -84,8 +86,53 @@
                     <li><strong>Total Price:</strong> Rs. {{ class_session.total_price }}</li>
                     <li><strong>Status:</strong> {% if class_session.is_cancelled %}Cancelled{% else %}Open{% endif %}</li>
                 </ul>
+
+                <form method="get" action="{% url 'edit_class_session' class_session.id %}" class="quick-filter range-filter" style="margin-top:0.9rem;">
+                    {% if selected_trainer %}
+                    <input type="hidden" name="trainer_id" value="{{ selected_trainer.pk }}">
+                    {% endif %}
+                    <label><strong>Pool Busy Range:</strong></label>
+                    <input class="compact-input" type="date" name="busy_from" value="{{ request.GET.busy_from|default:'' }}">
+                    <input class="compact-input" type="date" name="busy_to" value="{{ request.GET.busy_to|default:'' }}">
+                    <button type="submit" class="btn-secondary">Apply</button>
+                </form>
+
+                <h3 style="margin-top:0.6rem;"><i class="fa-solid fa-calendar-xmark"></i> Pool Busy Slots</h3>
+                <div class="slot-list">
+                    {% for slot in busy_slots %}
+                    <span class="slot-chip" title="{{ slot.4 }}">{{ slot.0 }} to {{ slot.1 }} | {{ slot.2 }} - {{ slot.3 }} | {{ slot.4 }}</span>
+                    {% empty %}
+                    <span class="slot-chip slot-empty">No busy slots for selected range</span>
+                    {% endfor %}
+                </div>
             </aside>
         </div>
     </main>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    const duration = parseInt("{{ class_session.class_type.duration_days | default:'0' }}", 10);
+
+    const updateEndDate = () => {
+        const startDate = startDateInput.value
+        if (!duration || !startDate){
+            endDateInput.value = '';
+            return
+        }
+
+        const d = new Date(startDate + 'T00:00:00');
+        d.setDate(d.getDate() + duration - 1);
+
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        endDateInput.value = `${year}-${month}-${day}`;
+    };
+    
+    startDateInput.addEventListener('change', updateEndDate);
+    updateEndDate();
+</script>
 {% endblock %}

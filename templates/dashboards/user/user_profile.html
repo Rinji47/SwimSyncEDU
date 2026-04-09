@@ -50,6 +50,12 @@
                         <div class="form-group full-width">
                             <label for="profile_picture">Profile Picture <span class="optional">(Optional)</span></label>
                             <input type="file" id="profile_picture" name="profile_picture" accept="image/*">
+                            {% if request.user.profile_picture %}
+                            <label style="margin-top:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                                <input type="checkbox" name="remove_profile_picture" value="1">
+                                Remove current profile picture
+                            </label>
+                            {% endif %}
                             <small class="form-hint">Upload a square image for best results.</small>
                         </div>
                     </div>

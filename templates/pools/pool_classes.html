@@ -12,6 +12,16 @@
         background: #f8fafc;
     }
 
+    .session-shell .two-col > div:first-child {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .session-shell .side-panel {
+        flex: 0 0 320px;
+        max-width: 320px;
+    }
+
     .session-hero {
         margin-bottom: 1.2rem;
         padding: 1.45rem 1.5rem;
@@ -43,6 +53,100 @@
         border-radius: 14px;
         margin-top: 0.35rem;
     }
+
+    .session-filter-bar {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 1rem 1.1rem;
+        margin-bottom: 1.2rem;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .session-filter-main {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .session-filter-search {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        margin-left: auto;
+    }
+
+    .session-filter-input {
+        min-width: 250px;
+        padding: 0.72rem 0.9rem;
+        border: 2px solid #dbe4f0;
+        border-radius: 12px;
+        font-size: 1rem;
+        background: #fff;
+    }
+
+    .session-filter-input:focus,
+    .session-filter-advanced input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.12);
+    }
+
+    .session-filter-advanced {
+        display: none;
+        margin-top: 0.95rem;
+        padding-top: 0.95rem;
+        border-top: 1px solid #e2e8f0;
+        gap: 0.8rem 1rem;
+        flex-wrap: wrap;
+    }
+
+    .session-filter-advanced.show {
+        display: flex;
+    }
+
+    .session-filter-advanced input {
+        min-width: 170px;
+        padding: 0.72rem 0.85rem;
+        border: 2px solid #dbe4f0;
+        border-radius: 12px;
+        font-size: 1rem;
+        background: #fff;
+    }
+
+    .session-filter-actions {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .session-filter-actions .btn-primary,
+    .session-filter-actions .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 52px;
+        padding: 0.8rem 1.35rem;
+        box-sizing: border-box;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 980px) {
+        .session-filter-search {
+            margin-left: 0;
+        }
+
+        .session-filter-input,
+        .session-filter-advanced input {
+            width: 100%;
+            min-width: 0;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -63,6 +167,100 @@
                 </div>
             </div>
 
+            <form class="session-filter-bar" method="GET" action="{% url 'pool_classes' pool.pool_id class_type.class_type_id %}">
+                <div class="session-filter-main">
+                    <div class="session-filter-search">
+                        <input
+                            type="text"
+                            name="q"
+                            class="session-filter-input"
+                            placeholder="Search class or trainer..."
+                            value="{{ request.GET.q|default_if_none:'' }}"
+                        >
+                        <button type="submit" class="btn-secondary">Search</button>
+                        <button
+                            type="button"
+                            class="btn-secondary filter-toggle"
+                            aria-expanded="{% if request.GET.date_from or request.GET.date_to or request.GET.total_price_min or request.GET.total_price_max or request.GET.total_bookings_min or request.GET.total_bookings_max or request.GET.seats_min or request.GET.seats_max or request.GET.start_time_from or request.GET.start_time_to %}true{% else %}false{% endif %}"
+                            aria-controls="filters-pool-classes"
+                        >
+                            Filters v
+                        </button>
+                    </div>
+                </div>
+
+                <div class="session-filter-advanced filter-advanced {% if request.GET.date_from or request.GET.date_to or request.GET.total_price_min or request.GET.total_price_max or request.GET.total_bookings_min or request.GET.total_bookings_max or request.GET.seats_min or request.GET.seats_max or request.GET.start_time_from or request.GET.start_time_to %}show{% endif %}" id="filters-pool-classes">
+                    <input
+                        type="date"
+                        name="date_from"
+                        value="{{ request.GET.date_from|default_if_none:'' }}"
+                    >
+                    <input
+                        type="date"
+                        name="date_to"
+                        value="{{ request.GET.date_to|default_if_none:'' }}"
+                    >
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="total_price_min"
+                        placeholder="Min price"
+                        value="{{ request.GET.total_price_min|default_if_none:'' }}"
+                    >
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="total_price_max"
+                        placeholder="Max price"
+                        value="{{ request.GET.total_price_max|default_if_none:'' }}"
+                    >
+                    <input
+                        type="number"
+                        min="0"
+                        name="total_bookings_min"
+                        placeholder="Min bookings"
+                        value="{{ request.GET.total_bookings_min|default_if_none:'' }}"
+                    >
+                    <input
+                        type="number"
+                        min="0"
+                        name="total_bookings_max"
+                        placeholder="Max bookings"
+                        value="{{ request.GET.total_bookings_max|default_if_none:'' }}"
+                    >
+                    <input
+                        type="number"
+                        min="0"
+                        name="seats_min"
+                        placeholder="Min seats"
+                        value="{{ request.GET.seats_min|default_if_none:'' }}"
+                    >
+                    <input
+                        type="number"
+                        min="0"
+                        name="seats_max"
+                        placeholder="Max seats"
+                        value="{{ request.GET.seats_max|default_if_none:'' }}"
+                    >
+                    <input
+                        type="time"
+                        name="start_time_from"
+                        value="{{ request.GET.start_time_from|default_if_none:'' }}"
+                    >
+                    <input
+                        type="time"
+                        name="start_time_to"
+                        value="{{ request.GET.start_time_to|default_if_none:'' }}"
+                    >
+                    <div class="session-filter-actions">
+                        <button type="submit" class="btn-primary">Apply Filters</button>
+                        <a class="btn-secondary" href="{% url 'pool_classes' pool.pool_id class_type.class_type_id %}">Clear</a>
+                    </div>
+                </div>
+            </form>
+
             <div class="pools-grid session-grid">
                 {% for class_item in classes %}
                 <article class="pool-card">
@@ -80,7 +278,13 @@
                     <a href="{% url 'book_class' class_item.id %}" class="btn-primary">Book Now</a>
                 </article>
                 {% empty %}
-                <p class="pools-empty">No scheduled sessions for this class type yet.</p>
+                <p class="pools-empty">
+                    {% if request.GET.q or request.GET.date_from or request.GET.date_to or request.GET.total_price_min or request.GET.total_price_max or request.GET.total_bookings_min or request.GET.total_bookings_max or request.GET.seats_min or request.GET.seats_max or request.GET.start_time_from or request.GET.start_time_to %}
+                    No sessions matched your filters.
+                    {% else %}
+                    No scheduled sessions for this class type yet.
+                    {% endif %}
+                </p>
                 {% endfor %}
             </div>
         </div>

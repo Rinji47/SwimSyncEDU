@@ -2,6 +2,7 @@ from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
+from django.contrib.auth.decorators import login_required
 from classes.models import ClassSession, ClassType, PrivateClass
 from .models import Pool, PoolImage, PoolQuality, TrainerPoolAssignment
 from django.utils import timezone
@@ -14,85 +15,19 @@ try:
 except ImportError:
     geodesic = None
 
-# Create your views here.
-def _parse_busy_range(raw_from, raw_to):
-    busy_from = None
-    busy_to = None
-
-    if raw_from:
-        try:
-            busy_from = datetime.strptime(raw_from, '%Y-%m-%d').date()
-        except ValueError:
-            busy_from = None
-
-    if raw_to:
-        try:
-            busy_to = datetime.strptime(raw_to, '%Y-%m-%d').date()
-        except ValueError:
-            busy_to = None
-
-    if busy_from and busy_to and busy_from > busy_to:
-        busy_from, busy_to = busy_to, busy_from
-
-    return busy_from, busy_to
-
-
-def _build_trainer_unavailability(trainers, busy_from=None, busy_to=None, max_items=None):
-    trainer_ids = [trainer.pk for trainer in trainers]
-    if not trainer_ids:
-        return {}
-
-    today = date.today()
-    busy = {}
-
-    group_sessions = ClassSession.objects.filter(
-        Q(trainer_id__in=trainer_ids) | Q(substitute_trainer_id__in=trainer_ids),
-        end_date__gte=today,
-        is_cancelled=False,
-    ).order_by('start_date', 'start_time')
-
-    private_sessions = PrivateClass.objects.filter(
-        Q(trainer_id__in=trainer_ids) | Q(substitute_trainer_id__in=trainer_ids),
-        end_date__gte=today,
-        is_cancelled=False,
-    ).order_by('start_date', 'start_time')
-
-    if busy_from:
-        group_sessions = group_sessions.filter(end_date__gte=busy_from)
-        private_sessions = private_sessions.filter(end_date__gte=busy_from)
-    if busy_to:
-        group_sessions = group_sessions.filter(start_date__lte=busy_to)
-        private_sessions = private_sessions.filter(start_date__lte=busy_to)
-
-    for session in group_sessions:
-        label = f"{session.start_date:%b %d}-{session.end_date:%b %d} | {session.start_time:%H:%M}-{session.end_time:%H:%M} | Group"
-        if session.trainer_id in trainer_ids:
-            busy.setdefault(session.trainer_id, []).append(label)
-        if session.substitute_trainer_id in trainer_ids:
-            busy.setdefault(session.substitute_trainer_id, []).append(label)
-
-    for private in private_sessions:
-        label = f"{private.start_date:%b %d}-{private.end_date:%b %d} | {private.start_time:%H:%M}-{private.end_time:%H:%M} | Private"
-        if private.trainer_id in trainer_ids:
-            busy.setdefault(private.trainer_id, []).append(label)
-        if private.substitute_trainer_id in trainer_ids:
-            busy.setdefault(private.substitute_trainer_id, []).append(label)
-
-    totals = {}
-    visible = {}
-    for trainer_id in list(busy.keys()):
-        deduped = list(dict.fromkeys(busy[trainer_id]))
-        totals[trainer_id] = len(deduped)
-        visible[trainer_id] = deduped[:max_items] if max_items else deduped
-
-    return visible, totals
-
-
 def nearby_pools(request):
-    pools = Pool.objects.filter(is_closed=False).prefetch_related('images').all().order_by('name')
+    pools = Pool.objects.filter(is_closed=False).all().order_by('name')
     lat = request.GET.get('lat')
     lng = request.GET.get('lng')
     raw_radius = request.GET.get('radius', '10')
+
+    q = (request.GET.get('q') or '').strip()
+
+    if q:
+        pools = pools.filter(
+            Q(name__icontains=q) |
+            Q(address__icontains=q)
+        )
 
     def parse_coordinates(raw):
         if not raw:
@@ -117,7 +52,7 @@ def nearby_pools(request):
         radius_km = float(raw_radius)
     except (TypeError, ValueError):
         radius_km = 10.0
-    radius_km = min(max(radius_km, 1.0), 100.0)
+    radius_km = max(radius_km, 1.00)
 
     status_message = f"Enable location to see pools within {radius_km:g} km."
     nearby = []
@@ -166,13 +101,16 @@ def nearby_pools(request):
 
 def pool_class_types(request, pool_id):
     pool = get_object_or_404(Pool, pk=pool_id)
+    class_types_from_pool = ClassSession.objects.filter(pool=pool, 
+                    is_cancelled=False, 
+                    start_date__gte=timezone.now().date()).values('class_type').distinct()
+    q = (request.GET.get('q') or '').strip()
 
     class_types = []
-    for types in ClassSession.objects.filter(pool=pool, 
-                                             is_cancelled=False, 
-                                             start_date__gte=timezone.now().date()
-                                             ).values('class_type').distinct():
+    for types in class_types_from_pool:
         for type in ClassType.objects.filter(pk=types['class_type'], is_closed=False):
+            if q and q.lower() not in type.name.lower() and q.lower() not in type.description.lower():
+                continue
             class_types.append(type)
 
     context = {
@@ -190,6 +128,80 @@ def pool_classes(request, class_type_id, pool_id):
                                           is_cancelled=False, 
                                           start_date__gte=timezone.now().date()
                                           ).order_by('start_date', 'start_time')
+    
+    q = (request.GET.get('q') or '').strip()
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    total_price_min = request.GET.get('total_price_min')
+    total_price_max = request.GET.get('total_price_max')
+    total_bookings_min = request.GET.get('total_bookings_min')
+    total_bookings_max = request.GET.get('total_bookings_max')
+    seats_min = request.GET.get('seats_min')
+    seats_max = request.GET.get('seats_max')
+    start_time_from = request.GET.get('start_time_from')
+    start_time_to = request.GET.get('start_time_to')
+    
+    if q:
+        classes = classes.filter(
+            Q(class_name__icontains=q) |
+            Q(trainer__full_name__icontains=q) |
+            Q(trainer__username__icontains=q)
+        )
+    if date_from:
+        try:
+            date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+            classes = classes.filter(end_date__gte=date_from_parsed)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+            classes = classes.filter(start_date__lte=date_to_parsed)
+        except ValueError:
+            pass
+    if total_price_min:
+        try:
+            classes = classes.filter(total_price__gte=float(total_price_min))
+        except ValueError:
+            pass
+    if total_price_max:
+        try:
+            classes = classes.filter(total_price__lte=float(total_price_max))
+        except ValueError:
+            pass
+    if total_bookings_min:
+        try:
+            classes = classes.filter(total_bookings__gte=int(total_bookings_min))
+        except ValueError:
+            pass
+    if total_bookings_max:
+        try:
+            classes = classes.filter(total_bookings__lte=int(total_bookings_max))
+        except ValueError:
+            pass
+    if seats_min:
+        try:
+            classes = classes.filter(seats__gte=int(seats_min))
+        except ValueError:
+            pass
+    if seats_max:
+        try:
+            classes = classes.filter(seats__lte=int(seats_max))
+        except ValueError:
+            pass
+
+    if start_time_from:
+        try:
+            start_time_from_parsed = datetime.strptime(start_time_from, '%H:%M').time()
+            classes = classes.filter(start_time__gte=start_time_from_parsed)
+        except ValueError:
+            pass
+    if start_time_to:
+        try:
+            start_time_to_parsed = datetime.strptime(start_time_to, '%H:%M').time()
+            classes = classes.filter(start_time__lte=start_time_to_parsed)
+        except ValueError:
+            pass
 
     context = {
         'pool': pool,
@@ -231,7 +243,7 @@ def pool_quality_today_list(request):
         radius_km = float(raw_radius)
     except (TypeError, ValueError):
         radius_km = 10.0
-    radius_km = min(max(radius_km, 1.0), 100.0)
+    radius_km = max(radius_km, 1.0)
 
     if q:
         pools = pools.filter(Q(name__icontains=q) | Q(address__icontains=q))
@@ -311,8 +323,153 @@ def pool_quality_today_detail(request, pool_id):
     return render(request, 'pools/pool_quality_today_detail.html', context)
 
 
+@login_required
+def add_pool(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    if request.method == 'POST':
+        pools = Pool.objects.all()
+        name = request.POST.get('name')
+        address = request.POST.get('address')
+        capacity_raw = request.POST.get('capacity')
+        coordinates = request.POST.get('coordinates')
+        uploaded_images = request.FILES.getlist('images')
+        MAX_IMAGES = 5
+
+        if len(uploaded_images) > MAX_IMAGES:
+            messages.error(request, f'You can only have up to {MAX_IMAGES} images per pool.')
+            return render(request, 'dashboards/admin/pool_management/add_pool.html', {
+                'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+                'form_data': request.POST,
+            })
+
+        try:
+            capacity = int(capacity_raw)
+            if capacity <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            messages.error(request, 'Capacity must be a positive whole number.')
+            return render(request, 'dashboards/admin/pool_management/add_pool.html', {
+                'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+                'form_data': request.POST,
+            })
+
+        if pools.filter(name=name).exists() or pools.filter(coordinates=coordinates).exists():
+            messages.error(request, 'A pool with this name, or coordinates already exists.')
+            return render(request, 'dashboards/admin/pool_management/add_pool.html', {
+                'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+                'form_data': request.POST,
+            })
+
+        if coordinates == "" or coordinates is None:
+            messages.error(request, 'Please select a coordinate')
+            return render(request, 'dashboards/admin/pool_management/add_pool.html', {
+                'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+                'form_data': request.POST,
+            })
+
+        created_pool = Pool.objects.create(
+            name=name,
+            address=address,
+            capacity=capacity,
+            coordinates=coordinates,
+        )
+        for index, uploaded in enumerate(uploaded_images, start=1):
+            PoolImage.objects.create(
+                pool=created_pool,
+                image=uploaded,
+                sort_order=index,
+            )
+        messages.success(request, 'New pool added successfully.')
+        return redirect('manage_pools')
+
+    return render(request, 'dashboards/admin/pool_management/add_pool.html', {
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+    })
+
+@login_required
+def edit_pool(request, pool_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    pool = get_object_or_404(Pool, pk=pool_id)
+    if request.method == 'POST':
+        pool_name = request.POST.get('name')
+        pool_address = request.POST.get('address')
+        capacity_raw = request.POST.get('capacity')
+        coordinates = request.POST.get('coordinates')
+        uploaded_images = request.FILES.getlist('images')
+        deleted_image_ids = request.POST.getlist('delete_image_ids')
+        MAX_IMAGES = 5
+        existing_image_count = pool.images.count()
+        deleted_count = len(deleted_image_ids)
+        final_count = existing_image_count - deleted_count + len(uploaded_images)
+        if final_count > MAX_IMAGES:
+            messages.error(request, f'You can only have up to {MAX_IMAGES} images per pool. Please delete some images before uploading new ones.')
+            return redirect('edit_pool', pool_id=pool_id)
+        try:
+            capacity = int(capacity_raw)
+            if capacity <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            messages.error(request, 'Capacity must be a positive whole number.')
+            return redirect('edit_pool', pool_id=pool_id)
+        pools = Pool.objects.exclude(pk=pool_id)
+        if pools.filter(name=pool_name).exists() or pools.filter(coordinates=coordinates).exists():
+            messages.error(request, 'A pool with this name, or coordinates already exists.')
+            return redirect('edit_pool', pool_id=pool_id)
+        if coordinates == "" or coordinates is None:
+            messages.error(request, 'Please select a coordinate')
+            return redirect('edit_pool', pool_id=pool_id)
+        
+        pool.name = pool_name
+        pool.address = pool_address
+        pool.capacity = capacity
+        pool.coordinates = coordinates
+        pool.save()
+
+        if deleted_image_ids:
+            images_to_delete = PoolImage.objects.filter(pool=pool, image_id__in=deleted_image_ids)
+
+            for image in images_to_delete:
+                image.image.delete(save=False)
+            images_to_delete.delete()
+
+        current_max = pool.images.order_by('-sort_order').values_list('sort_order', flat=True).first() or 0
+
+        for index, uploaded in enumerate(uploaded_images, start=1):
+            PoolImage.objects.create(
+                pool=pool,
+                image=uploaded,
+                sort_order=current_max + index,
+            )
+
+        messages.success(request, 'Pool updated successfully.')
+        return redirect('manage_pools')
+
+    return render(request, 'dashboards/admin/pool_management/edit_pool.html', {
+        'pool': pool,
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
+    })
+
+
+@login_required
+def view_pool(request, pool_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    pool = get_object_or_404(Pool, pk=pool_id)
+    return render(request, 'dashboards/admin/pool_management/view_pool.html', {
+        'pool': pool,
+    })
+
+
 def manage_pools(request, pool_id=None):
-    pools = Pool.objects.prefetch_related('images').all()
+    pools = Pool.objects.all()
 
     q = (request.GET.get('q') or '').strip()
     status = request.GET.get('status')
@@ -339,7 +496,7 @@ def manage_pools(request, pool_id=None):
             pass
 
     if pool_id:
-        pool = get_object_or_404(Pool.objects.prefetch_related('images'), pk=pool_id)
+        pool = get_object_or_404(Pool, pk=pool_id)
     else:
         pool = None
 
@@ -351,6 +508,20 @@ def manage_pools(request, pool_id=None):
         uploaded_images = request.FILES.getlist('images')
         deleted_image_ids = request.POST.getlist('delete_image_ids')
 
+        MAX_IMAGES = 5
+        existing_image_count = 0;
+        if pool:
+            existing_image_count = pool.images.count()
+        
+        deleted_count = len(deleted_image_ids)
+        if pool:
+            deleted_count = len(deleted_image_ids)
+        
+        final_count = existing_image_count - deleted_count + len(uploaded_images)
+        if final_count > MAX_IMAGES:
+            messages.error(request, f'You can only have up to {MAX_IMAGES} images per pool. Please delete some images before uploading new ones.')
+            return redirect('manage_pools')
+        
         try:
             capacity = int(capacity_raw)
             if capacity <= 0:
@@ -379,15 +550,13 @@ def manage_pools(request, pool_id=None):
         
         if pool is not None:
             if (pools.filter(name=name).exclude(pk=pool_id).exists() or
-                pools.filter(address=address).exclude(pk=pool_id).exists() or
                 pools.filter(coordinates=coordinates).exclude(pk=pool_id).exists()):
-                messages.error(request, 'A pool with this name, address, or coordinates already exists.')
+                messages.error(request, 'A pool with this name, or coordinates already exists.')
                 return redirect('manage_pools')
         else:
             if (pools.filter(name=name).exists() or
-                pools.filter(address=address).exists() or
                 pools.filter(coordinates=coordinates).exists()):
-                messages.error(request, 'A pool with this name, address, or coordinates already exists.')
+                messages.error(request, 'A pool with this name, or coordinates already exists.')
                 return redirect('manage_pools')
         
         if coordinates == "" or coordinates is None:
@@ -402,7 +571,12 @@ def manage_pools(request, pool_id=None):
             pool.save()
 
             if deleted_image_ids:
-                PoolImage.objects.filter(pool=pool, image_id__in=deleted_image_ids).delete()
+                images_to_delete = PoolImage.objects.filter(pool=pool, image_id__in=deleted_image_ids)
+
+                for image in images_to_delete:
+                    image.image.delete(save=False)
+                
+                images_to_delete.delete()
 
             current_max = pool.images.order_by('-sort_order').values_list('sort_order', flat=True).first() or 0
             for index, uploaded in enumerate(uploaded_images, start=1):
@@ -431,7 +605,7 @@ def manage_pools(request, pool_id=None):
     
     return render(
         request,
-        'dashboards/admin/admin_manage_pools.html',
+        'dashboards/admin/pool_management/admin_manage_pools.html',
         {
             'pools': pools,
             'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
@@ -452,6 +626,8 @@ def manage_quality_history(request):
     pools = Pool.objects.all()
     pool_filter = request.GET.get('pool')
     rating_filter = request.GET.get('rating')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
     q = (request.GET.get('q') or '').strip()
     today = timezone.localdate()
 
@@ -462,6 +638,10 @@ def manage_quality_history(request):
         qualities = qualities.filter(pool_id=pool_filter)
     if rating_filter:
         qualities = qualities.filter(cleanliness_rating=rating_filter)
+    if date_from:
+        qualities = qualities.filter(date__gte=date_from)
+    if date_to:
+        qualities = qualities.filter(date__lte=date_to)
 
     qualities = qualities.order_by('-date')
 
@@ -476,15 +656,29 @@ def manage_quality_history(request):
 def select_pool_quality(request):
     today = timezone.localdate()
     pools = Pool.objects.all().order_by('name')
+
+    q = (request.GET.get('pool_name_or_address') or '').strip()
+    not_rated_pools = request.GET.get('not_rated_pools')
+
+    if not_rated_pools:
+        not_rated_pools_id = PoolQuality.objects.filter(date=today).values_list('pool_id', flat=True)
+        pools = pools.exclude(pool_id__in=not_rated_pools_id)
+    
+    if q:
+        pools = pools.filter(Q(name__icontains=q) | Q(address__icontains=q))
+
     today_qualities = PoolQuality.objects.filter(date=today).select_related('pool')
-    quality_by_pool_id = {quality.pool_id: quality for quality in today_qualities}
-    pool_cards = [
-        {
+
+    quality_by_pool_id = {}
+    for quality in today_qualities:
+        quality_by_pool_id[quality.pool_id] = quality
+
+    pool_cards = []
+    for pool in pools:
+        pool_cards.append({
             'pool': pool,
             'today_quality': quality_by_pool_id.get(pool.pool_id),
-        }
-        for pool in pools
-    ]
+        })
 
     context = {
         'today': today,
@@ -574,18 +768,24 @@ def assign_trainer_manager(request):
     assigned_trainers = TrainerPoolAssignment.objects.select_related('trainer', 'pool').all().order_by('-start_date')
     pools = Pool.objects.all()
     pool_filter = request.GET.get('pool')
-    trainer_filter = (request.GET.get('trainer') or '').strip()
-    date_filter = request.GET.get('date')
+    trainer_and_pool_filter = (request.GET.get('trainer_and_pools') or '').strip()
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
 
     if pool_filter:
         assigned_trainers = assigned_trainers.filter(pool_id=pool_filter)
-    if trainer_filter:
+    if trainer_and_pool_filter:
         assigned_trainers = assigned_trainers.filter(
-            Q(trainer__full_name__icontains=trainer_filter) |
-            Q(trainer__email__icontains=trainer_filter)
+            Q(trainer__full_name__icontains=trainer_and_pool_filter) |
+            Q(trainer__email__icontains=trainer_and_pool_filter) |
+            Q(pool__name__icontains=trainer_and_pool_filter)
         )
-    if date_filter:
-        assigned_trainers = assigned_trainers.filter(start_date__lte=date_filter).filter(Q(end_date__gte=date_filter) | Q(end_date__isnull=True))
+    if date_from:
+        assigned_trainers = assigned_trainers.filter(
+            Q(end_date__gte=date_from) | Q(end_date__isnull=True)
+        )
+    if date_to:
+        assigned_trainers = assigned_trainers.filter(start_date__lte=date_to)
 
     context = {
         'assigned_trainers': assigned_trainers,
@@ -622,30 +822,10 @@ def list_trainers(request, pool_id):
     elif assignment == 'not_assigned':
         trainers = trainers.exclude(user_id__in=trainers_assigned_id)
 
-    busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
-    unavailability_map, total_map = _build_trainer_unavailability(
-        trainers,
-        busy_from=busy_from,
-        busy_to=busy_to,
-    )
-    trainer_cards = []
-    for trainer in trainers:
-        unavailable_slots = unavailability_map.get(trainer.pk, [])
-        unavailable_total = total_map.get(trainer.pk, 0)
-        unavailable_more = max(unavailable_total - len(unavailable_slots), 0)
-        trainer_cards.append({
-            'trainer': trainer,
-            'unavailable_slots': unavailable_slots,
-            'unavailable_total': unavailable_total,
-            'unavailable_more': unavailable_more,
-        })
-
     context = {
         'pool': pool,
-        'trainer_cards': trainer_cards,
+        'trainers': trainers,
         'trainers_assigned_id': trainers_assigned_id,
-        'busy_from': busy_from,
-        'busy_to': busy_to,
     }
     return render(request, 'dashboards/admin/trainer_assignment/list_trainers.html', context)
 
@@ -675,31 +855,37 @@ def assign_trainer(request, pool_id, trainer_id):
         messages.success(request, 'Trainer assigned successfully.')
         return redirect('assign_trainer_manager')
 
-    busy_from, busy_to = _parse_busy_range(request.GET.get('busy_from'), request.GET.get('busy_to'))
     context = {
         'pool': pool,
         'trainer': trainer,
-        'trainer_unavailable_slots': [],
-        'trainer_unavailable_total': 0,
-        'trainer_unavailable_more': 0,
-        'busy_from': busy_from,
-        'busy_to': busy_to,
     }
-    slots_map, total_map = _build_trainer_unavailability(
-        [trainer],
-        busy_from=context['busy_from'],
-        busy_to=context['busy_to'],
-        max_items=6,
-    )
-    shown_slots = slots_map.get(trainer.pk, [])
-    total_slots = total_map.get(trainer.pk, 0)
-    context['trainer_unavailable_slots'] = shown_slots
-    context['trainer_unavailable_total'] = total_slots
-    context['trainer_unavailable_more'] = max(total_slots - len(shown_slots), 0)
     return render(request, 'dashboards/admin/trainer_assignment/assign_trainer.html', context)
 
 def unassign_trainer(request, assignment_id):
     assignment = get_object_or_404(TrainerPoolAssignment, pk=assignment_id)
+    today = timezone.now().date()
+
+    ongoing_or_upcoming_group_classes = ClassSession.objects.filter(
+        trainer=assignment.trainer,
+        pool=assignment.pool,
+        is_cancelled=False,
+        end_date__gte=today,
+    )
+
+    ongoing_or_upcoming_private_classes = PrivateClass.objects.filter(
+        trainer=assignment.trainer,
+        pool=assignment.pool,
+        is_cancelled=False,
+        end_date__gte=today,
+    )
+
+    if ongoing_or_upcoming_group_classes.exists() or ongoing_or_upcoming_private_classes.exists():
+        messages.error(
+            request,
+            'This trainer still has ongoing or upcoming classes in this pool. Unassign them after those classes are finished or cancelled.'
+        )
+        return redirect('assign_trainer_manager')
+
     assignment.end_date = timezone.now().date()
     assignment.is_active = False
     assignment.save(update_fields=['end_date', 'is_active'])

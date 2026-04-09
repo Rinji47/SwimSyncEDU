@@ -236,13 +236,17 @@ function renderExistingPoolImages(images) {
     existingImagesWrap.style.display = "block";
     existingImagesList.innerHTML = images
         .map((image) => `
-            <label style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem;">
+            <label class="existing-image-card">
                 <input type="checkbox" name="delete_image_ids" value="${image.id}">
-                <img src="${image.url}" alt="${image.caption || 'Pool image'}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;">
-                <span>${image.caption || "Pool image"}</span>
+                <img src="${image.url}" alt="${image.caption || 'Pool image'}" class="existing-image-thumb">
+                <span class="existing-image-meta">
+                    <span class="existing-image-title">Pool image</span>
+                    <span class="existing-image-caption">${image.caption || "Select to remove this image when saving."}</span>
+                </span>
             </label>
         `)
         .join("");
+    existingImagesList.className = "existing-image-grid";
 }
 
 // CLASS MODAL

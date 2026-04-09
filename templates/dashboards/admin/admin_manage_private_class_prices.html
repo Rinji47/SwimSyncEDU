@@ -27,6 +27,38 @@
             <p><strong>Current Price Per Day:</strong> Rs. {{ private_class_price_per_day }}</p>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'manage_private_class_prices' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search price history..." value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-private-price">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.status or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-private-price">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="ended" {% if request.GET.status == 'ended' %}selected{% endif %}>Ended</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'manage_private_class_prices' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section">
             <h2>Private Class Price History</h2>
             <div class="card-grid">
@@ -84,3 +116,4 @@
 {% block extra_js %}
 <script src="{% static 'js/admin_manage.js' %}"></script>
 {% endblock %}
+

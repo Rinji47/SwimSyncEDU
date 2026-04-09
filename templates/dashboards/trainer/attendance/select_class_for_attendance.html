@@ -22,6 +22,16 @@
             <p class="attendance-meta">Choose an ongoing class session for {{ today }} and mark each booked student as present or absent.</p>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'select_class_for_attendance' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search group classes..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <a href="{% url 'select_class_for_attendance' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section card-grid">
             {% for class_session in ongoing_classes %}
             <div class="class-card">

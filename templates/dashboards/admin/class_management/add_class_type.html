@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Class Type{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Add Class Type</h1>
+                <p class="subtitle">Create a new class type from a separate page.</p>
+            </div>
+            <a href="{% url 'manage_class_types' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="two-col">
+            <div class="info-card">
+                <form method="POST" action="{% url 'add_class_type' %}" class="split-form">
+                    {% csrf_token %}
+
+                    <div class="full-span">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" value="{{ form_data.name|default:'' }}" required>
+                    </div>
+
+                    <div>
+                        <label for="cost">Cost (Rs.)</label>
+                        <input type="number" id="cost" name="cost" step="0.01" value="{{ form_data.cost|default:'' }}" required>
+                    </div>
+                    <div>
+                        <label for="duration_days">Duration (days)</label>
+                        <input type="number" id="duration_days" name="duration_days" min="0" step="1" value="{{ form_data.duration_days|default:'0' }}">
+                    </div>
+
+                    <div class="full-span">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" rows="5">{{ form_data.description|default:'' }}</textarea>
+                    </div>
+
+                    <div class="full-span form-actions">
+                        <button type="submit" class="btn-primary">Create Class Type</button>
+                        <a href="{% url 'manage_class_types' %}" class="btn-secondary btn-sm reset-btn">Cancel</a>
+                    </div>
+                </form>
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-circle-info"></i> Notes</h3>
+                <ul class="side-list">
+                    <li><strong>Name:</strong> must be unique.</li>
+                    <li><strong>Duration:</strong> used when creating future class sessions.</li>
+                    <li><strong>Cost:</strong> shown when admin selects a class type.</li>
+                </ul>
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}
+

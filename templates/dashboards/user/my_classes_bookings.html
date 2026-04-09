@@ -10,20 +10,75 @@
 
 {% block content %}
 <div class="dashboard-layout">
-    {% include "./components/user_sidebar.html" %}
+    {% include "dashboards/user/components/user_sidebar.html" %}
 
     <main class="dashboard-main">
-        {% include "../../components/message.html" %}
+        {% include "components/message.html" %}
         <div class="dashboard-header">
             <h1>My Booked Classes</h1>
         </div>
+
+        <form class="filter-bar" method="GET" action="{% url 'my_bookings' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text"
+                           class="filter-input"
+                           name="q"
+                           placeholder="Search class, pool, or trainer..."
+                           value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button"
+                            class="btn-secondary filter-toggle"
+                            aria-expanded="{% if request.GET.status or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}"
+                            aria-controls="filters-my-bookings">
+                        Filters v
+                    </button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.status or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-my-bookings">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="Upcoming" {% if request.GET.status == 'Upcoming' %}selected{% endif %}>Upcoming</option>
+                        <option value="Ongoing" {% if request.GET.status == 'Ongoing' %}selected{% endif %}>Ongoing</option>
+                        <option value="Completed" {% if request.GET.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Cancelled" {% if request.GET.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'my_bookings' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
 
         <div class="dashboard-section card-grid">
             {% for booking in bookings %}
             <div class="class-card compact">
                 <h3 style="font-size:1rem;margin-bottom:0.3rem;">
-                    <span class="class-status {% if booking.class_session.is_cancelled %}status-cancelled{% else %}status-open{% endif %}">
-                        {% if booking.class_session.is_cancelled %}Cancelled{% else %}Open{% endif %}
+                    <span class="class-status
+                        {% if booking.class_session.is_cancelled %}status-cancelled
+                        {% elif booking.class_session.end_date < today %}status-completed
+                        {% elif booking.class_session.start_date > today %}today-status-upcoming
+                        {% else %}status-open{% endif %}">
+                        {% if booking.class_session.is_cancelled %}
+                            Cancelled
+                        {% elif booking.class_session.end_date < today %}
+                            Completed
+                        {% elif booking.class_session.start_date > today %}
+                            Upcoming
+                        {% else %}
+                            Ongoing
+                        {% endif %}
                     </span>
                     {{ booking.class_session.class_name }}
                 </h3>
@@ -36,18 +91,11 @@
                 </div>
 
                 <div class="card-actions" style="margin-top:0.5rem;">
-                    <button type="button"
-                            class="btn-sm btn-primary"
-                            onclick="openUserBookingModal(this)"
-                            data-class-name="{{ booking.class_session.class_name|escape }}"
-                            data-pool-name="{{ booking.class_session.pool.name|escape }}"
-                            data-trainer-name="{{ booking.class_session.trainer.full_name|default:booking.class_session.trainer.username|escape }}"
-                            data-dates="{{ booking.class_session.start_date|date:'M d' }} - {{ booking.class_session.end_date|date:'M d' }}"
-                            data-price="Rs. {{ booking.class_session.total_price }}"
-                            data-booking-date="{{ booking.booking_date|date:'M d, Y H:i' }}"
-                            data-status="{% if booking.class_session.is_cancelled %}Cancelled{% else %}Open{% endif %}">
+                    <a href="{% url 'view_my_booking' booking.id %}"
+                       class="btn-sm btn-primary"
+                       style="text-decoration:none;">
                         View
-                    </button>
+                    </a>
 
                     {% if not booking.is_cancelled and not booking.class_session.is_cancelled and booking.class_session.end_date >= today %}
                         <a href="{% url 'cancel_booked_class' booking.id %}"
@@ -68,7 +116,6 @@
                             {% endif %}
                         </span>
                     {% endif %}
-
                 </div>
             </div>
             {% empty %}
@@ -77,84 +124,4 @@
         </div>
     </main>
 </div>
-
-<!-- ✅ SINGLE USER BOOKING MODAL (OUTSIDE LOOP) -->
-<div id="userBookingModal" class="modal">
-    <div class="modal-content modal-lg">
-        <div class="modal-header">
-            <h2 id="modal_class_name">Class Name</h2>
-            <span class="close" onclick="toggleUserBookingModal()">&times;</span>
-        </div>
-
-        <div class="details-grid">
-            <div class="detail-item">
-                <span class="detail-label">Pool</span>
-                <span class="detail-value" id="modal_pool"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Trainer</span>
-                <span class="detail-value" id="modal_trainer"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Dates</span>
-                <span class="detail-value" id="modal_dates"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Price</span>
-                <span class="detail-value" id="modal_price"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Booking Date</span>
-                <span class="detail-value" id="modal_booking_date"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Status</span>
-                <span class="detail-value" id="modal_status"></span>
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button type="button"
-                    class="btn-secondary"
-                    onclick="toggleUserBookingModal()">
-                Close
-            </button>
-        </div>
-    </div>
-</div>
-
-{% endblock %}
-
-{% block extra_js %}
-<script>
-const userModal = document.getElementById('userBookingModal');
-
-function openUserBookingModal(btn) {
-    document.getElementById('modal_class_name').innerText = btn.getAttribute('data-class-name');
-    document.getElementById('modal_pool').innerText = btn.getAttribute('data-pool-name');
-    document.getElementById('modal_trainer').innerText = btn.getAttribute('data-trainer-name');
-    document.getElementById('modal_dates').innerText = btn.getAttribute('data-dates');
-    document.getElementById('modal_price').innerText = btn.getAttribute('data-price');
-    document.getElementById('modal_booking_date').innerText = btn.getAttribute('data-booking-date');
-    document.getElementById('modal_status').innerText = btn.getAttribute('data-status');
-    userModal.classList.add('show');
-}
-
-function toggleUserBookingModal() {
-    userModal.classList.remove('show');
-    document.getElementById('modal_class_name').innerText = '';
-    document.getElementById('modal_pool').innerText = '';
-    document.getElementById('modal_trainer').innerText = '';
-    document.getElementById('modal_dates').innerText = '';
-    document.getElementById('modal_price').innerText = '';
-    document.getElementById('modal_booking_date').innerText = '';
-    document.getElementById('modal_status').innerText = '';
-}
-
-window.addEventListener('mousedown', function(event) {
-    if (userModal.classList.contains('show') && event.target === userModal) {
-        toggleUserBookingModal();
-    }
-});
-</script>
 {% endblock %}

@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Select Class Type{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Select Class Type</h1>
+                <p class="subtitle">Step 3 of 4 for <strong>{{ pool.name }}</strong> with {{ trainer.full_name|default:trainer.username }}.</p>
+            </div>
+            <a href="{% url 'select_trainer_for_class_session' pool.pool_id %}" class="btn-secondary">Back</a>
+        </div>
+
+        <form class="filter-bar" method="GET" action="{% url 'select_class_type_for_class_session' pool.pool_id trainer.user_id %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search class types..." value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <a href="{% url 'select_class_type_for_class_session' pool.pool_id trainer.user_id %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
+        <div class="two-col">
+            <div class="dashboard-section card-grid" style="margin:0; flex: 2;">
+                {% for class_type in class_types %}
+                <article class="class-card">
+                    <h3>{{ class_type.name }}</h3>
+                    <p><strong>Price:</strong> Rs. {{ class_type.cost }}</p>
+                    <p><strong>Duration:</strong> {{ class_type.duration_days }} day(s)</p>
+                    <p><strong>Description:</strong> {{ class_type.description|default:"No description" }}</p>
+                    <div class="card-actions">
+                        <a href="{% url 'create_class_session_for_pool' pool.pool_id trainer.user_id %}?class_type_id={{ class_type.class_type_id }}" class="btn-primary btn-sm">Select Type</a>
+                    </div>
+                </article>
+                {% empty %}
+                <article class="class-card"><p>No class types found.</p></article>
+                {% endfor %}
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-circle-info"></i> Current Selection</h3>
+                <ul class="side-list">
+                    <li><strong>Pool:</strong> {{ pool.name }}</li>
+                    <li><strong>Address:</strong> {{ pool.address }}</li>
+                    <li><strong>Trainer:</strong> {{ trainer.full_name|default:trainer.username }}</li>
+                    <li><strong>Email:</strong> {{ trainer.email }}</li>
+                </ul>
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}
+

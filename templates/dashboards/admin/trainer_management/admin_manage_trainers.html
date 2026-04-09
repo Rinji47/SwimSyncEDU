@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Trainers - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+        <div class="dashboard-header">
+            <h1>Manage Trainers</h1>
+            <a class="btn-primary" href="{% url 'add_trainer' %}">Add New Trainer</a>
+        </div>
+
+        <form class="filter-bar" method="GET" action="{% url 'manage_trainers' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search trainers..." value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-trainers">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced" id="filters-trainers">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>Specialization</label>
+                    <input type="text" class="filter-input" name="specialization" placeholder="e.g. Beginner" value="{{ request.GET.specialization|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>Min Exp</label>
+                    <input type="number" class="filter-number" name="min_exp" min="0" value="{{ request.GET.min_exp|default:'' }}">
+                </div>
+            </div>
+        </form>
+
+        <div class="dashboard-section">
+            <div class="data-card-grid">
+                {% for trainer in trainers %}
+                <div class="data-card">
+                    <div class="data-card-header">
+                        {% if trainer.profile_picture %}
+                            <img src="{{ trainer.profile_picture.url }}" alt="{{ trainer.full_name }}" class="data-card-avatar">
+                        {% else %}
+                            <div class="data-card-avatar-placeholder">{{ trainer.username|slice:":1"|upper }}</div>
+                        {% endif %}
+                        <h3 class="data-card-title">
+                            <span class="data-card-status {% if trainer.is_active %}status-open{% else %}status-closed{% endif %}">
+                                {% if trainer.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                            {{ trainer.full_name|default:trainer.username }}
+                        </h3>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Email:</span>
+                        <span>{{ trainer.email }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Phone:</span>
+                        <span>{{ trainer.phone|default:"-" }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Specialization:</span>
+                        <span>{{ trainer.specialization|default:"-" }}</span>
+                    </div>
+                    <div class="data-card-row">
+                        <span class="data-card-label">Experience:</span>
+                        <span>{{ trainer.experience_years|default:"-" }}{% if trainer.experience_years %} year{{ trainer.experience_years|pluralize }}{% endif %}</span>
+                    </div>
+                    <div class="data-card-actions">
+                        <a class="btn-sm btn-primary" href="{% url 'view_trainer' trainer.user_id %}">View</a>
+                        <a href="{% url 'list_trainer_classes' trainer.pk %}" class="btn-sm btn-secondary">View Classes</a>
+                        <a class="btn-sm btn-secondary" href="{% url 'edit_trainer' trainer.user_id %}">Edit</a>
+                        <button class="btn-sm btn-danger">
+                            <a href="{% url 'toggle_trainer_status' trainer.user_id %}" style="text-decoration: none; color: white;"
+                            onclick="return confirm('Are you sure you want to {% if trainer.is_active %}deactivate{% else %}activate{% endif %} this trainer?');">
+                                {% if trainer.is_active %}Deactivate{% else %}Activate{% endif %}
+                            </a>
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-secondary);">No trainers found. Click "Add New Trainer" to create one.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </main>
+</div>
+{% endblock %}
+

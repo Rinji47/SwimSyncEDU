@@ -12,10 +12,10 @@
 
 {% block content %}
 <div class="dashboard-layout">
-    {% include '../components/admin_sidebar.html' %}
+    {% include '../../components/admin_sidebar.html' %}
 
     <main class="dashboard-main">
-        {% include '../../../components/message.html' %}
+        {% include '../../../../components/message.html' %}
 
         <div class="two-col">
             <div class="dashboard-section">
@@ -24,6 +24,12 @@
                 <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
                 <p><strong>Original Trainer:</strong> {{ private_class.trainer.full_name|default:private_class.trainer.username }}</p>
                 <p><strong>Date:</strong> {{ today }}</p>
+
+                <div class="attendance-actions" style="margin-top:1rem;">
+                    {% if current_substitute_trainer %}
+                        <span class="attendance-status present">Current substitute: {{ current_substitute_trainer.full_name|default:current_substitute_trainer.username }}</span>
+                    {% endif %}
+                </div>
 
                 <div class="attendance-actions" style="margin-top:1rem;">
                     {% if selected_trainer %}
@@ -47,7 +53,6 @@
                         <button
                             type="submit"
                             class="btn-danger"
-                            {% if selected_trainer %}disabled{% endif %}
                             onclick="return confirm('Cancel this private class for today and mark attendance as class cancelled?');"
                         >
                             Cancel for Today

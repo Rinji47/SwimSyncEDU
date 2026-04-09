@@ -12,15 +12,49 @@
 
 {% block content %}
 <div class="dashboard-layout">
-    {% include '../components/admin_sidebar.html' %}
+    {% include '../../components/admin_sidebar.html' %}
 
     <main class="dashboard-main">
-        {% include '../../../components/message.html' %}
+        {% include '../../../../components/message.html' %}
 
         <div class="dashboard-header">
             <h1>{{ trainer.full_name|default:trainer.username }} - All Classes</h1>
             <a href="{% url 'select_trainer_for_attendance' %}" class="btn-secondary">Back</a>
         </div>
+
+        <form class="filter-bar" method="GET" action="{% url 'list_trainer_classes' trainer.pk %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search classes, pools, students..." value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-trainer-classes">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.status or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-trainer-classes">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="Upcoming" {% if request.GET.status == 'Upcoming' %}selected{% endif %}>Upcoming</option>
+                        <option value="Ongoing" {% if request.GET.status == 'Ongoing' %}selected{% endif %}>Ongoing</option>
+                        <option value="Completed" {% if request.GET.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Cancelled" {% if request.GET.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'list_trainer_classes' trainer.pk %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
 
         <div class="dashboard-section">
             <h2>Group Class Sessions</h2>

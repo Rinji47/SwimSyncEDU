@@ -25,6 +25,41 @@
             </div>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'trainer_my_reviews' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search student, class, or comment..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.rating or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-trainer-reviews">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.rating or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-trainer-reviews">
+                <div class="filter-field">
+                    <label>Rating</label>
+                    <select class="filter-select" name="rating">
+                        <option value="">All</option>
+                        <option value="5" {% if request.GET.rating == '5' %}selected{% endif %}>5</option>
+                        <option value="4" {% if request.GET.rating == '4' %}selected{% endif %}>4</option>
+                        <option value="3" {% if request.GET.rating == '3' %}selected{% endif %}>3</option>
+                        <option value="2" {% if request.GET.rating == '2' %}selected{% endif %}>2</option>
+                        <option value="1" {% if request.GET.rating == '1' %}selected{% endif %}>1</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default_if_none:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default_if_none:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'trainer_my_reviews' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section card-grid">
             {% for row in review_rows %}
             <div class="class-card compact">

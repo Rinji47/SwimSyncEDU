@@ -15,10 +15,13 @@ urlpatterns = [
     path('change_password/', views.change_password, name='change_password'),
 
     path('members/', views.manage_members, name='manage_members'),
+    path('members/add/', views.add_member, name='add_member'),
+    path('members/view/<int:member_id>/', views.view_member, name='view_member'),
     path('members/edit/<int:member_id>/', views.edit_member, name='edit_member'),
 
     path('trainers/', views.manage_trainer, name='manage_trainers'),
     path('trainers/add/', views.add_trainer, name='add_trainer'),
+    path('trainers/view/<int:trainer_id>/', views.view_trainer, name='view_trainer'),
     path('trainers/edit/<int:trainer_id>/', views.edit_trainer, name='edit_trainer'),
     path('trainers/toggle_status/<int:trainer_id>/', views.toggle_trainer_status, name='toggle_trainer_status'),
 ]

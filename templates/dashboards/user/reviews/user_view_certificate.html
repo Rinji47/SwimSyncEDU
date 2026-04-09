@@ -16,21 +16,31 @@
     background: #f8fafc;
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 1rem;
+    padding: 0.85rem;
 }
 
 .certificate-sheet {
     background: #ffffff;
     border: 2px solid #0891b2;
-    border-radius: 14px;
+    border-radius: 18px;
     box-shadow: 0 12px 32px var(--shadow);
     overflow: hidden;
+    position: relative;
+}
+
+.certificate-sheet::before {
+    content: "";
+    position: absolute;
+    inset: 14px;
+    border: 1px solid rgba(8, 145, 178, 0.18);
+    border-radius: 12px;
+    pointer-events: none;
 }
 
 .certificate-top {
     background: #0891b2;
     color: #ffffff;
-    padding: 1rem 1.5rem;
+    padding: 1rem 1.35rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -52,57 +62,103 @@
 }
 
 .certificate-body {
-    padding: 2rem 1.5rem;
+    padding: 1.95rem 1.45rem 1.55rem;
     text-align: center;
+    position: relative;
+}
+
+.certificate-kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    font-size: 0.74rem;
+    color: #0e7490;
+    font-weight: 700;
+    margin-bottom: 0.9rem;
 }
 
 .certificate-title {
-    font-size: 2rem;
+    font-size: 2.05rem;
     margin-bottom: 0.45rem;
     color: var(--text-primary);
 }
 
 .certificate-subtitle {
     color: var(--text-secondary);
-    margin-bottom: 1.4rem;
+    margin-bottom: 1.15rem;
+    font-size: 0.94rem;
 }
 
 .certificate-name {
-    font-size: 2rem;
+    font-size: 1.95rem;
     line-height: 1.2;
     color: #0e7490;
     font-weight: 700;
-    padding-bottom: 0.45rem;
+    padding: 0 1rem 0.45rem;
     border-bottom: 2px dashed #bae6fd;
     display: inline-block;
-    margin-bottom: 1.2rem;
+    margin-bottom: 1rem;
+    max-width: 100%;
 }
 
 .certificate-statement {
-    max-width: 760px;
+    max-width: 800px;
     margin: 0 auto;
     color: var(--text-primary);
+    font-size: 0.98rem;
+    line-height: 1.7;
 }
 
 .certificate-class-name {
-    font-size: 1.3rem;
+    font-size: 1.22rem;
     color: #0f172a;
-    margin: 0.85rem 0;
+    margin: 0.8rem 0 0.45rem;
     font-weight: 700;
 }
 
+.certificate-honors {
+    max-width: 720px;
+    margin: 0.2rem auto 0;
+    color: #475569;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.certificate-seal-row {
+    display: flex;
+    justify-content: center;
+    margin: 1rem 0 0.75rem;
+}
+
+.certificate-seal {
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    border: 6px double rgba(8, 145, 178, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: #e0f2fe;
+    color: #0e7490;
+    font-size: 0.63rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.8rem;
+}
+
 .certificate-meta {
-    margin-top: 1.4rem;
+    margin-top: 1.1rem;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 0.9rem;
+    gap: 0.7rem;
     text-align: left;
 }
 
 .certificate-meta-item {
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 0.75rem;
+    padding: 0.62rem;
     background: #f8fafc;
 }
 
@@ -121,19 +177,37 @@
 }
 
 .certificate-signatures {
-    margin-top: 2rem;
+    margin-top: 1.4rem;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.2rem;
+    gap: 1rem;
 }
 
 .signature-box {
     text-align: center;
 }
 
+.signature-image {
+    max-height: 64px;
+    width: auto;
+    object-fit: contain;
+    margin-bottom: 0.45rem;
+}
+
 .signature-line {
     border-top: 2px solid #cbd5e1;
     margin-bottom: 0.4rem;
+}
+
+.signature-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.signature-role {
+    color: var(--text-secondary);
+    font-size: 0.92rem;
 }
 
 .certificate-actions {
@@ -162,6 +236,27 @@
         padding: 0;
         margin: 0;
     }
+
+    .certificate-sheet {
+        box-shadow: none;
+    }
+
+    .certificate-sheet::before {
+        inset: 10px;
+    }
+
+    .certificate-top {
+        padding: 0.8rem 1.1rem;
+    }
+
+    .certificate-top h2 {
+        font-size: 1rem;
+    }
+
+    .certificate-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.55rem;
+    }
 }
 </style>
 {% endblock %}
@@ -189,83 +284,7 @@
             </div>
 
             <div class="certificate-wrapper">
-                <article class="certificate-sheet">
-                    <header class="certificate-top">
-                        <h2>SWIMSYNC EDU</h2>
-                        <span class="certificate-badge">CERT-{{ certificate.id }}</span>
-                    </header>
-
-                    <section class="certificate-body">
-                        <h3 class="certificate-title">Certificate of Completion</h3>
-                        <p class="certificate-subtitle">This certifies that</p>
-
-                        <div class="certificate-name">
-                            {{ certificate.user.full_name|default:certificate.user.username }}
-                        </div>
-
-                        <p class="certificate-statement">
-                            has successfully completed the
-                            {% if certificate.class_booking %}
-                                Group Class
-                            {% elif certificate.private_class %}
-                                Private Class
-                            {% else %}
-                                Swim Program
-                            {% endif %}
-                            at SwimSync EDU.
-                        </p>
-
-                        <p class="certificate-class-name">
-                            {% if certificate.class_booking %}
-                                {{ certificate.class_booking.class_session.class_name }}
-                            {% elif certificate.private_class %}
-                                Private Class
-                            {% else %}
-                                Class Name
-                            {% endif %}
-                        </p>
-
-                        <div class="certificate-meta">
-                            <div class="certificate-meta-item">
-                                <div class="label">Trainer</div>
-                                <div class="value">{{ trainer.full_name|default:trainer.username }}</div>
-                            </div>
-                            <div class="certificate-meta-item">
-                                <div class="label">Issued Date</div>
-                                <div class="value">{{ certificate.issued_at|date:"M d, Y" }}</div>
-                            </div>
-                            <div class="certificate-meta-item">
-                                <div class="label">Certificate ID</div>
-                                <div class="value">CERT-{{ certificate.id }}</div>
-                            </div>
-                            <div class="certificate-meta-item">
-                                <div class="label">Pool</div>
-                                <div class="value">
-                                    {% if certificate.class_booking %}
-                                        {{ certificate.class_booking.class_session.pool.name }}
-                                    {% elif certificate.private_class %}
-                                        {{ certificate.private_class.pool.name }}
-                                    {% else %}
-                                        N/A
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="certificate-signatures">
-                            <div class="signature-box">
-                                <div class="signature-line"></div>
-                                <div>{{ trainer.full_name|default:trainer.username }}</div>
-                                <small>Trainer Signature</small>
-                            </div>
-                            <div class="signature-box">
-                                <div class="signature-line"></div>
-                                <div>SwimSync EDU</div>
-                                <small>Authorized Signature</small>
-                            </div>
-                        </div>
-                    </section>
-                </article>
+                {% include 'components/certificate_sheet.html' %}
             </div>
         </div>
     </main>

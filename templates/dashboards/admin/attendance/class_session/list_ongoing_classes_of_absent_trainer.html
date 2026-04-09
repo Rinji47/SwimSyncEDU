@@ -12,15 +12,25 @@
 
 {% block content %}
 <div class="dashboard-layout">
-    {% include '../components/admin_sidebar.html' %}
+    {% include '../../components/admin_sidebar.html' %}
 
     <main class="dashboard-main">
-        {% include '../../../components/message.html' %}
+        {% include '../../../../components/message.html' %}
 
         <div class="dashboard-header">
             <h1>Ongoing Group Classes (Absent Trainers) - {{ today }}</h1>
             <a href="{% url 'select_trainer_for_attendance' %}" class="btn-secondary">Back</a>
         </div>
+
+        <form class="filter-bar" method="GET" action="{% url 'list_ongoing_classes_of_absent_trainer' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search group classes..." value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <a href="{% url 'list_ongoing_classes_of_absent_trainer' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
 
         <div class="dashboard-section card-grid">
             {% for class_session in ongoing_classes %}
@@ -33,16 +43,24 @@
                 <div class="card-actions">
                     {% if class_session.substitute_trainer %}
                         <span class="attendance-status present">Sub: {{ class_session.substitute_trainer.full_name|default:class_session.substitute_trainer.username }}</span>
-                    {% else %}
-                        <a href="{% url 'assign_substitute_trainer_for_class_session' class_session.id %}" class="btn-sm btn-primary">Assign Substitute</a>
                     {% endif %}
+                    <a href="{% url 'assign_substitute_trainer_for_class_session' class_session.id %}" class="btn-sm btn-primary">
+                        {% if class_session.substitute_trainer %}Change Substitute{% else %}Assign Substitute{% endif %}
+                    </a>
                     <a href="{% url 'admin_class_session_attendance_history' class_session.id %}" class="btn-sm btn-secondary">History</a>
                 </div>
             </div>
             {% empty %}
-            <p>No ongoing group classes currently linked to absent trainers.</p>
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fa-solid fa-person-swimming"></i>
+                </div>
+                <h3>No Ongoing Group Classes Found</h3>
+                <p>Try a different search term or check again after marking trainer attendance.</p>
+            </div>
             {% endfor %}
         </div>
     </main>
 </div>
 {% endblock %}
+

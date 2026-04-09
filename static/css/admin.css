@@ -385,10 +385,6 @@
   gap: 1.5rem;
 }
 
-.admin-panel {
-  margin-bottom: 0;
-}
-
 .admin-list {
   display: grid;
   gap: 0.9rem;

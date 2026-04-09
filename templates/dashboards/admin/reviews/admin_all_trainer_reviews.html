@@ -117,9 +117,10 @@
                     <div class="filter-search">
                         <input type="text" class="filter-input" name="q" value="{{ q }}" placeholder="Search trainer, member, class, comment...">
                         <button type="submit" class="btn-secondary">Search</button>
+                        <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if selected_rating or selected_type %}true{% else %}false{% endif %}" aria-controls="filters-reviews">Filters v</button>
                     </div>
                 </div>
-                <div class="filter-advanced" style="display:grid;">
+                <div class="filter-advanced {% if selected_rating or selected_type %}show{% endif %}" id="filters-reviews" style="display:grid;">
                     <div class="filter-field">
                         <label>Rating</label>
                         <select name="rating" class="filter-select">
@@ -138,6 +139,9 @@
                             <option value="group" {% if selected_type == 'group' %}selected{% endif %}>Group</option>
                             <option value="private" {% if selected_type == 'private' %}selected{% endif %}>Private</option>
                         </select>
+                    </div>
+                    <div class="filter-actions">
+                        <a href="{% url 'admin_all_trainer_reviews' %}" class="btn-secondary">Clear</a>
                     </div>
                 </div>
             </form>

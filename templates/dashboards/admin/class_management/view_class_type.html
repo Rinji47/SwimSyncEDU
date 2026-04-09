@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}View Class Type{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>View Class Type</h1>
+                <p class="subtitle">See the full details of this class type.</p>
+            </div>
+            <a href="{% url 'manage_class_types' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="data-card" style="max-width: 900px; margin: 0 auto;">
+                <h2 class="data-card-title">
+                    <span class="data-card-status {% if class_type.is_closed %}status-closed{% else %}status-open{% endif %}">
+                        {% if class_type.is_closed %}Closed{% else %}Open{% endif %}
+                    </span>
+                    {{ class_type.name }}
+                </h2>
+
+                <div class="data-card-row data-card-row-stack">
+                    <span class="data-card-label">Description:</span>
+                    <span>{{ class_type.description|default:"No description provided." }}</span>
+                </div>
+
+                <div class="data-card-row">
+                    <span class="data-card-label">Cost:</span>
+                    <span>Rs. {{ class_type.cost }}</span>
+                </div>
+
+                <div class="data-card-row">
+                    <span class="data-card-label">Duration:</span>
+                    <span>{{ class_type.duration_days }} day{% if class_type.duration_days != 1 %}s{% endif %}</span>
+                </div>
+
+                <div class="data-card-actions">
+                    <a href="{% url 'manage_class_types' %}" class="btn-secondary">Back</a>
+                    <a href="{% url 'edit_class_types' class_type.class_type_id %}" class="btn-primary">Edit</a>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

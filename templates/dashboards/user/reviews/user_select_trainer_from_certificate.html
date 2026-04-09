@@ -25,6 +25,55 @@
             </div>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'user_select_trainer_from_certificate' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text"
+                           class="filter-input"
+                           name="q"
+                           placeholder="Search trainer..."
+                           value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button"
+                            class="btn-secondary filter-toggle"
+                            aria-expanded="{% if request.GET.reviewed or request.GET.date_from or request.GET.date_to or request.GET.reviewed_date_from or request.GET.reviewed_date_to %}true{% else %}false{% endif %}"
+                            aria-controls="filters-review-certificates">
+                        Filters v
+                    </button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.reviewed or request.GET.date_from or request.GET.date_to or request.GET.reviewed_date_from or request.GET.reviewed_date_to %}show{% endif %}" id="filters-review-certificates">
+                <div class="filter-field">
+                    <label>Reviewed</label>
+                    <select class="filter-select" name="reviewed">
+                        <option value="">All</option>
+                        <option value="true" {% if request.GET.reviewed == 'true' %}selected{% endif %}>Reviewed</option>
+                        <option value="false" {% if request.GET.reviewed == 'false' %}selected{% endif %}>Not Reviewed</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>Issued From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default_if_none:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>Issued To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default_if_none:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>Reviewed From</label>
+                    <input type="date" class="filter-date" name="reviewed_date_from" value="{{ request.GET.reviewed_date_from|default_if_none:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>Reviewed To</label>
+                    <input type="date" class="filter-date" name="reviewed_date_to" value="{{ request.GET.reviewed_date_to|default_if_none:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'user_select_trainer_from_certificate' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section card-grid">
             {% for item in certificate_card %}
             <div class="class-card compact">

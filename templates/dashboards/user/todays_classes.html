@@ -79,11 +79,24 @@
             </div>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'todays_classes' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text"
+                           class="filter-input"
+                           name="q"
+                           placeholder="Search class, pool, type, or trainer..."
+                           value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <a href="{% url 'todays_classes' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         {% if cards %}
         <div class="dashboard-section today-grid">
             {% for card in cards %}
             <article class="class-card compact">
-
                 {% if card.type == 'group' %}
                 <div class="today-type">
                     <i class="fa-solid fa-users"></i>
@@ -109,19 +122,11 @@
                 </div>
                 <div class="card-actions">
                     <a href="{% url 'my_bookings' %}" class="btn-sm btn-secondary" style="text-decoration:none;">All Bookings</a>
-                    <button type="button"
-                            class="btn-sm btn-primary"
-                            onclick="openTodayClassModal(this)"
-                            data-title="{{ card.session.class_name|escape }}"
-                            data-type="Group Class"
-                            data-status="{{ card.status|escape }}"
-                            data-pool="{{ card.session.pool.name|escape }}"
-                            data-trainer="{{ card.session.trainer.full_name|default:card.session.trainer.username|escape }}"
-                            data-dates="{{ card.session.start_date|date:'M d, Y' }} - {{ card.session.end_date|date:'M d, Y' }}"
-                            data-time="{{ card.session.start_time|time:'H:i' }} - {{ card.session.end_time|time:'H:i' }}"
-                            data-extra="Class Type: {{ card.session.class_type.name|escape }}">
+                    <a href="{% url 'view_my_booking' card.booking.id %}"
+                       class="btn-sm btn-primary"
+                       style="text-decoration:none;">
                         View
-                    </button>
+                    </a>
                 </div>
                 {% else %}
                 <div class="today-type">
@@ -147,19 +152,11 @@
                 </div>
                 <div class="card-actions">
                     <a href="{% url 'my_private_classes' %}" class="btn-sm btn-secondary" style="text-decoration:none;">All Private</a>
-                    <button type="button"
-                            class="btn-sm btn-primary"
-                            onclick="openTodayClassModal(this)"
-                            data-title="Private Class"
-                            data-type="Private Class"
-                            data-status="{{ card.status|escape }}"
-                            data-pool="{{ card.private_class.pool.name|escape }}"
-                            data-trainer="{{ card.private_class.trainer.full_name|default:card.private_class.trainer.username|escape }}"
-                            data-dates="{{ card.private_class.start_date|date:'M d, Y' }} - {{ card.private_class.end_date|date:'M d, Y' }}"
-                            data-time="{{ card.private_class.start_time|time:'H:i' }} - {{ card.private_class.end_time|time:'H:i' }}"
-                            data-extra="Booked By: {{ card.private_class.user.full_name|default:card.private_class.user.username|escape }}">
+                    <a href="{% url 'view_my_private_class' card.private_class.id %}"
+                       class="btn-sm btn-primary"
+                       style="text-decoration:none;">
                         View
-                    </button>
+                    </a>
                 </div>
                 {% endif %}
             </article>
@@ -167,81 +164,13 @@
         </div>
         {% else %}
         <div class="today-empty">
+            {% if request.GET.q %}
+            No classes matched your search for today.
+            {% else %}
             No classes fall on today's schedule.
+            {% endif %}
         </div>
         {% endif %}
     </main>
 </div>
-
-<div id="todayClassModal" class="modal">
-    <div class="modal-content modal-lg">
-        <div class="modal-header">
-            <h2 id="today_modal_title">Class Details</h2>
-            <span class="close" onclick="toggleTodayClassModal()">&times;</span>
-        </div>
-
-        <div class="details-grid">
-            <div class="detail-item">
-                <span class="detail-label">Type</span>
-                <span class="detail-value" id="today_modal_type"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Status</span>
-                <span class="detail-value" id="today_modal_status"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Pool</span>
-                <span class="detail-value" id="today_modal_pool"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Trainer</span>
-                <span class="detail-value" id="today_modal_trainer"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Dates</span>
-                <span class="detail-value" id="today_modal_dates"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Time</span>
-                <span class="detail-value" id="today_modal_time"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Extra</span>
-                <span class="detail-value" id="today_modal_extra"></span>
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn-secondary" onclick="toggleTodayClassModal()">Close</button>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-const todayClassModal = document.getElementById('todayClassModal');
-
-function openTodayClassModal(button) {
-    document.getElementById('today_modal_title').innerText = button.getAttribute('data-title');
-    document.getElementById('today_modal_type').innerText = button.getAttribute('data-type');
-    document.getElementById('today_modal_status').innerText = button.getAttribute('data-status');
-    document.getElementById('today_modal_pool').innerText = button.getAttribute('data-pool');
-    document.getElementById('today_modal_trainer').innerText = button.getAttribute('data-trainer');
-    document.getElementById('today_modal_dates').innerText = button.getAttribute('data-dates');
-    document.getElementById('today_modal_time').innerText = button.getAttribute('data-time');
-    document.getElementById('today_modal_extra').innerText = button.getAttribute('data-extra');
-    todayClassModal.classList.add('show');
-}
-
-function toggleTodayClassModal() {
-    todayClassModal.classList.remove('show');
-}
-
-window.addEventListener('mousedown', function(event) {
-    if (todayClassModal.classList.contains('show') && event.target === todayClassModal) {
-        toggleTodayClassModal();
-    }
-});
-</script>
 {% endblock %}

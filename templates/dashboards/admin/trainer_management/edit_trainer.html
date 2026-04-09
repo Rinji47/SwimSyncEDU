@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Trainer{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Edit Trainer</h1>
+                <p class="subtitle">Update trainer details on a dedicated page.</p>
+            </div>
+            <a href="{% url 'manage_trainers' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="two-col">
+            <div class="info-card">
+                <form method="POST" enctype="multipart/form-data" action="{% url 'edit_trainer' trainer.user_id %}" class="split-form">
+                    {% csrf_token %}
+
+                    <div>
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" value="{{ form_data.username|default:trainer.username }}" required>
+                    </div>
+                    <div>
+                        <label for="full_name">Full Name</label>
+                        <input type="text" id="full_name" name="full_name" value="{{ form_data.full_name|default:trainer.full_name }}" required>
+                    </div>
+
+                    <div>
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" value="{{ form_data.email|default:trainer.email }}" required>
+                    </div>
+                    <div>
+                        <label for="phone">Phone</label>
+                        <input type="text" id="phone" name="phone" value="{{ form_data.phone|default:trainer.phone }}">
+                    </div>
+
+                    <div>
+                        <label for="gender">Gender</label>
+                        {% with selected_gender=form_data.gender|default:trainer.gender %}
+                        <select id="gender" name="gender" required>
+                            <option value="">Select Gender</option>
+                            <option value="male" {% if selected_gender == 'male' or selected_gender == 'Male' %}selected{% endif %}>Male</option>
+                            <option value="female" {% if selected_gender == 'female' or selected_gender == 'Female' %}selected{% endif %}>Female</option>
+                            <option value="other" {% if selected_gender == 'other' or selected_gender == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                        {% endwith %}
+                    </div>
+                    <div>
+                        <label for="specialization">Specialization</label>
+                        <input type="text" id="specialization" name="specialization" value="{{ form_data.specialization|default:trainer.specialization }}">
+                    </div>
+
+                    <div>
+                        <label for="experience_years">Experience (years)</label>
+                        <input type="number" id="experience_years" name="experience_years" min="0" value="{{ form_data.experience_years|default:trainer.experience_years }}">
+                    </div>
+                    <div>
+                        <label for="profile_picture">Profile Picture</label>
+                        <input type="file" id="profile_picture" name="profile_picture" accept="image/*">
+                        {% if trainer.profile_picture %}
+                        <div style="margin-top:0.75rem;">
+                            <img src="{{ trainer.profile_picture.url }}" alt="{{ trainer.full_name|default:trainer.username }}" style="max-width:120px;max-height:120px;object-fit:cover;border-radius:12px;">
+                        </div>
+                        <label style="margin-top:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                            <input type="checkbox" name="remove_profile_picture" value="1">
+                            Remove current profile picture
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    <div class="full-span">
+                        <label for="digital_signature">Digital Signature</label>
+                        <input type="file" id="digital_signature" name="digital_signature" accept=".png,.jpg,.jpeg">
+                    </div>
+
+                    <div class="full-span form-actions">
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                        <a href="{% url 'edit_trainer' trainer.user_id %}" class="btn-secondary btn-sm reset-btn">Reset</a>
+                    </div>
+                </form>
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-circle-info"></i> Current Trainer</h3>
+                <ul class="side-list">
+                    <li><strong>Name:</strong> {{ trainer.full_name|default:trainer.username }}</li>
+                    <li><strong>Status:</strong> {{ trainer.is_active|yesno:"Active,Inactive" }}</li>
+                    <li><strong>Email:</strong> {{ trainer.email }}</li>
+                </ul>
+
+                {% if trainer.digital_signature %}
+                <h3 style="margin-top: 1rem;"><i class="fa-solid fa-signature"></i> Current Signature</h3>
+                <div class="info-card" style="padding: 0.75rem; box-shadow: none; margin-top: 0.5rem;">
+                    <img src="{{ trainer.digital_signature.url }}" alt="Trainer signature" style="max-width: 100%; max-height: 120px; object-fit: contain;">
+                </div>
+                {% endif %}
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}

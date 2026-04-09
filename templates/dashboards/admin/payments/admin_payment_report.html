@@ -49,11 +49,68 @@
             <article class="stat-card">
                 <div class="stat-icon"><i class="fa-solid fa-sack-dollar"></i></div>
                 <div class="stat-content">
-                    <h3>Rs. {{ summary.collected_total|default_if_none:"0.00" }}</h3>
+                    <h3>Rs. {{ summary.collected_total|default:"0.00" }}</h3>
                     <p>Total collected revenue</p>
                 </div>
             </article>
         </section>
+
+        <form class="filter-bar payment-filter-bar" method="GET" action="{% url 'admin_payment_report' %}">
+            <div class="filter-main">
+                <div class="filter-search payment-filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search by user, transaction..." value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status or request.GET.purpose or request.GET.method or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-payments">Filters v</button>
+                </div>
+            </div>
+
+            <div class="filter-advanced {% if request.GET.status or request.GET.purpose or request.GET.method or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-payments">
+                <div class="filter-field">
+                    <label>Status:</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="Completed" {% if request.GET.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Pending" {% if request.GET.status == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="Cancelled" {% if request.GET.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                        <option value="Failed" {% if request.GET.status == 'Failed' %}selected{% endif %}>Failed</option>
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label>Purpose</label>
+                    <select class="filter-select" name="purpose">
+                        <option value="">All</option>
+                        <option value="group" {% if request.GET.purpose == 'group' %}selected{% endif %}>Group</option>
+                        <option value="private" {% if request.GET.purpose == 'private' %}selected{% endif %}>Private</option>
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label>Method</label>
+                    <select class="filter-select" name="method">
+                        <option value="">All</option>
+                        <option value="Cash" {% if request.GET.method == 'Cash' %}selected{% endif %}>Cash</option>
+                        <option value="Card" {% if request.GET.method == 'Card' %}selected{% endif %}>Card</option>
+                        <option value="Online" {% if request.GET.method == 'Online' %}selected{% endif %}>Online</option>
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default:'' }}">
+                </div>
+
+                <div class="filter-actions payment-filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'admin_payment_report' %}" class="btn-secondary">Clear Filters</a>
+                </div>
+            </div>
+        </form>
 
         <section class="dashboard-section">
             <div class="payment-section-head">
@@ -144,3 +201,4 @@
     </main>
 </div>
 {% endblock %}
+

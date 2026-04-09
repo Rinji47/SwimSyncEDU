@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Member{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Edit Member</h1>
+                <p class="subtitle">Update member details on a normal page.</p>
+            </div>
+            <a href="{% url 'manage_members' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="two-col">
+            <div class="info-card">
+                <form method="POST" enctype="multipart/form-data" action="{% url 'edit_member' member.user_id %}" class="split-form">
+                    {% csrf_token %}
+
+                    <div>
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" value="{{ form_data.username|default:member.username }}" required>
+                    </div>
+                    <div>
+                        <label for="full_name">Full Name</label>
+                        <input type="text" id="full_name" name="full_name" value="{{ form_data.full_name|default:member.full_name }}" required>
+                    </div>
+
+                    <div>
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" value="{{ form_data.email|default:member.email }}" required>
+                    </div>
+                    <div>
+                        <label for="phone">Phone</label>
+                        <input type="text" id="phone" name="phone" value="{{ form_data.phone|default:member.phone }}">
+                    </div>
+
+                    <div>
+                        <label for="gender">Gender</label>
+                        {% with selected_gender=form_data.gender|default:member.gender %}
+                        <select id="gender" name="gender">
+                            <option value="">Select Gender</option>
+                            <option value="male" {% if selected_gender == 'male' or selected_gender == 'Male' %}selected{% endif %}>Male</option>
+                            <option value="female" {% if selected_gender == 'female' or selected_gender == 'Female' %}selected{% endif %}>Female</option>
+                            <option value="other" {% if selected_gender == 'other' or selected_gender == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                        {% endwith %}
+                    </div>
+                    <div>
+                        <label for="date_of_birth">Date of Birth</label>
+                        <input type="date" id="date_of_birth" name="date_of_birth" value="{{ form_data.date_of_birth|default:member.date_of_birth|date:'Y-m-d' }}">
+                    </div>
+
+                    <div class="full-span">
+                        <label for="profile_picture">Profile Picture</label>
+                        <input type="file" id="profile_picture" name="profile_picture" accept="image/*">
+                        {% if member.profile_picture %}
+                        <div style="margin-top:0.75rem;">
+                            <img src="{{ member.profile_picture.url }}" alt="{{ member.full_name|default:member.username }}" style="max-width:120px;max-height:120px;object-fit:cover;border-radius:12px;">
+                        </div>
+                        <label style="margin-top:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                            <input type="checkbox" name="remove_profile_picture" value="1">
+                            Remove current profile picture
+                        </label>
+                        {% endif %}
+                    </div>
+
+                    <div class="full-span form-actions">
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                        <a href="{% url 'edit_member' member.user_id %}" class="btn-secondary btn-sm reset-btn">Reset</a>
+                    </div>
+                </form>
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-user"></i> Current Member</h3>
+                <ul class="side-list">
+                    <li><strong>Name:</strong> {{ member.full_name|default:member.username }}</li>
+                    <li><strong>Status:</strong> {{ member.is_active|yesno:"Active,Inactive" }}</li>
+                    <li><strong>Email:</strong> {{ member.email }}</li>
+                </ul>
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}

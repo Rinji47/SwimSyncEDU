@@ -241,6 +241,11 @@
 
 <section class="reviews-browse-shell">
     <div class="container">
+        <form class="quick-filter" method="get" action="{% url 'public_select_trainer_for_reviews' %}" style="margin-bottom: 1.25rem;">
+            <input type="text" name="q" placeholder="Search trainer name or specialty..." value="{{ request.GET.q|default_if_none:'' }}">
+            <button type="submit" class="btn-secondary">Search</button>
+            <a href="{% url 'public_select_trainer_for_reviews' %}" class="btn-secondary">Clear</a>
+        </form>
         <div class="review-trainer-grid">
             {% for card in trainer_cards %}
             <article class="review-trainer-card">

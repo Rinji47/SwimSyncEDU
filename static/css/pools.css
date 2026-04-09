@@ -169,6 +169,8 @@
 .pool-image {
   width: 100%;
   height: 160px;
+  max-width: auto;
+  max-height: auto;
   object-fit: cover;
   border-radius: 12px;
   margin-top: 0.5rem;
@@ -190,6 +192,7 @@
 
 .pool-image.slide.active {
   display: block;
+  
 }
 
 .carousel-btn {

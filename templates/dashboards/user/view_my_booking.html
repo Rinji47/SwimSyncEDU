@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Booked Class Details - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/user/components/user_sidebar.html" %}
+
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="dashboard-header">
+            <h1>Booked Class Details</h1>
+            <a href="{% url 'my_bookings' %}" class="btn-secondary" style="text-decoration:none;">Back to My Bookings</a>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="data-card" style="max-width:900px;margin:0 auto;">
+                <div class="data-card-header">
+                    <div>
+                        <span class="class-status
+                            {% if booking.class_session.is_cancelled %}status-cancelled
+                            {% elif booking.class_session.end_date < today %}status-completed
+                            {% elif booking.class_session.start_date > today %}today-status-upcoming
+                            {% else %}status-open{% endif %}">
+                            {% if booking.class_session.is_cancelled %}
+                                Cancelled
+                            {% elif booking.class_session.end_date < today %}
+                                Completed
+                            {% elif booking.class_session.start_date > today %}
+                                Upcoming
+                            {% else %}
+                                Ongoing
+                            {% endif %}
+                        </span>
+                        <h2 style="margin-top:1rem;">{{ booking.class_session.class_name }}</h2>
+                    </div>
+                </div>
+
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Pool</span>
+                        <span class="detail-value">{{ booking.class_session.pool.name }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Trainer</span>
+                        <span class="detail-value">{{ booking.class_session.trainer.full_name|default:booking.class_session.trainer.username }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Class Type</span>
+                        <span class="detail-value">{{ booking.class_session.class_type.name }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Dates</span>
+                        <span class="detail-value">{{ booking.class_session.start_date|date:"M d, Y" }} - {{ booking.class_session.end_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Time</span>
+                        <span class="detail-value">{{ booking.class_session.start_time|time:"H:i" }} - {{ booking.class_session.end_time|time:"H:i" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Price</span>
+                        <span class="detail-value">Rs. {{ booking.class_session.total_price }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Booking Date</span>
+                        <span class="detail-value">{{ booking.booking_date|date:"M d, Y H:i" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Booking Status</span>
+                        <span class="detail-value">{% if booking.is_cancelled %}Cancelled{% else %}Active{% endif %}</span>
+                    </div>
+                </div>
+
+                <div class="data-card-actions">
+                    <a href="{% url 'my_bookings' %}" class="btn-secondary" style="text-decoration:none;">Back</a>
+                    {% if not booking.is_cancelled and not booking.class_session.is_cancelled and booking.class_session.end_date >= today %}
+                        <a href="{% url 'cancel_booked_class' booking.id %}"
+                           class="btn-danger"
+                           style="color:white;text-decoration:none;"
+                           onclick="return confirm('Are you sure you want to cancel this booking?');">
+                            Cancel Booking
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

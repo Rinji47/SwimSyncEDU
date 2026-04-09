@@ -8,7 +8,9 @@ urlpatterns = [
     path('pool/<int:pool_id>/classes/', views.pool_class_types, name='pool_class_types'),
     path('pool/<int:pool_id>/classes/<int:class_type_id>/', views.pool_classes, name='pool_classes'),
     path('manage_pools/', views.manage_pools, name='manage_pools'),
-    path('edit_pool/<int:pool_id>/', views.manage_pools, name='edit_pool'),
+    path('add_pool/', views.add_pool, name='add_pool'),
+    path('view_pool/<int:pool_id>/', views.view_pool, name='view_pool'),
+    path('edit_pool/<int:pool_id>/', views.edit_pool, name='edit_pool'),
     path('close_pool/<int:pool_id>/', views.close_pool, name='close_pool'),
 
     path('qualities/', views.manage_quality_history, name='manage_quality'),

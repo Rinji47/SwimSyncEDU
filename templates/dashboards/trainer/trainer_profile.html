@@ -50,7 +50,22 @@
                         <div class="form-group full-width">
                             <label for="profile_picture">Profile Picture <span class="optional">(Optional)</span></label>
                             <input type="file" id="profile_picture" name="profile_picture" accept="image/*">
+                            {% if request.user.profile_picture %}
+                            <label style="margin-top:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                                <input type="checkbox" name="remove_profile_picture" value="1">
+                                Remove current profile picture
+                            </label>
+                            {% endif %}
                             <small class="form-hint">A professional headshot builds trust with members.</small>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="digital_signature">Digital Signature <span class="optional">(Optional)</span></label>
+                            <input type="file" id="digital_signature" name="digital_signature" accept=".png,.jpg,.jpeg">
+                            {% if request.user.digital_signature %}
+                            <div style="margin-top:0.75rem;">
+                                <img src="{{ request.user.digital_signature.url }}" alt="Trainer signature" style="max-width: 180px; max-height: 100px; object-fit: contain;">
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
 

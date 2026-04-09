@@ -26,6 +26,31 @@
             <p><strong>Email:</strong> {{ trainer.email|default:'-' }}</p>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'trainers_attandance_history' trainer.pk %}">
+            <div class="filter-advanced show" id="filters-trainer-attendance-history" style="margin-top: 0; padding-top: 0; border-top: none;">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="present" {% if request.GET.status == 'present' %}selected{% endif %}>Present</option>
+                        <option value="absent" {% if request.GET.status == 'absent' %}selected{% endif %}>Absent</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'trainers_attandance_history' trainer.pk %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section history-table-wrap">
             <table class="history-table">
                 <thead>

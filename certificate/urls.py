@@ -8,5 +8,6 @@ urlpatterns = [
     path('trainer/certificates/private/', views.pending_private_certificates, name='pending_private_certificates'),
     path('trainer/certificates/private/issue/<int:private_class_id>/', views.issue_private_class_completion_certificate, name='issue_private_class_completion_certificate'),
     path('granted/', views.certificate_granted_list, name='certificate_granted_list'),
+    path('trainer/view/<int:certificate_id>/', views.trainer_view_certificate, name='trainer_view_certificate'),
     path('admin/view/<int:certificate_id>/', views.admin_view_certificate, name='admin_view_certificate'),
 ]

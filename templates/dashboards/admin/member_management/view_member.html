@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Member Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Member Details</h1>
+                <p class="subtitle">View the member information on a full page.</p>
+            </div>
+            <a href="{% url 'manage_members' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="two-col">
+            <div class="info-card">
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Full Name</span>
+                        <span class="detail-value">{{ member.full_name|default:member.username }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Status</span>
+                        <span class="detail-value">{% if member.is_active %}Active{% else %}Inactive{% endif %}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Username</span>
+                        <span class="detail-value">{{ member.username }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Email</span>
+                        <span class="detail-value">{{ member.email }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Phone</span>
+                        <span class="detail-value">{{ member.phone|default:"-" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Gender</span>
+                        <span class="detail-value">{{ member.gender|default:"-" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Date of Birth</span>
+                        <span class="detail-value">{{ member.date_of_birth|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Joined</span>
+                        <span class="detail-value">{{ member.created_at|date:"M d, Y" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-user"></i> Profile</h3>
+                {% if member.profile_picture %}
+                <div class="info-card" style="padding: 0.75rem; box-shadow: none; margin-top: 0.5rem;">
+                    <img src="{{ member.profile_picture.url }}" alt="{{ member.full_name }}" style="max-width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px;">
+                </div>
+                {% else %}
+                <p class="subtitle" style="margin-top: 0.5rem;">No profile picture uploaded.</p>
+                {% endif %}
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}

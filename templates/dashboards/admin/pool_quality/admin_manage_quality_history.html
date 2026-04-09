@@ -22,12 +22,12 @@
         <form class="filter-bar" method="GET" action="{% url 'manage_quality_history' %}">
             <div class="filter-main">
                 <div class="filter-search">
-                    <input type="text" class="filter-input" name="q" placeholder="Search pool..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <input type="text" class="filter-input" name="q" placeholder="Search pool..." value="{{ request.GET.q|default:'' }}">
                     <button type="submit" class="btn-secondary">Search</button>
-                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-quality">Filters v</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.pool or request.GET.rating or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-quality">Filters v</button>
                 </div>
             </div>
-            <div class="filter-advanced" id="filters-quality">
+            <div class="filter-advanced {% if request.GET.pool or request.GET.rating or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-quality">
                 <div class="filter-field">
                     <label for="pool_filter">Pool</label>
                     <select name="pool" id="pool_filter" class="filter-select">
@@ -48,6 +48,17 @@
                         <option value="1" {% if request.GET.rating == '1' %}selected{% endif %}>1</option>
                     </select>
                 </div>
+                <div class="filter-field">
+                    <label for="date_from_filter">From</label>
+                    <input type="date" name="date_from" id="date_from_filter" class="filter-date" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label for="date_to_filter">To</label>
+                    <input type="date" name="date_to" id="date_to_filter" class="filter-date" value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <a href="{% url 'manage_quality_history' %}" class="btn-secondary">Clear</a>
+                </div>
             </div>
         </form>
 
@@ -57,7 +68,15 @@
                 <div class="data-card">
                     <h3 class="data-card-title">
                         <span class="data-card-status">
-                            {% if quality.cleanliness_rating >= 4 %}Excellent{% elif quality.cleanliness_rating >= 3 %}Good{% else %}Needs Attention{% endif %}
+                            {% if quality.cleanliness_rating == 5 %}
+                                Excellent
+                            {% elif quality.cleanliness_rating == 4 %}
+                                Very Good
+                            {% elif quality.cleanliness_rating == 3 %}
+                                Good
+                            {% else %}
+                                Needs Attention
+                            {% endif %}
                         </span>
                         {{ quality.pool.name }}
                     </h3>
@@ -101,3 +120,4 @@
     </main>
 </div>
 {% endblock %}
+

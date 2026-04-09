@@ -26,6 +26,29 @@
             <p class="attendance-meta">Review all certificates across group and private classes, including the trainer who granted each one.</p>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'certificate_granted_list' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search student, trainer, class..." value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.type %}true{% else %}false{% endif %}" aria-controls="filters-certificates-admin">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.type %}show{% endif %}" id="filters-certificates-admin">
+                <div class="filter-field">
+                    <label>Type</label>
+                    <select class="filter-select" name="type">
+                        <option value="">All</option>
+                        <option value="group" {% if request.GET.type == 'group' %}selected{% endif %}>Group</option>
+                        <option value="private" {% if request.GET.type == 'private' %}selected{% endif %}>Private</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <a href="{% url 'certificate_granted_list' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section history-table-wrap">
             <table class="history-table">
                 <thead>
@@ -73,3 +96,4 @@
     </main>
 </div>
 {% endblock %}
+

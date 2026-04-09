@@ -4,7 +4,7 @@ from django.db.models import Q
 from .models import User
 from django.contrib.auth import login, logout, authenticate
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
@@ -97,7 +97,12 @@ def logout_view(request):
     return render(request, 'auth/login.html')
 
 # Manage Members page (placeholder)
+@login_required
 def manage_members(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
     members = User.objects.filter(role='user').order_by('-created_at')
     q = (request.GET.get('q') or '').strip()
     status = request.GET.get('status')
@@ -120,10 +125,136 @@ def manage_members(request):
         members = members.filter(created_at__date__gte=joined_from)
     if joined_to:
         members = members.filter(created_at__date__lte=joined_to)
-    return render(request, 'dashboards/admin/admin_manage_members.html', {'members': members})
+    return render(request, 'dashboards/admin/member_management/admin_manage_members.html', {'members': members})
+
+
+@login_required
+def add_member(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        full_name = request.POST.get('full_name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        gender = request.POST.get('gender')
+        date_of_birth = request.POST.get('date_of_birth')
+        profile_picture = request.FILES.get('profile_picture', None)
+        password = request.POST.get('password') or 'member123'
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, 'Username already exists.')
+            return render(request, 'dashboards/admin/member_management/add_member.html', {'form_data': request.POST})
+        if User.objects.filter(email=email).exists():
+            messages.error(request, 'Email already registered.')
+            return render(request, 'dashboards/admin/member_management/add_member.html', {'form_data': request.POST})
+
+        try:
+            member = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                full_name=full_name,
+                phone=phone,
+                gender=gender,
+                date_of_birth=date_of_birth,
+                profile_picture=profile_picture,
+                role='user',
+                is_active=True
+            )
+        except ValueError as e:
+            messages.error(request, str(e))
+            return render(request, 'dashboards/admin/member_management/add_member.html', {'form_data': request.POST})
+        except Exception:
+            messages.error(request, 'An error occurred while creating the member. Please try again.')
+            return render(request, 'dashboards/admin/member_management/add_member.html', {'form_data': request.POST})
+
+        messages.success(request, f'Member "{member.username}" added successfully.')
+        return redirect('manage_members')
+
+    return render(request, 'dashboards/admin/member_management/add_member.html')
+
+@login_required
+def edit_member(request, member_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    user = get_object_or_404(User, pk=member_id, role='user')
+
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        full_name = request.POST.get('full_name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        gender = request.POST.get('gender')
+        date_of_birth = request.POST.get('date_of_birth')
+        profile_picture = request.FILES.get('profile_picture', None)
+        remove_profile_picture = request.POST.get('remove_profile_picture')
+
+        if User.objects.filter(username=username).exclude(pk=user.pk).exists():
+            messages.error(request, 'Username already exists.')
+            return render(request, 'dashboards/admin/member_management/edit_member.html', {'form_data': request.POST, 'member': user})
+        if User.objects.filter(email=email).exclude(pk=user.pk).exists():
+            messages.error(request, 'Email already registered.')
+            return render(request, 'dashboards/admin/member_management/edit_member.html', {'form_data': request.POST, 'member': user})
+
+        if not full_name:
+            messages.error(request, 'Full name is required.')
+            return render(request, 'dashboards/admin/member_management/edit_member.html', {'form_data': request.POST, 'member': user})
+        if not gender:
+            messages.error(request, 'Gender is required.')
+            return render(request, 'dashboards/admin/member_management/edit_member.html', {'form_data': request.POST, 'member': user})
+        if not date_of_birth:
+            messages.error(request, 'Date of birth is required.')
+            return render(request, 'dashboards/admin/member_management/edit_member.html', {'form_data': request.POST, 'member': user})
+
+        try:
+            parsed_dob = datetime.strptime(date_of_birth, '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, 'Invalid date format for date of birth.')
+            return render(request, 'dashboards/admin/member_management/edit_member.html', 
+                          {'form_data': request.POST, 'member': user}
+                          )
+        
+        user.username = username
+        user.full_name = full_name
+        user.email = email
+        user.phone = phone
+        user.gender = gender
+        user.date_of_birth = parsed_dob
+        if remove_profile_picture == '1' and user.profile_picture:
+            user.profile_picture.delete(save=False)
+            user.profile_picture = None
+        if profile_picture:
+            user.profile_picture = profile_picture
+        user.save()
+
+        messages.success(request, f'Member "{user.username}" updated successfully.')
+        return redirect('manage_members')
+
+    return render(request, 'dashboards/admin/member_management/edit_member.html', {'member': user})
+
+@login_required
+def view_member(request, member_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    member = get_object_or_404(User, pk=member_id, role='user')
+    return render(request, 'dashboards/admin/member_management/view_member.html', {
+        'member': member,
+    })
 
 # Manage Trainers page
+@login_required
 def manage_trainer(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
     trainers = User.objects.filter(role='trainer').order_by('-created_at')
     q = (request.GET.get('q') or '').strip()
     status = request.GET.get('status')
@@ -150,10 +281,15 @@ def manage_trainer(request):
             trainers = trainers.filter(experience_years__gte=int(min_exp))
         except ValueError:
             pass
-    return render(request, 'dashboards/admin/admin_manage_trainers.html', {'trainers': trainers})
+    return render(request, 'dashboards/admin/trainer_management/admin_manage_trainers.html', {'trainers': trainers})
 
 # Add Trainer
+@login_required
 def add_trainer(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
     if request.method == 'POST':
         username = request.POST.get('username')
         full_name = request.POST.get('full_name')
@@ -169,19 +305,19 @@ def add_trainer(request):
         # Check for username/email conflicts
         if User.objects.filter(username=username).exists():
             messages.error(request, 'Username already exists.')
-            return redirect('manage_trainers')
+            return render(request, 'dashboards/admin/trainer_management/add_trainer.html', {'form_data': request.POST})
         if User.objects.filter(email=email).exists():
             messages.error(request, 'Email already registered.')
-            return redirect('manage_trainers')
+            return render(request, 'dashboards/admin/trainer_management/add_trainer.html', {'form_data': request.POST})
         if not digital_signature:
             messages.error(request, 'Digital signature is required for trainers.')
-            return redirect('manage_trainers')
+            return render(request, 'dashboards/admin/trainer_management/add_trainer.html', {'form_data': request.POST})
         if experience_years is not None:
             try:
                 experience_years = int(experience_years)
             except:
                 messages.error(request, 'Experience years must be a valid integer.')
-                return redirect('manage_trainers')
+                return render(request, 'dashboards/admin/trainer_management/add_trainer.html', {'form_data': request.POST})
     
         try:
             trainer = User.objects.create_user(
@@ -200,19 +336,24 @@ def add_trainer(request):
             )
         except ValueError as e:
             messages.error(request, str(e))
-            return redirect('manage_trainers')
+            return render(request, 'dashboards/admin/trainer_management/add_trainer.html', {'form_data': request.POST})
         except Exception:
             messages.error(request, 'An error occurred while creating the trainer. Please try again.')
-            return redirect('manage_trainers')
+            return render(request, 'dashboards/admin/trainer_management/add_trainer.html', {'form_data': request.POST})
 
         messages.success(request, f'Trainer "{trainer.username}" added successfully.')
         return redirect('manage_trainers')
-    messages.error(request, 'Invalid request.')
-    return redirect('manage_trainers')
+
+    return render(request, 'dashboards/admin/trainer_management/add_trainer.html')
 
 
 # Edit Trainer
+@login_required
 def edit_trainer(request, trainer_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
     trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
 
     if request.method == 'POST':
@@ -225,33 +366,34 @@ def edit_trainer(request, trainer_id):
         experience_years = request.POST.get('experience_years') or None
         profile_picture = request.FILES.get('profile_picture', None)
         digital_signature = request.FILES.get('digital_signature', None)
+        remove_profile_picture = request.POST.get('remove_profile_picture')
         
         # Check for conflicts excluding this trainer
         if User.objects.filter(username=username).exclude(pk=trainer_id).exists():
             messages.error(request, 'Username already exists.')
-            return redirect('manage_trainers')
+            return render(request, 'dashboards/admin/trainer_management/edit_trainer.html', {'trainer': trainer, 'form_data': request.POST})
         if User.objects.filter(email=email).exclude(pk=trainer_id).exists():
             messages.error(request, 'Email already registered.')
-            return redirect('manage_trainers')
+            return render(request, 'dashboards/admin/trainer_management/edit_trainer.html', {'trainer': trainer, 'form_data': request.POST})
         
         if not full_name:
             messages.error(request, 'Full name is required.')
-            return redirect('manage_trainers')
+            return render(request, 'dashboards/admin/trainer_management/edit_trainer.html', {'trainer': trainer, 'form_data': request.POST})
 
         if not gender:
             messages.error(request, 'Gender is required.')
-            return redirect('manage_trainers')
+            return render(request, 'dashboards/admin/trainer_management/edit_trainer.html', {'trainer': trainer, 'form_data': request.POST})
 
         if not trainer.digital_signature and not digital_signature:
             messages.error(request, 'Digital signature is required for trainers.')
-            return redirect('manage_trainers')
+            return render(request, 'dashboards/admin/trainer_management/edit_trainer.html', {'trainer': trainer, 'form_data': request.POST})
 
         if experience_years is None:
             try:
                 experience_years = int(experience_years)
             except:
                 messages.error(request, 'Experience years must be a valid integer.')
-                return redirect('manage_trainers')
+                return render(request, 'dashboards/admin/trainer_management/edit_trainer.html', {'trainer': trainer, 'form_data': request.POST})
 
         trainer.username = username
         trainer.full_name = full_name
@@ -260,64 +402,51 @@ def edit_trainer(request, trainer_id):
         trainer.gender = gender
         trainer.specialization = specialization
         trainer.experience_years = experience_years
+        if remove_profile_picture == '1' and trainer.profile_picture:
+            trainer.profile_picture.delete(save=False)
+            trainer.profile_picture = None
         if profile_picture:
             trainer.profile_picture = profile_picture
         if digital_signature:
+            if trainer.digital_signature:
+                trainer.digital_signature.delete(save=False)
             trainer.digital_signature = digital_signature
 
         trainer.save()
         messages.success(request, f'Trainer "{trainer.username}" updated successfully.')
         return redirect('manage_trainers')
 
-    messages.error(request, 'Invalid request.')
-    return redirect('manage_trainers')
+    return render(request, 'dashboards/admin/trainer_management/edit_trainer.html', {
+        'trainer': trainer,
+    })
+
+
+# View Trainer
+@login_required
+def view_trainer(request, trainer_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
+    return render(request, 'dashboards/admin/trainer_management/view_trainer.html', {
+        'trainer': trainer,
+    })
 
 
 # Toggle Trainer Active/Inactive
+@login_required
 def toggle_trainer_status(request, trainer_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
     trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
     trainer.is_active = not trainer.is_active
     trainer.save()
     status = 'activated' if trainer.is_active else 'deactivated'
     messages.success(request, f'Trainer "{trainer.username}" has been {status}.')
     return redirect('manage_trainers')
-
-
-# Edit Member (placeholder)
-def edit_member(request, member_id):
-    user = get_object_or_404(User, pk=member_id, role='user')
-
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        full_name = request.POST.get('full_name')
-        email = request.POST.get('email')
-        phone = request.POST.get('phone')
-        gender = request.POST.get('gender')
-        date_of_birth = request.POST.get('date_of_birth')
-        profile_picture = request.FILES.get('profile_picture', None)
-        
-        if User.objects.filter(username=username).exclude(pk=member_id).exists():
-            messages.error(request, 'Username already exists.')
-            return redirect('manage_members')
-        if User.objects.filter(email=email).exclude(pk=member_id).exists():
-            messages.error(request, 'Email already registered.')
-            return redirect('manage_members')
-        
-        
-        user.username = username
-        user.full_name = full_name
-        user.email = email
-        user.phone = phone
-        user.gender = gender
-        user.date_of_birth = date_of_birth
-        if profile_picture:
-            user.profile_picture = profile_picture 
-        user.save()
-        messages.success(request, f'Member "{user.username}" updated successfully.')
-        return redirect('manage_members')
-    
-    messages.error(request, 'Invalid request.')
-    return redirect('manage_members')
 
 @login_required
 def admin_dashboard(request):
@@ -335,13 +464,13 @@ def admin_dashboard(request):
     active_private_classes = PrivateClass.objects.filter(start_date__lte=today, end_date__gte=today).count()
 
     monthly_revenue = Payment.objects.filter(
-        payment_status='completed',
+        payment_status='Completed',
         payment_date__year=now.year,
         payment_date__month=now.month
     ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
     total_revenue = Payment.objects.aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
 
-    pending_payments = Payment.objects.filter(payment_status='pending').count()
+    pending_payments = Payment.objects.filter(payment_status='Pending').count()
     pool_quality = PoolQuality.objects.order_by('-created_at')[:5]
 
     if pool_quality is None:
@@ -430,6 +559,7 @@ def user_profile(request):
     user = request.user
     if request.method == 'POST':
         profile_picture = request.FILES.get('profile_picture', None)
+        remove_profile_picture = request.POST.get('remove_profile_picture')
         full_name = request.POST.get('full_name')
         email = request.POST.get('email')
         phone = request.POST.get('phone')
@@ -456,6 +586,9 @@ def user_profile(request):
             messages.error(request, 'Email already registered.')
             return redirect('user_profile')
         
+        if remove_profile_picture == '1' and user.profile_picture:
+            user.profile_picture.delete(save=False)
+            user.profile_picture = None
         if profile_picture:
             user.profile_picture = profile_picture
         user.full_name = full_name
@@ -479,6 +612,7 @@ def trainer_profile(request):
     user = request.user
     if request.method == 'POST':
         profile_picture = request.FILES.get('profile_picture', None)
+        remove_profile_picture = request.POST.get('remove_profile_picture')
         full_name = request.POST.get('full_name')
         email = request.POST.get('email')
         phone = request.POST.get('phone')
@@ -486,6 +620,7 @@ def trainer_profile(request):
         date_of_birth = request.POST.get('date_of_birth')
         specialization = request.POST.get('specialization') or None
         experience_years = request.POST.get('experience_years') or None
+        digital_signature = request.FILES.get('digital_signature', None)
 
         if not full_name:
             messages.error(request, 'Full name is required.')
@@ -507,6 +642,14 @@ def trainer_profile(request):
             messages.error(request, 'Email already registered.')
             return redirect('trainer_profile')
         
+        if digital_signature:
+            if user.digital_signature:
+                user.digital_signature.delete(save=False)
+            user.digital_signature = digital_signature
+        
+        if remove_profile_picture == '1' and user.profile_picture:
+            user.profile_picture.delete(save=False)
+            user.profile_picture = None
         if profile_picture:
             user.profile_picture = profile_picture
         user.full_name = full_name
@@ -531,11 +674,13 @@ def admin_profile(request):
     user = request.user
     if request.method == 'POST':
         profile_picture = request.FILES.get('profile_picture', None)
+        remove_profile_picture = request.POST.get('remove_profile_picture')
         full_name = request.POST.get('full_name')
         email = request.POST.get('email')
         phone = request.POST.get('phone')
         gender = request.POST.get('gender')
         date_of_birth = request.POST.get('date_of_birth')
+        digital_signature = request.FILES.get('digital_signature', None)
 
         if not full_name:
             messages.error(request, 'Full name is required.')
@@ -557,6 +702,14 @@ def admin_profile(request):
             messages.error(request, 'Email already registered.')
             return redirect('admin_profile')
         
+        if digital_signature:
+            if user.digital_signature:
+                user.digital_signature.delete(save=False)
+            user.digital_signature = digital_signature
+        
+        if remove_profile_picture == '1' and user.profile_picture:
+            user.profile_picture.delete(save=False)
+            user.profile_picture = None
         if profile_picture:
             user.profile_picture = profile_picture
         user.full_name = full_name

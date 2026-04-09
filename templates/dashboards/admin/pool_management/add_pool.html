@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Pool{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+{% if google_maps_api_key %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key|urlencode }}&callback=initMap" async defer></script>
+{% endif %}
+<script src="{% static 'js/admin_manage.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Add New Pool</h1>
+                <p class="subtitle">Create a pool from a separate page instead of the manage screen.</p>
+            </div>
+            <a href="{% url 'manage_pools' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="two-col">
+            <div class="info-card">
+                <form method="POST" enctype="multipart/form-data" action="{% url 'add_pool' %}" class="split-form">
+                    {% csrf_token %}
+
+                    <div>
+                        <label for="name">Pool Name</label>
+                        <input type="text" id="name" name="name" value="{{ form_data.name|default:'' }}" required>
+                    </div>
+                    <div>
+                        <label for="capacity">Capacity</label>
+                        <input type="number" id="capacity" name="capacity" value="{{ form_data.capacity|default:'' }}" required>
+                    </div>
+
+                    <div class="full-span">
+                        <label for="address">Address</label>
+                        <input type="text" id="address" name="address" value="{{ form_data.address|default:'' }}" required>
+                    </div>
+
+                    <div class="full-span">
+                        <label>Select Pool Location</label>
+                        <input type="hidden" id="coordinates" name="coordinates" value="{{ form_data.coordinates|default:'' }}">
+                        <div id="map" style="height: 300px; border-radius: 8px;"></div>
+                        {% if not google_maps_api_key %}
+                        <small style="color: #b91c1c;">Google Maps is unavailable until `GOOGLE_MAPS_API_KEY` is set in the environment.</small>
+                        {% endif %}
+                        <small id="coordDisplay">
+                            {% if form_data.coordinates %}
+                            Selected: {{ form_data.coordinates }}
+                            {% else %}
+                            Click on the map to select location
+                            {% endif %}
+                        </small>
+                    </div>
+
+                    <div class="full-span">
+                        <label for="images">Pool Images</label>
+                        <input type="file" id="images" name="images" accept="image/*" multiple>
+                        <small>Upload one or more images.</small>
+                    </div>
+
+                    <div class="full-span form-actions">
+                        <button type="submit" class="btn-primary">Create Pool</button>
+                        <a href="{% url 'manage_pools' %}" class="btn-secondary btn-sm reset-btn">Cancel</a>
+                    </div>
+                </form>
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-circle-info"></i> Pool Notes</h3>
+                <ul class="side-list">
+                    <li><strong>Name:</strong> must be unique.</li>
+                    <li><strong>Coordinates:</strong> must be unique.</li>
+                    <li><strong>Capacity:</strong> must be a positive whole number.</li>
+                    <li><strong>Images:</strong> up to 5 images per pool.</li>
+                </ul>
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}
+

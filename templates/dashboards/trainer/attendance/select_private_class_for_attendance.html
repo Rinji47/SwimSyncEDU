@@ -22,6 +22,16 @@
             <p class="attendance-meta">Date: {{ today }} | Select a private class to mark the student attendance.</p>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'select_private_class_for_attendance' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search student or pool..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <a href="{% url 'select_private_class_for_attendance' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section card-grid">
             {% for private_class in ongoing_private_classes %}
             <div class="class-card">

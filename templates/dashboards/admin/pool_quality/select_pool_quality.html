@@ -6,6 +6,23 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 <link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<style>
+    .filter-check {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        cursor: pointer;
+    }
+
+    .filter-check input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #0ea5b7;
+        cursor: pointer;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -19,6 +36,22 @@
             <h1>Update Today's Pool Quality</h1>
             <p style="color: var(--text-secondary); margin: 0;">Date: {{ today|date:"M d, Y" }}</p>
         </div>
+
+        <form class="filter-bar" method="GET" action="{% url 'select_pool_quality' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="pool_name_or_address" placeholder="Search pool or address..." value="{{ request.GET.pool_name_or_address|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <a href="{% url 'select_pool_quality' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+            <div class="filter-advanced show" id="filters-select-quality">
+                <label for="not_rated_pools" class="filter-check">
+                    <input type="checkbox" id="not_rated_pools" name="not_rated_pools" value="1" {% if request.GET.not_rated_pools %}checked{% endif %}>
+                    <span>Only Not Rated</span>
+                </label>
+            </div>
+        </form>
 
         <div class="dashboard-section">
             <div class="data-card-grid">
@@ -55,3 +88,4 @@
     </main>
 </div>
 {% endblock %}
+

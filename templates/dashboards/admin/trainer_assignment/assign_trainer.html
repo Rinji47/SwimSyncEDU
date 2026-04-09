@@ -49,25 +49,6 @@
                     <li><strong>Trainer:</strong> {{ trainer.full_name|default:trainer.username }}</li>
                     <li><strong>Email:</strong> {{ trainer.email }}</li>
                 </ul>
-
-                <form method="get" action="{% url 'assign_trainer' pool.pool_id trainer.user_id %}" class="quick-filter range-filter" style="margin-top:0.9rem;">
-                    <label><strong>Busy Range:</strong></label>
-                    <input class="compact-input" type="date" name="busy_from" value="{% if busy_from %}{{ busy_from|date:'Y-m-d' }}{% endif %}">
-                    <input class="compact-input" type="date" name="busy_to" value="{% if busy_to %}{{ busy_to|date:'Y-m-d' }}{% endif %}">
-                    <button type="submit" class="btn-secondary">Apply</button>
-                </form>
-
-                <h3 style="margin-top:0.6rem;"><i class="fa-solid fa-calendar-xmark"></i> Trainer Busy Slots</h3>
-                <div class="slot-list">
-                    {% for slot in trainer_unavailable_slots %}
-                    <span class="slot-chip" title="{{ slot }}">{{ slot }}</span>
-                    {% empty %}
-                    <span class="slot-chip slot-empty">No conflicts for selected scope</span>
-                    {% endfor %}
-                    {% if trainer_unavailable_more > 0 %}
-                    <span class="slot-chip slot-more">+{{ trainer_unavailable_more }} more conflicts</span>
-                    {% endif %}
-                </div>
             </aside>
         </div>
     </main>

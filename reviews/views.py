@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404, render
+from django.db.models import Q
 from certificate.models import CompletionCertificate
 from .models import Review
 from django.contrib import messages
@@ -40,6 +41,39 @@ def get_certificate_and_trainer(request, certificate_id):
 def user_select_trainer_from_certificate(request):
     certificates = CompletionCertificate.objects.filter(user=request.user)
 
+    q = (request.GET.get('q') or '').strip().lower()
+    if q:
+        certificates = certificates.filter(
+            Q(class_booking__class_session__trainer__full_name__icontains=q) |
+            Q(class_booking__class_session__trainer__username__icontains=q) |
+            Q(private_class__trainer__full_name__icontains=q) |
+            Q(private_class__trainer__username__icontains=q)
+        )
+    
+    reviewd_certificates = (request.GET.get('reviewed') or '').strip().lower()
+    if reviewd_certificates == 'true':
+        review=Review.objects.filter(user=request.user).values_list('certificate_id', flat=True)
+        certificates = certificates.filter(id__in=review)
+    elif reviewd_certificates == 'false':
+        review=Review.objects.filter(user=request.user).values_list('certificate_id', flat=True)
+        certificates = certificates.exclude(id__in=review)
+
+    issued_date_from = request.GET.get('date_from')
+    issued_date_to = request.GET.get('date_to')
+    if issued_date_from:
+        certificates = certificates.filter(issued_at__date__gte=issued_date_from)
+    if issued_date_to:
+        certificates = certificates.filter(issued_at__date__lte=issued_date_to)
+
+    reviewed_created_date_from = request.GET.get('reviewed_date_from')
+    reviewed_created_date_to = request.GET.get('reviewed_date_to')
+    if reviewed_created_date_from:
+        reviews = Review.objects.filter(user=request.user, created_at__date__gte=reviewed_created_date_from).values_list('certificate_id', flat=True)
+        certificates = certificates.filter(id__in=reviews)
+    if reviewed_created_date_to:
+        reviews = Review.objects.filter(user=request.user, created_at__date__lte=reviewed_created_date_to).values_list('certificate_id', flat=True)
+        certificates = certificates.filter(id__in=reviews)
+
     certificate_card = []
     for certificate in certificates:
         if certificate.class_booking:
@@ -71,6 +105,7 @@ def public_select_trainer_for_reviews(request):
         'certificate__class_booking__class_session__trainer',
         'certificate__private_class__trainer',
     ).order_by('-created_at')
+    q = (request.GET.get('q') or '').strip().lower()
 
     trainer_map = {}
 
@@ -91,6 +126,15 @@ def public_select_trainer_for_reviews(request):
 
     trainer_cards = []
     for row in trainer_map.values():
+        if q:
+            searchable = ' '.join([
+                row['trainer'].username or '',
+                row['trainer'].full_name or '',
+                row['trainer'].specialization or '',
+            ]).lower()
+            if q not in searchable:
+                continue
+
         trainer_cards.append({
             'trainer': row['trainer'],
             'review_count': row['review_count'],
@@ -167,11 +211,43 @@ def trainer_my_reviews(request):
         'certificate__private_class__trainer',
         'certificate__private_class__pool',
     ).order_by('-created_at')
+    q = (request.GET.get('q') or '').strip().lower()
+    rating = (request.GET.get('rating') or '').strip()
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
 
     review_rows = []
     for review in reviews:
         review_trainer = get_review_trainer(review)
         if review_trainer and review_trainer.pk == request.user.pk:
+            if rating:
+                try:
+                    if review.rating != int(rating):
+                        continue
+                except ValueError:
+                    pass
+            if date_from:
+                try:
+                    date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+                    if review.created_at.date() < date_from_parsed:
+                        continue
+                except ValueError:
+                    pass
+            if date_to:
+                try:
+                    date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+                    if review.created_at.date() > date_to_parsed:
+                        continue
+                except ValueError:
+                    pass
+            if q:
+                username = (review.user.username or '').lower()
+                full_name = (review.user.full_name or '').lower()
+                comment = (review.comment or '').lower()
+                source_label = get_review_source_label(review).lower()
+
+                if q not in username and q not in full_name and q not in comment and q not in source_label:
+                    continue
             review_rows.append({
                 'review': review,
                 'source_label': get_review_source_label(review),
@@ -208,11 +284,15 @@ def admin_all_trainer_reviews(request):
         'certificate__private_class__pool',
     ).order_by('-created_at')
 
-    q = (request.GET.get('q') or '').strip().lower()
     rating = request.GET.get('rating')
     review_type = (request.GET.get('type') or '').strip().lower()
 
     review_rows = []
+
+    q = (request.GET.get('q') or '').strip().lower()
+    rating = request.GET.get('rating')
+    review_type = (request.GET.get('type') or '').strip().lower()
+
 
     for review in reviews:
         trainer = get_review_trainer(review)
@@ -222,17 +302,13 @@ def admin_all_trainer_reviews(request):
         source_label = get_review_source_label(review)
         source_type = 'group' if source_label.startswith('Group Class:') else 'private'
 
-        searchable = ' '.join([
-            review.user.username or '',
-            review.user.full_name or '',
-            trainer.username or '',
-            trainer.full_name or '',
-            review.comment or '',
-            source_label,
-        ]).lower()
+        if q:
+            user_name =  (review.user.full_name or review.user.username or '').lower()
+            trainer_name = (trainer.full_name or trainer.username or '').lower()
+            comment = (review.comment or '').lower()
 
-        if q and q not in searchable:
-            continue
+            if q not in user_name and q not in trainer_name and q not in comment:
+                continue
 
         if rating:
             try:
@@ -253,7 +329,7 @@ def admin_all_trainer_reviews(request):
 
     return render(request, 'dashboards/admin/reviews/admin_all_trainer_reviews.html', {
         'review_rows': review_rows,
-        'q': request.GET.get('q', ''),
+        'q': q,
         'selected_rating': rating,
         'selected_type': review_type,
     })

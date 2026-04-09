@@ -105,6 +105,87 @@
   margin-bottom: 2rem;
 }
 
+.payment-filter-bar {
+  margin-bottom: 1.75rem;
+  padding: 1.2rem 1.35rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.payment-filter-bar .filter-main {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.payment-filter-search {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.payment-filter-search .filter-input {
+  width: min(100%, 320px);
+  min-width: 220px;
+}
+
+.payment-filter-bar .filter-advanced {
+  margin-top: 1rem;
+  align-items: end;
+  gap: 1rem 1.1rem;
+}
+
+.payment-filter-bar .filter-advanced.show {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.payment-filter-bar .filter-field {
+  min-width: 0;
+}
+
+.payment-filter-bar .filter-field label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.payment-filter-bar .filter-select,
+.payment-filter-bar .filter-date,
+.payment-filter-bar .filter-input {
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+}
+
+.payment-filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  grid-column: 1 / -1;
+  padding-top: 0.25rem;
+}
+
+.payment-filter-actions .btn-primary,
+.payment-filter-actions .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  min-width: 170px;
+  min-height: 52px;
+  justify-content: center;
+  padding: 0.8rem 1.35rem;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
 .payment-section-head {
   display: flex;
   justify-content: space-between;
@@ -239,12 +320,49 @@
   .payment-section-head {
     flex-direction: column;
   }
+
+  .payment-filter-bar .filter-advanced.show {
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
   .payment-report-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .payment-filter-bar {
+    padding: 1rem;
+  }
+
+  .payment-filter-bar .filter-main {
+    justify-content: stretch;
+  }
+
+  .payment-filter-search {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .payment-filter-search .filter-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .payment-filter-bar .filter-advanced.show {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-filter-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .payment-filter-actions .btn-primary,
+  .payment-filter-actions .btn-secondary {
+    width: 100%;
+    min-width: 0;
   }
 
   .payment-table-wrap {

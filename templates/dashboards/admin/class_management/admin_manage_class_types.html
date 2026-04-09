@@ -18,13 +18,13 @@
         {% include "components/message.html" %}
         <div class="dashboard-header">
             <h1>Class Types</h1>
-            <button class="btn-primary" onclick="openAddClassTypeModal()">Add Class Type</button>
+            <a class="btn-primary" href="{% url 'add_class_type' %}">Add Class Type</a>
         </div>
 
         <form class="filter-bar" method="GET" action="{% url 'manage_class_types' %}">
             <div class="filter-main">
                 <div class="filter-search">
-                    <input type="text" class="filter-input" name="q" placeholder="Search class types..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <input type="text" class="filter-input" name="q" placeholder="Search class types..." value="{{ request.GET.q|default:'' }}">
                     <button type="submit" class="btn-secondary">Search</button>
                     <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-class-types">Filters v</button>
                 </div>
@@ -40,11 +40,11 @@
                 </div>
                 <div class="filter-field">
                     <label>Cost Min</label>
-                    <input type="number" class="filter-number" name="cost_min" min="0" step="0.01" value="{{ request.GET.cost_min|default_if_none:'' }}">
+                    <input type="number" class="filter-number" name="cost_min" min="0" step="0.01" value="{{ request.GET.cost_min|default:'' }}">
                 </div>
                 <div class="filter-field">
                     <label>Cost Max</label>
-                    <input type="number" class="filter-number" name="cost_max" min="0" step="0.01" value="{{ request.GET.cost_max|default_if_none:'' }}">
+                    <input type="number" class="filter-number" name="cost_max" min="0" step="0.01" value="{{ request.GET.cost_max|default:'' }}">
                 </div>
             </div>
         </form>
@@ -58,10 +58,10 @@
                             {% if type.is_closed %}Closed{% else %}Open{% endif %}
                         </span>
                         {{ type.name }}
-                    </h3>
-                    <div class="data-card-row">
+                    </h3>s
+                    <div class="data-card-row data-card-row-stack">
                         <span class="data-card-label">Description:</span>
-                        <span>{{ type.description }}</span>
+                        <span class="data-card-clamp">{{ type.description|default:"No description provided." }}</span>
                     </div>
                     <div class="data-card-row">
                         <span class="data-card-label">Cost:</span>
@@ -74,17 +74,8 @@
                         </span>
                     </div>
                     <div class="data-card-actions">
-                        <button class="btn-sm btn-secondary"
-                            onclick="openEditClassTypeModal(this)"
-                            data-url="{% url 'edit_class_types' type.class_type_id %}"
-                            data-class-type='{
-                                "name": "{{ type.name|escapejs }}",
-                                "description": "{{ type.description|escapejs }}",
-                                "cost": "{{ type.cost }}",
-                                "is_closed": "{{ type.is_closed }}",
-                                "duration_days": "{{ type.duration_days }}"
-                            }'
-                        >Edit</button>
+                        <a class="btn-sm btn-primary" href="{% url 'view_class_type' type.class_type_id %}">View</a>
+                        <a class="btn-sm btn-secondary" href="{% url 'edit_class_types' type.class_type_id %}">Edit</a>
                         {% if type.is_closed %}
                         <button class="btn-sm btn-success">
                             <a href="{% url 'open_class_type' type.class_type_id %}" style="text-decoration: none; color: white;"
@@ -105,41 +96,5 @@
         </div>
     </main>
 </div>
-
-<!-- Modal -->
-<div id="classTypeModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Add Class Type</h2>
-            <span class="close" onclick="toggleModal('classTypeModal')">&times;</span>
-        </div>
-        <form method="POST">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="type_name">Name</label>
-                <input type="text" id="type_name" name="name" required>
-            </div>
-            <div class="form-group">
-                <label for="cost">Cost (Rs.)</label>
-                <input type="number" step="0.01" id="cost" name="cost" required>
-            </div>
-            <!-- Removed is_group field -->
-            <div class="form-group">
-                <label for="duration_days">Duration (days)</label>
-                <input type="number" id="duration_days" name="duration_days" min="0" step="1" value="0">
-                <small id="class_type_duration_note" style="display:block;margin-top:0.35rem;color:var(--text-secondary);">
-                    This duration is used when creating future class sessions.
-                </small>
-            </div>
-            <div class="form-group">
-                <label for="description">Description</label>
-                <textarea id="description" name="description" rows="4"></textarea>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="toggleModal('classTypeModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Save Type</button>
-            </div>
-        </form>
-    </div>
-</div>
 {% endblock %}
+

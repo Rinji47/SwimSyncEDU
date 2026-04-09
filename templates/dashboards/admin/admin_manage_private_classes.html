@@ -24,7 +24,7 @@
         <form class="filter-bar" method="GET" action="{% url 'manage_private_classes' %}">
             <div class="filter-main">
                 <div class="filter-search">
-                    <input type="text" class="filter-input" name="q" placeholder="Search private classes..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <input type="text" class="filter-input" name="q" placeholder="Search private classes..." value="{{ request.GET.q|default:'' }}">
                     <button type="submit" class="btn-secondary">Search</button>
                     <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-private-classes">Filters v</button>
                 </div>
@@ -186,3 +186,4 @@ function openViewPrivateModal(btn) {
 
 </script>
 {% endblock %}
+

@@ -8,11 +8,11 @@
             <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
             Dashboard
         </a>
-        <a href="{% url 'manage_trainer_class_session' %}" class="nav-item {% if request.resolver_match.url_name == 'manage_trainer_class_session' %}active{% endif %}">
+        <a href="{% url 'manage_trainer_class_session' %}" class="nav-item {% if request.resolver_match.url_name == 'manage_trainer_class_session' or request.resolver_match.url_name == 'select_class_sessions_for_attendance_history' or request.resolver_match.url_name == 'class_session_attendance_history' %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-book-open"></i></span>
             Group Classes
         </a>
-        <a href="{% url 'manage_trainer_private_classes' %}" class="nav-item {% if request.resolver_match.url_name == 'manage_trainer_private_classes' %}active{% endif %}">
+        <a href="{% url 'manage_trainer_private_classes' %}" class="nav-item {% if request.resolver_match.url_name == 'manage_trainer_private_classes' or request.resolver_match.url_name == 'select_private_classes_for_attendance_history' or request.resolver_match.url_name == 'private_class_attendance_history' %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-lock"></i></span>
             Private Classes
         </a>

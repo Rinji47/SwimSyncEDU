@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Class Type{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Edit Class Type</h1>
+                <p class="subtitle">Update the class type on a normal page.</p>
+            </div>
+            <a href="{% url 'manage_class_types' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="two-col">
+            <div class="info-card">
+                <form method="POST" action="{% url 'edit_class_types' class_type.class_type_id %}" class="split-form">
+                    {% csrf_token %}
+
+                    <div class="full-span">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" value="{{ form_data.name|default:class_type.name }}" required>
+                    </div>
+
+                    <div>
+                        <label for="cost">Cost (Rs.)</label>
+                        <input type="number" id="cost" name="cost" step="0.01" value="{{ form_data.cost|default:class_type.cost }}" required>
+                    </div>
+                    <div>
+                        <label for="duration_days">Duration (days)</label>
+                        <input type="number" id="duration_days" name="duration_days" min="0" step="1" value="{{ form_data.duration_days|default:class_type.duration_days }}">
+                    </div>
+
+                    <div class="full-span">
+                        <label for="description">Description</label>
+                        <textarea id="description" name="description" rows="5">{{ form_data.description|default:class_type.description }}</textarea>
+                    </div>
+
+                    <div class="full-span form-actions">
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                        <a href="{% url 'edit_class_types' class_type.class_type_id %}" class="btn-secondary btn-sm reset-btn">Reset</a>
+                    </div>
+                </form>
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-circle-info"></i> Current Type</h3>
+                <ul class="side-list">
+                    <li><strong>Status:</strong> {% if class_type.is_closed %}Closed{% else %}Open{% endif %}</li>
+                    <li><strong>Name:</strong> {{ class_type.name }}</li>
+                    <li><strong>Duration:</strong> {{ class_type.duration_days }} day{{ class_type.duration_days|pluralize }}</li>
+                </ul>
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}

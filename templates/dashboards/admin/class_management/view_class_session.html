@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Class Session Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Class Session Details</h1>
+                <p class="subtitle">View the class session information on a full page.</p>
+            </div>
+            <a href="{% url 'manage_classes' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="two-col">
+            <div class="info-card">
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Class Name</span>
+                        <span class="detail-value">{{ class_session.class_name }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Status</span>
+                        <span class="detail-value">{% if class_session.is_cancelled %}Cancelled{% else %}Open{% endif %}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Pool</span>
+                        <span class="detail-value">{{ class_session.pool.name }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Trainer</span>
+                        <span class="detail-value">{{ class_session.trainer.full_name|default:class_session.trainer.username }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Class Type</span>
+                        <span class="detail-value">{{ class_session.class_type.name }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Seats</span>
+                        <span class="detail-value">{{ class_session.seats }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Start Date</span>
+                        <span class="detail-value">{{ class_session.start_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">End Date</span>
+                        <span class="detail-value">{{ class_session.end_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Start Time</span>
+                        <span class="detail-value">{{ class_session.start_time }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">End Time</span>
+                        <span class="detail-value">{{ class_session.end_time }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Total Price</span>
+                        <span class="detail-value">Rs. {{ class_session.total_price }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Total Bookings</span>
+                        <span class="detail-value">{{ class_session.total_bookings|default:0 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-circle-info"></i> Quick Actions</h3>
+                <div class="inline-actions" style="margin-top: 0.75rem;">
+                    <a href="{% url 'edit_class_session' class_session.id %}" class="btn-primary">Edit Session</a>
+                    <a href="{% url 'manage_classes' %}" class="btn-secondary">Back to List</a>
+                </div>
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}

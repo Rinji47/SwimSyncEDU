@@ -27,6 +27,38 @@
             <p class="attendance-meta">This page shows every completion certificate you have granted for group and private classes.</p>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'certificate_granted_list' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search student or class..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.type or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-certificates-trainer">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.type or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-certificates-trainer">
+                <div class="filter-field">
+                    <label>Type</label>
+                    <select class="filter-select" name="type">
+                        <option value="">All</option>
+                        <option value="group" {% if request.GET.type == 'group' %}selected{% endif %}>Group</option>
+                        <option value="private" {% if request.GET.type == 'private' %}selected{% endif %}>Private</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default_if_none:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default_if_none:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'certificate_granted_list' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section history-table-wrap">
             <table class="history-table">
                 <thead>
@@ -35,6 +67,7 @@
                         <th>Type</th>
                         <th>Class</th>
                         <th>Granted By</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -60,9 +93,12 @@
                             {% endif %}
                         </td>
                         <td>{{ certificate.trainer.full_name|default:certificate.trainer.username }}</td>
+                        <td>
+                            <a href="{% url 'trainer_view_certificate' certificate.id %}" class="btn-sm btn-secondary">View Certificate</a>
+                        </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="4">No certificates granted yet.</td></tr>
+                    <tr><td colspan="5">No certificates granted yet.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

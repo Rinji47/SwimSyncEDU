@@ -18,13 +18,54 @@
             <h1>My Private Classes</h1>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'my_private_classes' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text"
+                           class="filter-input"
+                           name="q"
+                           placeholder="Search pool or trainer..."
+                           value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button"
+                            class="btn-secondary filter-toggle"
+                            aria-expanded="{% if request.GET.status or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}"
+                            aria-controls="filters-my-private-classes">
+                        Filters v
+                    </button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.status or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-my-private-classes">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="Upcoming" {% if request.GET.status == 'Upcoming' %}selected{% endif %}>Upcoming</option>
+                        <option value="Ongoing" {% if request.GET.status == 'Ongoing' %}selected{% endif %}>Ongoing</option>
+                        <option value="Completed" {% if request.GET.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Cancelled" {% if request.GET.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'my_private_classes' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section card-grid">
             {% for private_class in private_classes %}
             <div class="class-card compact">
-
-                <!-- ✅ STATUS BADGE -->
                 <h3 style="font-size:1rem;margin-bottom:0.3rem;">
-                    <span class="class-status 
+                    <span class="class-status
                         {% if private_class.is_cancelled %}
                             status-cancelled
                         {% elif private_class.end_date < today %}
@@ -54,7 +95,6 @@
                     <strong>Time:</strong> {{ private_class.start_time|time:"H:i" }} - {{ private_class.end_time|time:"H:i" }}<br>
                 </div>
 
-                <!-- ✅ CANCEL BUTTON -->
                 <div class="card-actions" style="margin-top:0.5rem;">
                     {% if not private_class.is_cancelled and private_class.end_date >= today %}
                         <a href="{% url 'cancel_private_class' private_class.id %}"
@@ -75,21 +115,11 @@
                         </span>
                     {% endif %}
 
-                    <!-- VIEW DETAILS BUTTON -->
-                    <button type="button"
-                            class="btn-sm btn-primary"
-                            onclick="openPrivateClassModal(this)"
-                            data-pool="{{ private_class.pool.name|escape }}"
-                            data-pool-address="{{ private_class.pool.address|escape }}"
-                            data-trainer="{{ private_class.trainer.full_name|default:private_class.trainer.username|escape }}"
-                            data-dates="{{ private_class.start_date|date:'M d' }} - {{ private_class.end_date|date:'M d' }}"
-                            data-time="{{ private_class.start_time|time:'H:i' }} - {{ private_class.end_time|time:'H:i' }}"
-                            data-status="{% if private_class.is_cancelled %}Cancelled{% elif private_class.end_date < today %}Completed{% elif private_class.start_date > today %}Upcoming{% else %}Ongoing{% endif %}"
-                            data-user="{{ private_class.user.full_name|default:private_class.user.username|escape }}"
-                            data-created="{{ private_class.created_at|date:'M d, Y H:i' }}"
-                            data-total-price="{{ private_class.total_price|default:'N/A' }}">
+                    <a href="{% url 'view_my_private_class' private_class.id %}"
+                       class="btn-sm btn-primary"
+                       style="text-decoration:none;">
                         View
-                    </button>
+                    </a>
                 </div>
             </div>
             {% empty %}
@@ -98,95 +128,4 @@
         </div>
     </main>
 </div>
-
-<!-- PRIVATE CLASS VIEW MODAL -->
-<div id="privateClassModal" class="modal">
-    <div class="modal-content modal-lg">
-        <div class="modal-header">
-            <h2>Private Class Details</h2>
-            <span class="close" onclick="togglePrivateClassModal()">&times;</span>
-        </div>
-
-        <div class="details-grid">
-            <div class="detail-item">
-                <span class="detail-label">Total Price</span>
-                <span class="detail-value" id="modal_total_price"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Pool</span>
-                <span class="detail-value" id="modal_pool"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Pool Address</span>
-                <span class="detail-value" id="modal_pool_address"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Trainer</span>
-                <span class="detail-value" id="modal_trainer"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Dates</span>
-                <span class="detail-value" id="modal_dates"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Time</span>
-                <span class="detail-value" id="modal_time"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Status</span>
-                <span class="detail-value" id="modal_status"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Booked By</span>
-                <span class="detail-value" id="modal_user"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Created At</span>
-                <span class="detail-value" id="modal_created"></span>
-            </div>
-        </div>
-
-        <div class="modal-footer">
-            <button type="button" class="btn-secondary" onclick="togglePrivateClassModal()">Close</button>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-const privateModal = document.getElementById('privateClassModal');
-
-function openPrivateClassModal(btn) {
-    document.getElementById('modal_pool').innerText = btn.getAttribute('data-pool');
-    document.getElementById('modal_pool_address').innerText = btn.getAttribute('data-pool-address');
-    document.getElementById('modal_trainer').innerText = btn.getAttribute('data-trainer');
-    document.getElementById('modal_dates').innerText = btn.getAttribute('data-dates');
-    document.getElementById('modal_time').innerText = btn.getAttribute('data-time');
-    document.getElementById('modal_status').innerText = btn.getAttribute('data-status');
-    document.getElementById('modal_user').innerText = btn.getAttribute('data-user');
-    document.getElementById('modal_created').innerText = btn.getAttribute('data-created');
-    document.getElementById('modal_total_price').innerText = btn.getAttribute('data-total-price');
-    privateModal.classList.add('show');
-}
-
-function togglePrivateClassModal() {
-    privateModal.classList.remove('show');
-    document.getElementById('modal_pool').innerText = '';
-    document.getElementById('modal_pool_address').innerText = '';
-    document.getElementById('modal_trainer').innerText = '';
-    document.getElementById('modal_dates').innerText = '';
-    document.getElementById('modal_time').innerText = '';
-    document.getElementById('modal_status').innerText = '';
-    document.getElementById('modal_user').innerText = '';
-    document.getElementById('modal_created').innerText = '';
-    document.getElementById('modal_total_price').innerText = '';
-}
-
-window.addEventListener('mousedown', function(event) {
-    if (privateModal.classList.contains('show') && event.target === privateModal) {
-        togglePrivateClassModal();
-    }
-});
-</script>
 {% endblock %}

@@ -21,7 +21,7 @@
         </div>
 
         <div class="dashboard-section">
-            <div class="modal-content" style="position: static; transform: none; max-width: 720px; margin: 0;">
+            <div class="modal-content" style="position: static; transform: none; max-width: 720px; margin: 0 auto;">
                 <form method="POST" action="{% if is_edit %}{% url 'edit_quality' quality.quality_id %}{% else %}{% url 'add_quality' pool.pool_id %}{% endif %}">
                     {% csrf_token %}
                     <div class="form-grid">

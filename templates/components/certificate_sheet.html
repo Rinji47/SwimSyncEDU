@@ -1,0 +1,97 @@
+<article class="certificate-sheet">
+    <header class="certificate-top">
+        <h2>SWIMSYNC EDU</h2>
+        <span class="certificate-badge">CERT-{{ certificate.id }}</span>
+    </header>
+
+    <section class="certificate-body">
+        <div class="certificate-kicker">Official Recognition of Completion</div>
+        <h3 class="certificate-title">Certificate of Completion</h3>
+        <p class="certificate-subtitle">
+            This document is proudly presented in recognition of successful course completion.
+        </p>
+
+        <div class="certificate-name">
+            {{ certificate.user.full_name|default:certificate.user.username }}
+        </div>
+
+        <p class="certificate-statement">
+            has successfully completed the
+            {% if certificate.class_booking %}
+                Group Class
+            {% elif certificate.private_class %}
+                Private Class
+            {% else %}
+                Swim Program
+            {% endif %}
+            at SwimSync EDU.
+        </p>
+
+        <p class="certificate-class-name">
+            {% if certificate.class_booking %}
+                {{ certificate.class_booking.class_session.class_name }}
+            {% elif certificate.private_class %}
+                Private Class
+            {% else %}
+                Class Name
+            {% endif %}
+        </p>
+
+        <p class="certificate-honors">
+            This certificate is awarded in recognition of consistent commitment, disciplined participation,
+            and the successful completion of the training requirements established by SwimSync EDU for this
+            program. It acknowledges the recipient's dedication, steady effort, and achievement throughout
+            the learning journey.
+        </p>
+
+        <div class="certificate-seal-row">
+            <div class="certificate-seal">Verified Achievement</div>
+        </div>
+
+        <div class="certificate-meta">
+            <div class="certificate-meta-item">
+                <div class="label">Trainer</div>
+                <div class="value">{{ trainer.full_name|default:trainer.username }}</div>
+            </div>
+            <div class="certificate-meta-item">
+                <div class="label">Issued Date</div>
+                <div class="value">{{ certificate.issued_at|date:"M d, Y" }}</div>
+            </div>
+            <div class="certificate-meta-item">
+                <div class="label">Certificate ID</div>
+                <div class="value">CERT-{{ certificate.id }}</div>
+            </div>
+            <div class="certificate-meta-item">
+                <div class="label">Pool</div>
+                <div class="value">
+                    {% if certificate.class_booking %}
+                        {{ certificate.class_booking.class_session.pool.name }}
+                    {% elif certificate.private_class %}
+                        {{ certificate.private_class.pool.name }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="certificate-signatures">
+            <div class="signature-box">
+                {% if trainer.digital_signature %}
+                    <img src="{{ trainer.digital_signature.url }}" alt="Trainer Signature" class="signature-image">
+                {% endif %}
+                <div class="signature-line"></div>
+                <div class="signature-name">{{ trainer.full_name|default:trainer.username }}</div>
+                <div class="signature-role">Trainer Signature</div>
+            </div>
+            <div class="signature-box">
+                {% if authorized_signature_path %}
+                    <img src="/media/{{ authorized_signature_path }}" alt="Authorized Signature" class="signature-image">
+                {% endif %}
+                <div class="signature-line"></div>
+                <div class="signature-name">SwimSync EDU</div>
+                <div class="signature-role">Authorized Signature</div>
+            </div>
+        </div>
+    </section>
+</article>

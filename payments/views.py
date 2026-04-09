@@ -63,7 +63,7 @@ def build_esewa_fields(payment, success_url, failure_url):
     service_charge = str(payment.service_charge)
     delivery_charge = str(payment.delivery_charge)
     transaction_uuid = str(payment.uid)
-
+    
     return {
         "amount": amount,
         "tax_amount": tax_amount,
@@ -388,7 +388,11 @@ def group_class_payment_success(request, uid):
         payment.save(update_fields=["payment_status"])
         return redirect("my_bookings")
 
-    if str(payment_data.get("total_amount")) != str(payment.total_amount):
+    expected_total_amount_str = str(payment.total_amount)
+    received_total_amount = payment_data.get("total_amount")
+    received_total_amount_str = str(received_total_amount)
+
+    if received_total_amount_str.rstrip('0').rstrip('.') != expected_total_amount_str.rstrip('0').rstrip('.'):
         messages.error(request, "Payment verification failed. Amount mismatch.")
         payment.payment_status = "Failed"
         payment.save(update_fields=["payment_status"])
@@ -405,8 +409,6 @@ def group_class_payment_success(request, uid):
         payment.payment_status = "Failed"
         payment.save(update_fields=["payment_status"])
         return redirect("my_bookings")
-
-
 
     ok, error_message = complete_group_payment(payment)
     if not ok:
@@ -625,6 +627,45 @@ def user_payment_report(request):
     ).update(payment_status="Cancelled")
     
     payments = Payment.objects.filter(user=request.user).order_by("-payment_date")
+    
+    q = (request.GET.get("q") or "").strip()
+    status = (request.GET.get("status", "")).strip()
+    purpose = (request.GET.get("purpose", "")).strip()
+    method = (request.GET.get("method", "")).strip()
+    date_from = (request.GET.get("date_from", "")).strip()
+    date_to = (request.GET.get("date_to", "")).strip()
+
+    if q:
+        payments = payments.filter(
+            Q(user__username__icontains=q) |
+            Q(user__full_name__icontains=q) |
+            Q(user__email__icontains=q) |
+            Q(user__phone__icontains=q)
+        )
+
+    if status:
+        payments = payments.filter(payment_status=status)
+    
+    if purpose:
+        payments = payments.filter(purpose=purpose)
+
+    if method:
+        payments = payments.filter(payment_method=method)
+
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d")
+            payments = payments.filter(payment_date__date__gte=date_from_obj)
+        except ValueError:
+            messages.warning(request, "Invalid date format for 'From' date. Use YYYY-MM-DD.")
+
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d")
+            payments = payments.filter(payment_date__date__lte=date_to_obj)
+        except ValueError:
+            messages.warning(request, "Invalid date format for 'To' date. Use YYYY-MM-DD.")
+
     summary = payments.aggregate(
         total_records=Count("id"),
         completed_count=Count("id", filter=Q(payment_status="Completed")),
@@ -657,6 +698,46 @@ def admin_payment_report(request):
     ).update(payment_status="Cancelled")
 
     payments = Payment.objects.select_related("user").all().order_by("-payment_date")
+
+    q = (request.GET.get("q") or "").strip()
+    status = (request.GET.get("status", "")).strip()
+    purpose = (request.GET.get("purpose", "")).strip()
+    method = (request.GET.get("method", "")).strip()
+    date_from = (request.GET.get("date_from", "")).strip()
+    date_to = (request.GET.get("date_to", "")).strip()
+
+    if q:
+        payments = payments.filter(
+            Q(user__username__icontains=q) |
+            Q(user__full_name__icontains=q) |
+            Q(user__email__icontains=q) |
+            Q(user__phone__icontains=q)
+        )
+
+    if status:
+        payments = payments.filter(payment_status=status)
+    
+    if purpose:
+        payments = payments.filter(purpose=purpose)
+
+    if method:
+        payments = payments.filter(payment_method=method)
+
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d")
+            payments = payments.filter(payment_date__date__gte=date_from_obj)
+        except ValueError:
+            messages.warning(request, "Invalid date format for 'From' date. Use YYYY-MM-DD.")
+
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d")
+            payments = payments.filter(payment_date__date__lte=date_to_obj)
+        except ValueError:
+            messages.warning(request, "Invalid date format for 'To' date. Use YYYY-MM-DD.")
+
+
     summary = payments.aggregate(
         total_records=Count("id"),
         completed_count=Count("id", filter=Q(payment_status="Completed")),

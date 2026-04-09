@@ -24,18 +24,25 @@
             <a href="{% url 'select_pool_for_class_session' %}" class="btn-secondary">Back</a>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'select_trainer_for_class_session' pool.pool_id %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search trainers..." value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <a href="{% url 'select_trainer_for_class_session' pool.pool_id %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="two-col">
-            <div class="dashboard-section card-grid" style="margin:0;">
+            <div class="dashboard-section card-grid" style="margin:0; flex: 2;">
                 {% for trainer in trainers %}
                 <article class="class-card">
                     <h3>{{ trainer.full_name|default:trainer.username }}</h3>
                     <p><strong>Email:</strong> {{ trainer.email }}</p>
                     <p><strong>Specialization:</strong> {{ trainer.specialization|default:"Not specified" }}</p>
-                    <p class="subtitle" style="margin:0.75rem 0 0;">
-                        Schedule conflict details are shown on the next step before class creation.
-                    </p>
                     <div class="card-actions">
-                        <a href="{% url 'create_class_session_for_pool' pool.pool_id trainer.pk %}" class="btn-primary btn-sm">Select Trainer</a>
+                        <a href="{% url 'select_class_type_for_class_session' pool.pool_id trainer.pk %}" class="btn-primary btn-sm">Select Trainer</a>
                     </div>
                 </article>
                 {% empty %}

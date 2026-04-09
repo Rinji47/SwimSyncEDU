@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pool Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Pool Details</h1>
+                <p class="subtitle">View the pool information on a full page.</p>
+            </div>
+            <a href="{% url 'manage_pools' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="two-col">
+            <div class="info-card">
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Name</span>
+                        <span class="detail-value">{{ pool.name }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Status</span>
+                        <span class="detail-value">{% if pool.is_closed %}Closed{% else %}Open{% endif %}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Address</span>
+                        <span class="detail-value">{{ pool.address }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Capacity</span>
+                        <span class="detail-value">{{ pool.capacity }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Coordinates</span>
+                        <span class="detail-value">{{ pool.coordinates }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-image"></i> Pool Images</h3>
+                {% if pool.images.all %}
+                <div class="slot-list" style="max-height:none; gap:0.75rem; margin-top:0.75rem;">
+                    {% for image in pool.images.all %}
+                    <img src="{{ image.image.url }}" alt="{{ pool.name }}" style="width: 100%; border-radius: 12px; border: 1px solid var(--border);">
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="subtitle" style="margin-top: 0.5rem;">No images uploaded for this pool.</p>
+                {% endif %}
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}

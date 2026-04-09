@@ -19,6 +19,30 @@
             <h1>Pending Private Certificates</h1>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'pending_private_certificates' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search pending private certificates..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-pending-private-certificates">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-pending-private-certificates">
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default_if_none:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default_if_none:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'pending_private_certificates' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section card-grid">
             {% for private_class in pending_private_classes %}
             <div class="class-card compact">

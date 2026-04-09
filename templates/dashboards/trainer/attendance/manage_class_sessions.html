@@ -16,18 +16,53 @@
 
     <main class="dashboard-main">
         {% include '../../../components/message.html' %}
+        {% now "Y-m-d" as today_str %}
 
         <div class="dashboard-header">
             <h1>My Group Class Sessions</h1>
             <a href="{% url 'select_class_for_attendance' %}" class="btn-primary">Take Attendance</a>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'manage_trainer_class_session' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search group classes..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-trainer-group-classes">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.status or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-trainer-group-classes">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="Upcoming" {% if request.GET.status == 'Upcoming' %}selected{% endif %}>Upcoming</option>
+                        <option value="Ongoing" {% if request.GET.status == 'Ongoing' %}selected{% endif %}>Ongoing</option>
+                        <option value="Completed" {% if request.GET.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Cancelled" {% if request.GET.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default_if_none:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default_if_none:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'manage_trainer_class_session' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section card-grid">
             {% for class_session in class_sessions %}
             <div class="class-card">
                 <h3>
-                    <span class="class-status {% if class_session.is_cancelled %}status-cancelled{% else %}status-open{% endif %}">
-                        {% if class_session.is_cancelled %}Cancelled{% else %}Active{% endif %}
+                    <span class="class-status {% if class_session.is_cancelled %}status-cancelled{% elif class_session.end_date|date:'Y-m-d' < today_str %}status-completed{% elif class_session.start_date|date:'Y-m-d' > today_str %}status-upcoming{% else %}status-open{% endif %}">
+                        {% if class_session.is_cancelled %}Cancelled{% elif class_session.end_date|date:'Y-m-d' < today_str %}Completed{% elif class_session.start_date|date:'Y-m-d' > today_str %}Upcoming{% else %}Ongoing{% endif %}
                     </span>
                     {{ class_session.class_name }}
                 </h3>

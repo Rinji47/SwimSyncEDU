@@ -12,15 +12,25 @@
 
 {% block content %}
 <div class="dashboard-layout">
-    {% include '../components/admin_sidebar.html' %}
+    {% include '../../components/admin_sidebar.html' %}
 
     <main class="dashboard-main">
-        {% include '../../../components/message.html' %}
+        {% include '../../../../components/message.html' %}
 
         <div class="dashboard-header">
             <h1>Ongoing Private Classes (Absent Trainers) - {{ today }}</h1>
             <a href="{% url 'select_trainer_for_attendance' %}" class="btn-secondary">Back</a>
         </div>
+
+        <form class="filter-bar" method="GET" action="{% url 'list_ongoing_private_classes_of_absent_trainer' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search private classes..." value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <a href="{% url 'list_ongoing_private_classes_of_absent_trainer' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
 
         <div class="dashboard-section card-grid">
             {% for private_class in ongoing_private_classes %}
@@ -33,16 +43,24 @@
                 <div class="card-actions">
                     {% if private_class.substitute_trainer %}
                         <span class="attendance-status present">Sub: {{ private_class.substitute_trainer.full_name|default:private_class.substitute_trainer.username }}</span>
-                    {% else %}
-                        <a href="{% url 'assign_substitute_trainer_for_private_class' private_class.id %}" class="btn-sm btn-primary">Assign Substitute</a>
                     {% endif %}
+                    <a href="{% url 'assign_substitute_trainer_for_private_class' private_class.id %}" class="btn-sm btn-primary">
+                        {% if private_class.substitute_trainer %}Change Substitute{% else %}Assign Substitute{% endif %}
+                    </a>
                     <a href="{% url 'admin_private_class_attendance_history' private_class.id %}" class="btn-sm btn-secondary">History</a>
                 </div>
             </div>
             {% empty %}
-            <p>No ongoing private classes currently linked to absent trainers.</p>
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fa-solid fa-user-clock"></i>
+                </div>
+                <h3>No Ongoing Private Classes Found</h3>
+                <p>Try a different search term or check again after marking trainer attendance.</p>
+            </div>
             {% endfor %}
         </div>
     </main>
 </div>
 {% endblock %}
+

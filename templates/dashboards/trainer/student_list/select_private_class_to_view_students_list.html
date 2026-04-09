@@ -22,6 +22,29 @@
             <p class="attendance-meta">Choose one of your assigned or substitute private classes to view the student details.</p>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'select_private_class_to_view_students_list' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search private classes..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status %}true{% else %}false{% endif %}" aria-controls="filters-trainer-private-students">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.status %}show{% endif %}" id="filters-trainer-private-students">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <a href="{% url 'select_private_class_to_view_students_list' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section card-grid">
             {% for private_class in private_classes %}
             <div class="class-card">

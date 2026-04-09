@@ -22,7 +22,7 @@
         <form class="filter-bar" method="GET" action="{% url 'manage_classes' %}">
             <div class="filter-main">
                 <div class="filter-search">
-                    <input type="text" class="filter-input" name="q" placeholder="Search classes..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <input type="text" class="filter-input" name="q" placeholder="Search classes..." value="{{ request.GET.q|default:'' }}">
                     <button type="submit" class="btn-secondary">Search</button>
                     <button type="button" class="btn-secondary filter-toggle" aria-expanded="false" aria-controls="filters-classes">Filters v</button>
                 </div>
@@ -56,11 +56,11 @@
                 </div>
                 <div class="filter-field">
                     <label>Start</label>
-                    <input type="date" class="filter-date" name="start" value="{{ request.GET.start|default_if_none:'' }}">
+                    <input type="date" class="filter-date" name="start" value="{{ request.GET.start|default:'' }}">
                 </div>
                 <div class="filter-field">
                     <label>End</label>
-                    <input type="date" class="filter-date" name="end" value="{{ request.GET.end|default_if_none:'' }}">
+                    <input type="date" class="filter-date" name="end" value="{{ request.GET.end|default:'' }}">
                 </div>
             </div>
         </form>
@@ -82,38 +82,31 @@
                 <p><strong>Total Bookings:</strong> {{ session.total_bookings|default:0 }}</p>
 
                 <div class="card-actions">
-                    <button type="button" class="btn-sm btn-primary"
-                        onclick="openViewModal(this)"
-                        data-class-name="{{ session.class_name|escape }}"
-                        data-pool-name="{{ session.pool.name|escape }}"
-                        data-trainer-name="{{ session.trainer.full_name|default:session.trainer.username|escape }}"
-                        data-class-type="{{ session.class_type.class_type_id }}"
-                        data-start-date="{{ session.start_date|date:"Y-m-d" }}"
-                        data-end-date="{{ session.end_date|date:"Y-m-d" }}"
-                        data-start-time="{{ session.start_time|time:"H:i" }}"
-                        data-end-time="{{ session.end_time|time:"H:i" }}"
-                        data-seats="{{ session.seats }}"
-                        data-total-price="{{ session.total_price }}"
-                        data-is-cancelled="{% if session.is_cancelled %}true{% else %}false{% endif %}">
-                        View
-                    </button>
+                    <a href="{% url 'view_class_session' session.id %}" class="btn-sm btn-primary">View</a>
 
                     <a href="{% url 'edit_class_session' session.id %}" class="btn-sm btn-secondary">Edit</a>
 
-                    {% if session.is_cancelled %}
-                    <button class="btn-sm btn-success">
-                        <a href="{% url 'open_class_session' session.id %}" style="color:white;text-decoration:none;"
-                        onclick="return confirm('Are you sure you want to reopen this class session?');">
-                        Open
-                        </a>
-                    </button>
+                    {% now "Y-m-d" as today_str %}
+                    {% if session.end_date|date:"Y-m-d" < today_str %}
+                        {% if session.is_cancelled %}
+                            <span class="btn-sm btn-danger" style="pointer-events:none;opacity:0.9;">Cancelled</span>
+                        {% else %}
+                            <span class="btn-sm btn-secondary" style="pointer-events:none;opacity:0.9;">Completed</span>
+                        {% endif %}
+                    {% elif session.is_cancelled %}
+                        <button class="btn-sm btn-success">
+                            <a href="{% url 'open_class_session' session.id %}" style="color:white;text-decoration:none;"
+                            onclick="return confirm('Are you sure you want to reopen this class session?');">
+                            Open
+                            </a>
+                        </button>
                     {% else %}
-                    <button class="btn-sm btn-danger">
-                        <a href="{% url 'close_class_session' session.id %}" style="color:white;text-decoration:none;"
-                        onclick="return confirm('Are you sure you want to cancel this class session?');">
-                        Cancel
-                        </a>
-                    </button>
+                        <button class="btn-sm btn-danger">
+                            <a href="{% url 'close_class_session' session.id %}" style="color:white;text-decoration:none;"
+                            onclick="return confirm('Are you sure you want to cancel this class session?');">
+                            Cancel
+                            </a>
+                        </button>
                     {% endif %}
                 </div>
             </div>
@@ -123,58 +116,5 @@
         </div>
     </main>
 </div>
-
-<!-- VIEW MODAL -->
-<div id="viewModal" class="modal">
-    <div class="modal-content modal-lg">
-        <div class="modal-header">
-            <h2 id="view_class_name">Class Name</h2>
-            <span class="close" onclick="toggleModal('viewModal')">&times;</span>
-        </div>
-        <div class="details-grid">
-            <div class="detail-item">
-                <span class="detail-label">Pool</span>
-                <span class="detail-value" id="view_pool"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Trainer</span>
-                <span class="detail-value" id="view_trainer"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Class Type</span>
-                <span class="detail-value" id="view_type"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Dates</span>
-                <span class="detail-value" id="view_dates"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Time</span>
-                <span class="detail-value" id="view_time"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Seats</span>
-                <span class="detail-value" id="view_seats"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Total Price</span>
-                <span class="detail-value">Rs. <span id="view_price"></span></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Total Bookings</span>
-                <span class="detail-value" id="view_bookings"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Cancelled</span>
-                <span class="detail-value" id="view_cancelled"></span>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn-secondary" onclick="toggleModal('viewModal')">Close</button>
-        </div>
-    </div>
-</div>
-<!-- Class session creation modal removed: creation is not handled here -->
-
-<!-- JS for class session creation removed -->
 {% endblock %}
+

@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Member{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Add Member</h1>
+                <p class="subtitle">Create a member account from a normal page.</p>
+            </div>
+            <a href="{% url 'manage_members' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="two-col">
+            <div class="info-card">
+                <form method="POST" enctype="multipart/form-data" action="{% url 'add_member' %}" class="split-form">
+                    {% csrf_token %}
+
+                    <div>
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" value="{{ form_data.username|default:'' }}" required>
+                    </div>
+                    <div>
+                        <label for="full_name">Full Name</label>
+                        <input type="text" id="full_name" name="full_name" value="{{ form_data.full_name|default:'' }}" required>
+                    </div>
+
+                    <div>
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" value="{{ form_data.email|default:'' }}" required>
+                    </div>
+                    <div>
+                        <label for="phone">Phone</label>
+                        <input type="text" id="phone" name="phone" value="{{ form_data.phone|default:'' }}">
+                    </div>
+
+                    <div>
+                        <label for="gender">Gender</label>
+                        <select id="gender" name="gender" required>
+                            <option value="">Select Gender</option>
+                            <option value="male" {% if form_data.gender == 'male' or form_data.gender == 'Male' %}selected{% endif %}>Male</option>
+                            <option value="female" {% if form_data.gender == 'female' or form_data.gender == 'Female' %}selected{% endif %}>Female</option>
+                            <option value="other" {% if form_data.gender == 'other' or form_data.gender == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="date_of_birth">Date of Birth</label>
+                        <input type="date" id="date_of_birth" name="date_of_birth" value="{{ form_data.date_of_birth|default:'' }}" required>
+                    </div>
+
+                    <div>
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div>
+                        <label for="profile_picture">Profile Picture</label>
+                        <input type="file" id="profile_picture" name="profile_picture" accept="image/*">
+                    </div>
+
+                    <div class="full-span form-actions">
+                        <button type="submit" class="btn-primary">Create Member</button>
+                        <a href="{% url 'manage_members' %}" class="btn-secondary btn-sm reset-btn">Cancel</a>
+                    </div>
+                </form>
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-circle-info"></i> Member Notes</h3>
+                <ul class="side-list">
+                    <li><strong>Username:</strong> must be unique.</li>
+                    <li><strong>Email:</strong> must be unique.</li>
+                    <li><strong>Date of birth:</strong> required by the custom user model.</li>
+                    <li><strong>Password:</strong> required when adding a member.</li>
+                </ul>
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}
+

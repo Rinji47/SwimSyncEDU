@@ -12,10 +12,10 @@
 
 {% block content %}
 <div class="dashboard-layout">
-    {% include '../components/admin_sidebar.html' %}
+    {% include '../../components/admin_sidebar.html' %}
 
     <main class="dashboard-main">
-        {% include '../../../components/message.html' %}
+        {% include '../../../../components/message.html' %}
 
         <div class="dashboard-header">
             <h1>Trainer Attendance ({{ today }})</h1>
@@ -25,6 +25,30 @@
                 <a href="{% url 'list_ongoing_private_classes_of_absent_trainer' %}" class="btn-secondary">Absent Private Classes</a>
             </div>
         </div>
+
+        <form class="filter-bar" method="GET" action="{% url 'select_trainer_for_attendance' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search trainers..." value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status %}true{% else %}false{% endif %}" aria-controls="filters-attendance-trainers">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.status %}show{% endif %}" id="filters-attendance-trainers">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="present" {% if request.GET.status == 'present' %}selected{% endif %}>Present</option>
+                        <option value="absent" {% if request.GET.status == 'absent' %}selected{% endif %}>Absent</option>
+                        <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <a href="{% url 'select_trainer_for_attendance' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
 
         <div class="dashboard-section card-grid">
             {% for row in trainer_rows %}
@@ -54,3 +78,4 @@
     </main>
 </div>
 {% endblock %}
+

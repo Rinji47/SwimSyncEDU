@@ -24,7 +24,7 @@
             <span class="nav-icon"><i class="fa-solid fa-user-lock"></i></span>
             My Private Classes
         </a>
-        <a href="{% url 'payment_report' %}" class="nav-item {% if request.resolver_match.url_name == 'payment_report' %}active{% endif %}">
+        <a href="{% url 'user_payment_report' %}" class="nav-item {% if request.resolver_match.url_name == 'user_payment_report' %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-wallet"></i></span>
             My Payments
         </a>

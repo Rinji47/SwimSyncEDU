@@ -75,6 +75,16 @@ def pending_group_certificate_sessions(request):
     ).filter(
         Q(trainer=request.user) | Q(substitute_trainer=request.user)
     ).select_related('pool', 'class_type').order_by('-end_date')
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        completed_sessions = completed_sessions.filter(
+            Q(class_name__icontains=q) |
+            Q(pool__name__icontains=q) |
+            Q(trainer__full_name__icontains=q) |
+            Q(trainer__username__icontains=q) |
+            Q(substitute_trainer__full_name__icontains=q) |
+            Q(substitute_trainer__username__icontains=q)
+        )
 
     pending_sessions = []
     for class_session in completed_sessions:
@@ -112,6 +122,15 @@ def pending_private_certificates(request):
     ).filter(
         Q(trainer=request.user) | Q(substitute_trainer=request.user)
     ).select_related('user', 'pool').order_by('-end_date')
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        completed_private_classes = completed_private_classes.filter(
+            Q(user__full_name__icontains=q) |
+            Q(user__username__icontains=q) |
+            Q(pool__name__icontains=q) |
+            Q(trainer__full_name__icontains=q) |
+            Q(trainer__username__icontains=q)
+        )
 
     pending_private_classes = []
     for private_class in completed_private_classes:
@@ -141,6 +160,14 @@ def select_student_for_group_certificate(request, class_session_id):
         class_session=class_session,
         is_cancelled=False,
     ).select_related('user')
+    q = (request.GET.get('q') or '').strip()
+
+    if q:
+        bookings = bookings.filter(
+            Q(user__username__icontains=q) |
+            Q(user__full_name__icontains=q) |
+            Q(user__email__icontains=q)
+        )
 
     pending_bookings = []
     for booking in bookings:
@@ -166,6 +193,23 @@ def certificate_granted_list(request):
     certificates = CompletionCertificate.objects.select_related(
         'user', 'trainer', 'class_booking__class_session', 'private_class'
     ).order_by('-id')
+    q = (request.GET.get('q') or '').strip()
+    cert_type = (request.GET.get('type') or '').strip()
+
+    if q:
+        certificates = certificates.filter(
+            Q(user__username__icontains=q) |
+            Q(user__full_name__icontains=q) |
+            Q(trainer__username__icontains=q) |
+            Q(trainer__full_name__icontains=q) |
+            Q(class_booking__class_session__class_name__icontains=q) |
+            Q(private_class__pool__name__icontains=q)
+        )
+
+    if cert_type == 'group':
+        certificates = certificates.filter(class_booking__isnull=False)
+    elif cert_type == 'private':
+        certificates = certificates.filter(private_class__isnull=False)
 
     if request.user.role == 'trainer':
         certificates = certificates.filter(trainer=request.user)
@@ -180,6 +224,38 @@ def certificate_granted_list(request):
         'dashboards/admin/certificates/certificate_granted_list.html',
         {'certificates': certificates},
     )
+
+
+@login_required
+def trainer_view_certificate(request, certificate_id):
+    if request.user.role != 'trainer':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    certificate = get_object_or_404(CompletionCertificate, id=certificate_id, trainer=request.user)
+
+    if certificate.class_booking:
+        trainer = certificate.class_booking.class_session.trainer
+    elif certificate.private_class:
+        trainer = certificate.private_class.trainer
+    else:
+        trainer = None
+
+    if User.objects.filter(role='admin').exists():
+        admin_signatre = User.objects.filter(role='admin').first().digital_signature
+    else:
+        admin_signatre = None
+
+    if not trainer:
+        messages.error(request, "Invalid certificate.")
+        return redirect('certificate_granted_list')
+
+    context = {
+        'certificate': certificate,
+        'trainer': trainer,
+        'authorized_signature_path': admin_signatre,
+    }
+    return render(request, 'dashboards/trainer/certificates/trainer_view_certificate.html', context)
 
 
 @login_required

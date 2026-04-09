@@ -21,6 +21,39 @@
             <a href="{% url 'manage_trainer_class_session' %}" class="btn-secondary">Back</a>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'class_session_attendance_history' class_session.id %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="student_and_trainer_name" placeholder="Search student or marker..." value="{{ request.GET.student_and_trainer_name|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-trainer-group-history">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.status or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-trainer-group-history">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="present" {% if request.GET.status == 'present' %}selected{% endif %}>Present</option>
+                        <option value="absent" {% if request.GET.status == 'absent' %}selected{% endif %}>Absent</option>
+                        <option value="class_cancelled" {% if request.GET.status == 'class_cancelled' %}selected{% endif %}>Class Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'class_session_attendance_history' class_session.id %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section history-table-wrap">
             <table class="history-table">
                 <thead>

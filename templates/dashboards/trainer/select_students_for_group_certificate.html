@@ -23,6 +23,16 @@
             <a href="{% url 'pending_group_certificate_sessions' %}" class="btn-secondary">Back</a>
         </div>
 
+        <form class="filter-bar" method="GET" action="{% url 'select_student_for_group_certificate' class_session.id %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search students..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <a href="{% url 'select_student_for_group_certificate' class_session.id %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section card-grid">
             {% for booking in pending_bookings %}
             <div class="class-card compact">

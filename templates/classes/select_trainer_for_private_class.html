@@ -63,17 +63,23 @@
 
 <section class="page-shell trainer-select-shell">
     <div class="container two-col">
-        <div>
-            {% include "components/message.html" %}
-            <div class="page-head trainer-select-hero">
+            <div>
+                {% include "components/message.html" %}
+                <div class="page-head trainer-select-hero">
                 <div>
                     <h1>Select A Trainer</h1>
                     <p class="subtitle">Private class at {{ pool.name }}. Check conflicts by date and pick quickly.</p>
                 </div>
-                <a class="btn-secondary" href="{% url 'pool_class_types' pool.pool_id %}"><i class="fa-solid fa-arrow-left"></i> Back</a>
-            </div>
+                    <a class="btn-secondary" href="{% url 'pool_class_types' pool.pool_id %}"><i class="fa-solid fa-arrow-left"></i> Back</a>
+                </div>
 
-            <div class="pools-grid trainer-select-grid">
+                <form class="quick-filter" method="get" action="{% url 'select_trainer_for_private_class' pool.pool_id %}" style="margin-bottom: 1.25rem;">
+                    <input type="text" name="q" placeholder="Search trainers..." value="{{ request.GET.q|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <a href="{% url 'select_trainer_for_private_class' pool.pool_id %}" class="btn-secondary">Clear</a>
+                </form>
+
+                <div class="pools-grid trainer-select-grid">
                 {% for trainer in trainers %}
                 <article class="pool-card">
                     <div class="pool-card-header">

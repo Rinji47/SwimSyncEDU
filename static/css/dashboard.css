@@ -396,6 +396,10 @@
   border-radius: 12px;
   padding: 1rem 1.2rem;
   box-shadow: 0 4px 12px var(--shadow);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .data-card-header {
@@ -403,6 +407,7 @@
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
+  min-width: 0;
 }
 
 .data-card-title {
@@ -414,6 +419,8 @@
   align-items: flex-start;
   justify-content: flex-start;
   gap: 0.75rem;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .data-card-row {
@@ -422,18 +429,52 @@
   margin: 0.25rem 0;
   font-size: 0.9rem;
   color: var(--text-secondary);
+  min-width: 0;
+  align-items: flex-start;
+  flex-wrap: wrap;
 }
 
 .data-card-label {
   font-weight: 600;
   color: var(--text-primary);
+  flex: 0 0 auto;
+}
+
+.data-card-row span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.data-card-row-stack {
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.data-card-row-stack .data-card-label {
+  flex: initial;
+}
+
+.data-card-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
 
 .data-card-actions {
-  margin-top: 0.8rem;
+  margin-top: auto;
+  padding-top: 0.8rem;
   display: flex;
+  align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.data-card-actions form {
+  margin: 0;
+  display: flex;
+  align-items: center;
 }
 
 .data-card-status {
@@ -584,7 +625,21 @@
   width: 100%;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
   margin-top: 0.25rem;
+}
+
+.filter-actions .btn-primary,
+.filter-actions .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0.8rem 1.35rem;
+  box-sizing: border-box;
+  white-space: nowrap;
 }
 
 .empty-state {
