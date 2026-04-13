@@ -72,6 +72,10 @@
         gap: 1rem;
     }
 
+    .review-filter-bar {
+        margin-bottom: 1.25rem;
+    }
+
     .review-comment-card {
         padding: 1.25rem 1.3rem;
         border-radius: 22px;
@@ -157,6 +161,21 @@
             </div>
             <a href="{% url 'public_select_trainer_for_reviews' %}" class="btn-secondary">Back</a>
         </div>
+
+        <form class="quick-filter review-filter-bar" method="get" action="{% url 'public_trainer_review_list' trainer.pk %}">
+            <select name="rating" class="filter-select">
+                <option value="">All Ratings</option>
+                <option value="5" {% if request.GET.rating == '5' %}selected{% endif %}>5 Stars</option>
+                <option value="4" {% if request.GET.rating == '4' %}selected{% endif %}>4 Stars</option>
+                <option value="3" {% if request.GET.rating == '3' %}selected{% endif %}>3 Stars</option>
+                <option value="2" {% if request.GET.rating == '2' %}selected{% endif %}>2 Stars</option>
+                <option value="1" {% if request.GET.rating == '1' %}selected{% endif %}>1 Star</option>
+            </select>
+            <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default:'' }}">
+            <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default:'' }}">
+            <button type="submit" class="btn-secondary">Apply</button>
+            <a href="{% url 'public_trainer_review_list' trainer.pk %}" class="btn-secondary">Clear</a>
+        </form>
 
         <div class="review-comment-grid">
             {% for row in review_rows %}

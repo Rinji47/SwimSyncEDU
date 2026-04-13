@@ -468,7 +468,7 @@ def view_pool(request, pool_id):
     })
 
 
-def manage_pools(request, pool_id=None):
+def manage_pools(request):
     pools = Pool.objects.all()
 
     q = (request.GET.get('q') or '').strip()
@@ -495,114 +495,6 @@ def manage_pools(request, pool_id=None):
         except ValueError:
             pass
 
-    if pool_id:
-        pool = get_object_or_404(Pool, pk=pool_id)
-    else:
-        pool = None
-
-    if request.method == 'POST':
-        name = request.POST.get('name')
-        address = request.POST.get('address')
-        capacity_raw = request.POST.get('capacity')
-        coordinates = request.POST.get('coordinates')
-        uploaded_images = request.FILES.getlist('images')
-        deleted_image_ids = request.POST.getlist('delete_image_ids')
-
-        MAX_IMAGES = 5
-        existing_image_count = 0;
-        if pool:
-            existing_image_count = pool.images.count()
-        
-        deleted_count = len(deleted_image_ids)
-        if pool:
-            deleted_count = len(deleted_image_ids)
-        
-        final_count = existing_image_count - deleted_count + len(uploaded_images)
-        if final_count > MAX_IMAGES:
-            messages.error(request, f'You can only have up to {MAX_IMAGES} images per pool. Please delete some images before uploading new ones.')
-            return redirect('manage_pools')
-        
-        try:
-            capacity = int(capacity_raw)
-            if capacity <= 0:
-                raise ValueError
-        except (TypeError, ValueError):
-            messages.error(request, 'Capacity must be a positive whole number.')
-            return redirect('manage_pools')
-
-        if pool_id and not pool:
-            messages.error(request, 'Pool not found.')
-            return redirect('manage_pools')
-        
-        if pool:
-            has_new_images = bool(uploaded_images)
-            has_deleted_images = bool(deleted_image_ids)
-            if (
-                pool.name == name
-                and pool.address == address
-                and pool.capacity == capacity
-                and pool.coordinates == coordinates
-                and not has_new_images
-                and not has_deleted_images
-            ):
-                messages.info(request, 'No changes detected.')
-                return redirect('manage_pools')
-        
-        if pool is not None:
-            if (pools.filter(name=name).exclude(pk=pool_id).exists() or
-                pools.filter(coordinates=coordinates).exclude(pk=pool_id).exists()):
-                messages.error(request, 'A pool with this name, or coordinates already exists.')
-                return redirect('manage_pools')
-        else:
-            if (pools.filter(name=name).exists() or
-                pools.filter(coordinates=coordinates).exists()):
-                messages.error(request, 'A pool with this name, or coordinates already exists.')
-                return redirect('manage_pools')
-        
-        if coordinates == "" or coordinates is None:
-            messages.error(request, 'Please select a coordinate')
-            return redirect('manage_pools')
-        
-        if pool:
-            pool.name = name
-            pool.address = address
-            pool.capacity = capacity
-            pool.coordinates = coordinates
-            pool.save()
-
-            if deleted_image_ids:
-                images_to_delete = PoolImage.objects.filter(pool=pool, image_id__in=deleted_image_ids)
-
-                for image in images_to_delete:
-                    image.image.delete(save=False)
-                
-                images_to_delete.delete()
-
-            current_max = pool.images.order_by('-sort_order').values_list('sort_order', flat=True).first() or 0
-            for index, uploaded in enumerate(uploaded_images, start=1):
-                PoolImage.objects.create(
-                    pool=pool,
-                    image=uploaded,
-                    sort_order=current_max + index,
-                )
-            messages.success(request, 'Pool updated successfully.')
-        else:
-            created_pool = Pool.objects.create(
-                name=name,
-                address=address,
-                capacity=capacity,
-                coordinates=coordinates,
-            )
-            for index, uploaded in enumerate(uploaded_images, start=1):
-                PoolImage.objects.create(
-                    pool=created_pool,
-                    image=uploaded,
-                    sort_order=index,
-                )
-            messages.success(request, 'New pool added successfully.')
-        
-        return redirect('manage_pools')
-    
     return render(
         request,
         'dashboards/admin/pool_management/admin_manage_pools.html',
@@ -611,6 +503,21 @@ def manage_pools(request, pool_id=None):
             'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
         },
     )
+
+def open_pool(request, pool_id):
+    pool = Pool.objects.get(pk=pool_id)
+    if not pool.is_closed:
+        messages.error(request, 'Pool is already open.')
+        return redirect('manage_pools')
+    
+    if Pool.objects.filter(coordinates=pool.coordinates, is_closed=False).exclude(pk=pool_id).exists():
+        messages.error(request, 'Another open pool with the same coordinates already exists. Please change the coordinates before opening this pool.')
+        return redirect('manage_pools') 
+    
+    pool.is_closed = False
+    pool.save()
+    messages.success(request, 'Pool has been opened successfully.')
+    return redirect('manage_pools')
 
 def close_pool(request, pool_id):
     pool = Pool.objects.get(pk=pool_id)
@@ -687,9 +594,7 @@ def select_pool_quality(request):
     return render(request, 'dashboards/admin/pool_quality/select_pool_quality.html', context)
 
 
-def add_quality(request, pool_id=None):
-    if pool_id is None:
-        pool_id = request.GET.get('pool_id')
+def add_quality(request, pool_id):
     pool = get_object_or_404(Pool, pk=pool_id)
     today = timezone.localdate()
 
@@ -878,6 +783,20 @@ def unassign_trainer(request, assignment_id):
         is_cancelled=False,
         end_date__gte=today,
     )
+    
+    substitute_group_classes = ClassSession.objects.filter(
+        substitute_trainer=assignment.trainer,
+        pool=assignment.pool,
+        is_cancelled=False,
+        end_date__gte=today,
+    )
+
+    substitute_private_classes = PrivateClass.objects.filter(
+        substitute_trainer=assignment.trainer,
+        pool=assignment.pool,
+        is_cancelled=False,
+        end_date__gte=today,
+    )
 
     if ongoing_or_upcoming_group_classes.exists() or ongoing_or_upcoming_private_classes.exists():
         messages.error(
@@ -885,9 +804,36 @@ def unassign_trainer(request, assignment_id):
             'This trainer still has ongoing or upcoming classes in this pool. Unassign them after those classes are finished or cancelled.'
         )
         return redirect('assign_trainer_manager')
+    
+    has_substitute_group_classes = substitute_group_classes.exists()
+    has_substitute_private_classes = substitute_private_classes.exists()
+    confirm_clear_substitute = request.POST.get('confirm_clear_substitute') == '1'
+
+
+    if has_substitute_group_classes or has_substitute_private_classes:
+        if not confirm_clear_substitute:
+            messages.warning(
+                request,
+                'This trainer is currently a substitute for some ongoing or upcoming classes in this pool. Please confirm to clear the substitute trainer for those classes and proceed with unassignment.'
+            )
+            return render(
+                request,
+                'dashboards/admin/trainer_assignment/assign_trainer_manager.html',
+                {
+                    'assignment': assignment,
+                    'require_substitute_clear_confirmation': True,
+                }
+            )
+
+    if has_substitute_group_classes:
+        substitute_group_classes.update(substitute_trainer=None)
+    if has_substitute_private_classes:
+        substitute_private_classes.update(substitute_trainer=None)
+
+    if not has_substitute_group_classes and not has_substitute_private_classes:
+        messages.success(request, 'Trainer unassigned successfully.')
 
     assignment.end_date = timezone.now().date()
     assignment.is_active = False
     assignment.save(update_fields=['end_date', 'is_active'])
-    messages.success(request, 'Trainer unassigned successfully.')
     return redirect('assign_trainer_manager')

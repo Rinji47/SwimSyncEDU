@@ -81,10 +81,17 @@
                     <div class="data-card-actions">
                         <a class="btn-sm btn-primary" href="{% url 'view_pool' pool.pool_id %}">View</a>
                         <a class="btn-sm btn-secondary" href="{% url 'edit_pool' pool.pool_id %}">Edit</a>
-                        <button class="btn-sm btn-danger">
-                            <a href="{% url 'close_pool' pool.pool_id %}" style="text-decoration: none; color: white;"
-                            onclick="return confirm('Are you sure you want to close this pool?');">Close</a>
-                        </button>
+                        {% if not pool.is_closed %}
+                            <button class="btn-sm btn-danger">
+                                <a href="{% url 'close_pool' pool.pool_id %}" style="text-decoration: none; color: white;"
+                                onclick="return confirm('Are you sure you want to close this pool?');">Close</a>
+                            </button>
+                            {% else %}
+                            <button class="btn-sm btn-success" disabled>
+                                <a href="{% url 'open_pool' pool.pool_id %}" style="text-decoration: none; color: white;"
+                                onclick="return confirm('Are you sure you want to open this pool?');">Open</a>
+                            </button>
+                        {% endif %}
                     </div>
                 </div>
                 {% empty %}

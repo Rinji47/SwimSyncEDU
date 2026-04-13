@@ -79,7 +79,7 @@
             <div class="class-card compact">
                 <h3>
                     <span class="class-status status-open">Certified</span>
-                    {{ item.trainer.full_name|default:item.trainer.username }}
+                    Trainer: {{ item.trainer.full_name|default:item.trainer.username }}
                 </h3>
 
                 {% if item.certificate.class_booking %}

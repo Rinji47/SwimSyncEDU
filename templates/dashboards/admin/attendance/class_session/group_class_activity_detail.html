@@ -18,13 +18,57 @@
 
         <div class="dashboard-header">
             <h1>{{ class_session.class_name }} - Daily Activity</h1>
-            <a href="{% url 'class_private_activity_history' %}?date_from={{ from_date|date:'Y-m-d' }}&date_to={{ to_date|date:'Y-m-d' }}" class="btn-secondary">Back</a>
+            <a href="{% url 'class_activity_history' %}" class="btn-secondary">Back</a>
         </div>
 
         <div class="dashboard-section">
             <p><strong>Pool:</strong> {{ class_session.pool.name }}</p>
             <p><strong>Main Trainer:</strong> {{ class_session.trainer.full_name|default:class_session.trainer.username }}</p>
-            <p><strong>Range:</strong> {{ from_date }} to {{ to_date }}</p>
+            <p><strong>Class Dates:</strong> {{ class_session.start_date }} to {{ class_session.end_date }}</p>
+        </div>
+
+        <form class="filter-bar" method="GET" action="{% url 'admin_group_class_activity_detail' class_session.id %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Marked by" value="{{ request.GET.q }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.pool or request.GET.rating or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-quality">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.pool or request.GET.rating or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-quality">
+                <div class="filter-field">
+                    <label for="status_filter">Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All Status</option>
+                        <option value="Conducted" {% if request.GET.status == 'Conducted' %}selected{% endif %}>Conducted</option>
+                        <option value="Cancelled" {% if request.GET.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                        <option value="Not Conducted" {% if request.GET.status == 'Not Conducted' %}selected{% endif %}>Not Conducted</option>
+                        <option value="Weekend" {% if request.GET.status == 'Weekend' %}selected{% endif %}>Weekend</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="sort_filter">Sort By</label>
+                    <select class="filter-select" name="order_by">
+                        <option value="">Newest First</option>
+                        <option value="date_asc" {% if request.GET.order_by == 'date_asc' %}selected{% endif %}>Oldest First</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="date_from_filter">From</label>
+                    <input type="date" name="date_from" id="date_from_filter" class="filter-date" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label for="date_to_filter">To</label>
+                    <input type="date" name="date_to" id="date_to_filter" class="filter-date" value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <a href="{% url 'admin_group_class_activity_detail' class_session.id %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
+        <div class="dashboard-section">
+            <p><strong>Total Rows:</strong> {{ daily_record_rows|length }}</p>
         </div>
 
         <div class="dashboard-section history-table-wrap">
@@ -32,29 +76,23 @@
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Main Trainer Attendance</th>
-                        <th>Substitute Trainer</th>
                         <th>Status</th>
+                        <th>Marked By</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for row in daily_rows %}
+                    {% for row in daily_record_rows %}
                     <tr>
                         <td>{{ row.date }}</td>
                         <td>
-                            <span class="attendance-status {% if row.main_trainer_status == 'Present' %}present{% elif row.main_trainer_status == 'Absent' %}absent{% else %}pending{% endif %}">
-                                {{ row.main_trainer_status }}
-                            </span>
-                        </td>
-                        <td>{{ row.substitute_name }}</td>
-                        <td>
-                            <span class="attendance-status {% if row.status == 'Cancelled' %}absent{% elif row.status == 'Not Conducted' %}pending{% else %}present{% endif %}">
+                            <span class="attendance-status {% if row.status == 'Conducted' %}present{% elif row.status == 'Cancelled' %}absent{% else %}pending{% endif %}">
                                 {{ row.status }}
                             </span>
                         </td>
+                        <td>{{ row.marked_by }}</td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="4">No daily activity records found for this date range.</td></tr>
+                    <tr><td colspan="3">No daily activity records found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

@@ -48,6 +48,153 @@ def get_pool_busy_slots(pool, busy_from, busy_to):
 
 
 @login_required
+def list_trainer_classes(request, trainer_id):
+    if request.user.role != 'admin' and request.user.pk != trainer_id:
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    trainer = get_object_or_404(User, pk=trainer_id)
+    today = date.today()
+    classes = ClassSession.objects.filter(
+        trainer=trainer
+    ).select_related('pool', 'class_type', 'trainer').order_by('-start_date', '-start_time')
+
+    private_classes = PrivateClass.objects.filter(
+        trainer=trainer
+    ).select_related('pool', 'trainer', 'user').order_by('-start_date', '-start_time')
+
+    q = (request.GET.get('q') or '').strip()
+    status = request.GET.get('status')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+
+    if q:
+        classes = classes.filter(
+            Q(class_name__icontains=q) |
+            Q(pool__name__icontains=q) |
+            Q(class_type__name__icontains=q)
+        )
+        private_classes = private_classes.filter(
+            Q(user__full_name__icontains=q) |
+            Q(user__username__icontains=q) |
+            Q(pool__name__icontains=q)
+        )
+
+    if date_from:
+        try:
+            date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+            classes = classes.filter(end_date__gte=date_from_parsed)
+            private_classes = private_classes.filter(end_date__gte=date_from_parsed)
+        except ValueError:
+            pass
+
+    if date_to:
+        try:
+            date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+            classes = classes.filter(start_date__lte=date_to_parsed)
+            private_classes = private_classes.filter(start_date__lte=date_to_parsed)
+        except ValueError:
+            pass
+
+    if status == 'Upcoming':
+        classes = classes.filter(start_date__gt=today, is_cancelled=False)
+        private_classes = private_classes.filter(start_date__gt=today, is_cancelled=False)
+    elif status == 'Ongoing':
+        classes = classes.filter(start_date__lte=today, end_date__gte=today, is_cancelled=False)
+        private_classes = private_classes.filter(start_date__lte=today, end_date__gte=today, is_cancelled=False)
+    elif status == 'Completed':
+        classes = classes.filter(end_date__lt=today, is_cancelled=False)
+        private_classes = private_classes.filter(end_date__lt=today, is_cancelled=False)
+    elif status == 'Cancelled':
+        classes = classes.filter(is_cancelled=True)
+        private_classes = private_classes.filter(is_cancelled=True)
+
+    return render(
+        request,
+        'dashboards/admin/class_management/trainer_class_lists/list_trainer_classes.html',
+        {
+            'trainer': trainer,
+            'classes': classes,
+            'private_classes': private_classes,
+            'today': today,
+        },
+    )
+
+
+@login_required
+def list_trainer_sub_classes(request, trainer_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    q = (request.GET.get('q') or '').strip()
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    status = request.GET.get('status')
+
+    trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
+    sub_class_sessions = ClassSession.objects.filter(
+        substitute_trainer=trainer
+    ).select_related('pool', 'class_type', 'trainer').order_by('-start_date', '-start_time')
+    sub_private_classes = PrivateClass.objects.filter(
+        substitute_trainer=trainer
+    ).select_related('pool', 'trainer', 'user').order_by('-start_date', '-start_time')
+
+    if q:
+        sub_class_sessions = sub_class_sessions.filter(
+            Q(class_name__icontains=q) |
+            Q(pool__name__icontains=q) |
+            Q(class_type__name__icontains=q)
+        )
+        sub_private_classes = sub_private_classes.filter(
+            Q(user__full_name__icontains=q) |
+            Q(user__username__icontains=q) |
+            Q(pool__name__icontains=q)
+        )
+
+    if date_from:
+        try:
+            date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+            sub_class_sessions = sub_class_sessions.filter(end_date__gte=date_from_parsed)
+            sub_private_classes = sub_private_classes.filter(end_date__gte=date_from_parsed)
+        except ValueError:
+            pass
+
+    if date_to:
+        try:
+            date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+            sub_class_sessions = sub_class_sessions.filter(start_date__lte=date_to_parsed)
+            sub_private_classes = sub_private_classes.filter(start_date__lte=date_to_parsed)
+        except ValueError:
+            pass
+
+    today = date.today()
+    if status == 'Upcoming':
+        sub_class_sessions = sub_class_sessions.filter(start_date__gt=today, is_cancelled=False)
+        sub_private_classes = sub_private_classes.filter(start_date__gt=today, is_cancelled=False)
+    elif status == 'Ongoing':
+        sub_class_sessions = sub_class_sessions.filter(start_date__lte=today, end_date__gte=today, is_cancelled=False)
+        sub_private_classes = sub_private_classes.filter(start_date__lte=today, end_date__gte=today, is_cancelled=False)
+    elif status == 'Completed':
+        sub_class_sessions = sub_class_sessions.filter(end_date__lt=today, is_cancelled=False)
+        sub_private_classes = sub_private_classes.filter(end_date__lt=today, is_cancelled=False)
+    elif status == 'Cancelled':
+        sub_class_sessions = sub_class_sessions.filter(is_cancelled=True)
+        sub_private_classes = sub_private_classes.filter(is_cancelled=True)
+
+    return render(
+        request,
+        'dashboards/admin/class_management/trainer_class_lists/list_trainer_sub_classes.html',
+        {
+            'trainer': trainer,
+            'sub_class_sessions': sub_class_sessions,
+            'sub_private_classes': sub_private_classes,
+            'today': today,
+        },
+    )
+
+
+@login_required
 def manage_class_types(request):
     if request.user.role != 'admin':
         messages.error(request, 'You do not have permission to access this page.')
@@ -1174,9 +1321,6 @@ def trainer_susitute_private_classes_list(request):
         )
     return render(request, 'dashboards/trainer/attendance/substitute_private_classes.html', {'substitute_private_classes': substitute_private_classes})
 
-
-
-
 @login_required
 def todays_classes(request):
     if request.user.role != 'user':
@@ -1187,20 +1331,22 @@ def todays_classes(request):
     now_time = timezone.localtime().time()
     is_weekday = today.weekday() < 5
 
-    group_bookings = ClassBooking.objects.filter(
-        user=request.user,
-        is_cancelled=False,
-        class_session__is_cancelled=False,
-        class_session__start_date__lte=today,
-        class_session__end_date__gte=today,
-    ).select_related(
-        'class_session',
-        'class_session__trainer',
-        'class_session__pool',
-        'class_session__class_type',
-    )
-
+    group_bookings = ClassBooking.objects.none()
     private_classes = PrivateClass.objects.none()
+    if is_weekday:
+        group_bookings = ClassBooking.objects.filter(
+            user=request.user,
+            is_cancelled=False,
+            class_session__is_cancelled=False,
+            class_session__start_date__lte=today,
+            class_session__end_date__gte=today,
+        ).select_related(
+            'class_session',
+            'class_session__trainer',
+            'class_session__pool',
+            'class_session__class_type',
+        ).order_by('class_session__start_time')
+
     if is_weekday:
         private_classes = PrivateClass.objects.filter(
             user=request.user,
@@ -1211,8 +1357,7 @@ def todays_classes(request):
             'trainer',
             'pool',
             'substitute_trainer',
-        )
-
+        ).order_by('start_time')
 
     q = (request.GET.get('q') or '').strip()
     if q:
@@ -1221,8 +1366,8 @@ def todays_classes(request):
             Q(class_session__pool__name__icontains=q) |
             Q(class_session__class_type__name__icontains=q) |
             Q(class_session__trainer__full_name__icontains=q) |
-            Q(substitute_trainer__full_name__icontains=q) |
-            Q(substitute_trainer__username__icontains=q)
+            Q(class_session__substitute_trainer__full_name__icontains=q) |
+            Q(class_session__substitute_trainer__username__icontains=q)
         )
 
         private_classes = private_classes.filter(
@@ -1233,85 +1378,28 @@ def todays_classes(request):
             Q(substitute_trainer__username__icontains=q)
         )
 
-    group_class_ids = []
-    for booking in group_bookings:
-        group_class_ids.append(booking.class_session_id)
+    if not is_weekday:
+        group_bookings = ClassBooking.objects.none()
+        private_classes = PrivateClass.objects.none()
+        weekend = "It is weekend today. No classes are scheduled for today."
+        context = {
+            'today': today,
+            'is_weekday': is_weekday,
+            'group_bookings': group_bookings,
+            'private_classes': private_classes,
+            'weekend': weekend,
+            'now_time': now_time,
+        }
 
-    group_attendance_records = ClassSessionAttendance.objects.filter(
-        student=request.user,
-        date=today,
-        class_session_id__in=group_class_ids,
-    )
-    group_attendance_map = {}
-    for record in group_attendance_records:
-        group_attendance_map[record.class_session_id] = record.status
+    else:   
+        context = {
+            'today': today,
+            'is_weekday': is_weekday,
+            'group_bookings': group_bookings,
+            'private_classes': private_classes,
+            'now_time': now_time,
+        }
 
-    private_class_ids = []
-    for private_class in private_classes:
-        private_class_ids.append(private_class.id)
-
-    private_attendance_records = PrivateClassAttendance.objects.filter(
-        student=request.user,
-        date=today,
-        private_class_id__in=private_class_ids,
-    )
-    private_attendance_map = {}
-    for record in private_attendance_records:
-        private_attendance_map[record.private_class_id] = record.status
-
-    cards = []
-
-    for booking in group_bookings:
-        session = booking.class_session
-        attendance_status = group_attendance_map.get(session.id)
-
-        if attendance_status == 'class_cancelled':
-            status = 'Cancelled Today'
-        elif attendance_status in {'present', 'absent'}:
-            status = 'Completed Today'
-        elif session.start_time > now_time:
-            status = 'Upcoming Today'
-        else:
-            status = 'Ongoing'
-
-        cards.append({
-            'type': 'group',
-            'status': status,
-            'start_time': session.start_time,
-            'booking': booking,
-            'session': session,
-        })
-
-    for private_class in private_classes:
-        attendance_status = private_attendance_map.get(private_class.id)
-
-        if attendance_status == 'class_cancelled':
-            status = 'Cancelled Today'
-        elif attendance_status in {'present', 'absent'}:
-            status = 'Completed Today'
-        elif private_class.start_time > now_time:
-            status = 'Upcoming Today'
-        else:
-            status = 'Ongoing'
-
-        cards.append({
-            'type': 'private',
-            'status': status,
-            'start_time': private_class.start_time,
-            'private_class': private_class,
-        })
-
-    def get_start_time(card):
-        return card['start_time']
-
-    cards.sort(key=get_start_time)
-
-    context = {
-        'today': today,
-        'cards': cards,
-        'is_weekday': is_weekday,
-
-    }
     return render(request, 'dashboards/user/todays_classes.html', context)
 
 @login_required

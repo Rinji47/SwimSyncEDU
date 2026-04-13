@@ -12,6 +12,7 @@ urlpatterns = [
     path('view_pool/<int:pool_id>/', views.view_pool, name='view_pool'),
     path('edit_pool/<int:pool_id>/', views.edit_pool, name='edit_pool'),
     path('close_pool/<int:pool_id>/', views.close_pool, name='close_pool'),
+    path('open_pool/<int:pool_id>/', views.open_pool, name='open_pool'),
 
     path('qualities/', views.manage_quality_history, name='manage_quality'),
     path('qualities/history/', views.manage_quality_history, name='manage_quality_history'),

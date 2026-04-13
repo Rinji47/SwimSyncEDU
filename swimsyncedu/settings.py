@@ -44,7 +44,7 @@ load_env_file(BASE_DIR / '.env')
 SECRET_KEY = 'django-insecure--!g5#w0ushtt9)tgscp)1m+p#%d&)_h@h$w^^!n+a-$qvhxh($'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     'localhost',
@@ -164,24 +164,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
-# Public base URL used by payment gateways like eSewa for success/failure callbacks.
+# Public base URL used by payment gateways for callbacks.
 # For local development, point this to a tunnel URL such as ngrok or cloudflared.
 PAYMENT_CALLBACK_BASE_URL = os.getenv('PAYMENT_CALLBACK_BASE_URL', '').rstrip('/')
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '').strip()
 
 # Payment gateway settings
-ESEWA_PRODUCT_CODE = os.getenv('ESEWA_PRODUCT_CODE', 'EPAYTEST').strip()
-ESEWA_SECRET_KEY = os.getenv('ESEWA_SECRET_KEY', '8gBm/:&EnhH.1/q').strip()
-ESEWA_FORM_URL = os.getenv(
-    'ESEWA_FORM_URL',
-    'https://rc-epay.esewa.com.np/api/epay/main/v2/form',
-).strip()
-
 KHALTI_SECRET_KEY = os.getenv('KHALTI_SECRET_KEY', '').strip()
 KHALTI_INITIATE_URL = os.getenv(
     'KHALTI_INITIATE_URL',

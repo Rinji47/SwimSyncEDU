@@ -20,36 +20,51 @@
         <div class="dashboard-header">
             <h1>Class Activity History</h1>
         </div>
-
-        <form class="quick-filter range-filter" method="get" action="{% url 'class_private_activity_history' %}">
-            <label><strong>Date Range:</strong></label>
-            <input class="compact-input" type="date" name="date_from" value="{{ from_date|date:'Y-m-d' }}">
-            <input class="compact-input" type="date" name="date_to" value="{{ to_date|date:'Y-m-d' }}">
-
-            <select class="filter-select" name="section">
-                <option value="all" {% if section == 'all' %}selected{% endif %}>All Sections</option>
-                <option value="group" {% if section == 'group' %}selected{% endif %}>Group Classes</option>
-                <option value="private" {% if section == 'private' %}selected{% endif %}>Private Classes</option>
-            </select>
-
-            <select class="filter-select" name="pool">
-                <option value="">All Pools</option>
-                {% for pool in pools %}
-                <option value="{{ pool.pool_id }}" {% if pool_id == pool.pool_id|stringformat:'s' %}selected{% endif %}>{{ pool.name }}</option>
-                {% endfor %}
-            </select>
-
-            <input type="text" class="filter-input" name="trainer" placeholder="Trainer name/email" value="{{ trainer_q }}">
-
-            <button type="submit" class="btn-secondary">Apply</button>
-            <a href="{% url 'class_private_activity_history' %}" class="btn-secondary">Clear</a>
+        <form class="filter-bar" method="GET" action="{% url 'class_activity_history' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search class, pool, or trainer" value="{{ request.GET.q }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.pool or request.GET.rating or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-quality">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.pool or request.GET.rating or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-quality">
+                <div class="filter-field">
+                    <label for="class_section_filter">Class Section</label>
+                    <select class="filter-select" name="private_or_group">
+                        <option value="all" {% if request.GET.private_or_group == 'all' or not request.GET.private_or_group %}selected{% endif %}>All Sections</option>
+                        <option value="group" {% if request.GET.private_or_group == 'group' %}selected{% endif %}>Group Classes</option>
+                        <option value="private" {% if request.GET.private_or_group == 'private' %}selected{% endif %}>Private Classes</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="pool_filter">Pool</label>
+                     <select class="filter-select" name="pool">
+                        <option value="">All Pools</option>
+                        {% for pool in pools %}
+                        <option value="{{ pool.pool_id }}" {% if request.GET.pool == pool.pool_id|stringformat:'s' %}selected{% endif %}>{{ pool.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="date_from_filter">From</label>
+                    <input type="date" name="date_from" id="date_from_filter" class="filter-date" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label for="date_to_filter">To</label>
+                    <input type="date" name="date_to" id="date_to_filter" class="filter-date" value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <a href="{% url 'class_activity_history' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
         </form>
 
-        {% if section == 'all' or section == 'group' %}
+        {% if request.GET.private_or_group != 'private' %}
         <div class="dashboard-section">
             <h2>Group Class Sessions</h2>
             <div class="card-grid">
-                {% for cls in group_classes %}
+                {% for cls in class_sessions %}
                 <article class="class-card">
                     <h3>{{ cls.class_name }}</h3>
                     <p><strong>Pool:</strong> {{ cls.pool.name }}</p>
@@ -63,7 +78,7 @@
                         {% if cls.substitute_trainer %}
                         <span class="attendance-status present">Sub: {{ cls.substitute_trainer.full_name|default:cls.substitute_trainer.username }}</span>
                         {% endif %}
-                        <a href="{% url 'admin_group_class_activity_detail' cls.id %}?date_from={{ from_date|date:'Y-m-d' }}&date_to={{ to_date|date:'Y-m-d' }}" class="btn-sm btn-secondary">View Daily Activity</a>
+                        <a href="{% url 'admin_group_class_activity_detail' cls.id %}" class="btn-sm btn-secondary">View Daily Activity</a>
                     </div>
                 </article>
                 {% empty %}
@@ -73,7 +88,7 @@
         </div>
         {% endif %}
 
-        {% if section == 'all' or section == 'private' %}
+        {% if request.GET.private_or_group != 'group' %}
         <div class="dashboard-section">
             <h2>Private Classes</h2>
             <div class="card-grid">
@@ -91,7 +106,7 @@
                         {% if cls.substitute_trainer %}
                         <span class="attendance-status present">Sub: {{ cls.substitute_trainer.full_name|default:cls.substitute_trainer.username }}</span>
                         {% endif %}
-                        <a href="{% url 'admin_private_class_activity_detail' cls.id %}?date_from={{ from_date|date:'Y-m-d' }}&date_to={{ to_date|date:'Y-m-d' }}" class="btn-sm btn-secondary">View Daily Activity</a>
+                        <a href="{% url 'admin_private_class_activity_detail' cls.id %}" class="btn-sm btn-secondary">View Daily Activity</a>
                     </div>
                 </article>
                 {% empty %}

@@ -25,10 +25,7 @@
             {% if require_substitute_clear_confirmation %}
             <div class="note-card" style="margin-bottom: 1rem;">
                 <strong>Confirmation Required:</strong>
-                This trainer is assigned as substitute today in
-                <strong>{{ pending_group_substitute_count }}</strong> group class(es) and
-                <strong>{{ pending_private_substitute_count }}</strong> private class(es).
-                Marking this trainer absent will clear those substitute assignments.
+                This trainer is assigned as substitute today. Marking this trainer absent will clear those substitute assignments.
             </div>
 
             <form method="post" action="{% url 'mark_trainer_attendance' trainer.user_id %}" class="attendance-actions" style="margin-bottom: 1rem;">

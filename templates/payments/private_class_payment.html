@@ -18,7 +18,7 @@
             <div class="page-head">
                 <div>
                     <h1>Private Class Payment</h1>
-                    <p class="subtitle">Review details and continue with your preferred gateway.</p>
+                    <p class="subtitle">Review details and continue with Khalti.</p>
                 </div>
                 <a class="btn-secondary" href="{% url 'book_private_class' pool.pool_id trainer.pk %}">
                     <i class="fa-solid fa-arrow-left"></i> Back
@@ -52,25 +52,11 @@
                 Booking is confirmed only after successful payment verification.
             </div>
 
-            <form method="post" action="{{ esewa_form_url }}" class="pay-actions">
-                <input type="hidden" name="amount" value="{{ esewa_fields.amount }}">
-                <input type="hidden" name="tax_amount" value="{{ esewa_fields.tax_amount }}">
-                <input type="hidden" name="total_amount" value="{{ esewa_fields.total_amount }}">
-                <input type="hidden" name="transaction_uuid" value="{{ esewa_fields.transaction_uuid }}">
-                <input type="hidden" name="product_code" value="{{ esewa_fields.product_code }}">
-                <input type="hidden" name="product_service_charge" value="{{ esewa_fields.product_service_charge }}">
-                <input type="hidden" name="product_delivery_charge" value="{{ esewa_fields.product_delivery_charge }}">
-                <input type="hidden" name="success_url" value="{{ esewa_fields.success_url }}">
-                <input type="hidden" name="failure_url" value="{{ esewa_fields.failure_url }}">
-                <input type="hidden" name="signed_field_names" value="{{ esewa_fields.signed_field_names }}">
-                <input type="hidden" name="signature" value="{{ esewa_fields.signature }}">
-                <button type="submit" class="btn-primary btn-esewa">
-                    Pay with eSewa
-                </button>
+            <div class="pay-actions">
                 <a class="btn-primary btn-khalti" href="{{ khalti_start_url }}" style="text-align:center;">
                     Pay with Khalti
                 </a>
-            </form>
+            </div>
         </aside>
     </div>
 </section>

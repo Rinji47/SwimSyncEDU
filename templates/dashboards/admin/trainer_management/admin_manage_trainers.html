@@ -83,6 +83,7 @@
                     <div class="data-card-actions">
                         <a class="btn-sm btn-primary" href="{% url 'view_trainer' trainer.user_id %}">View</a>
                         <a href="{% url 'list_trainer_classes' trainer.pk %}" class="btn-sm btn-secondary">View Classes</a>
+                        <a href="{% url 'list_trainer_sub_classes' trainer.pk %}" class="btn-sm btn-secondary">View Sub Classes</a>
                         <a class="btn-sm btn-secondary" href="{% url 'edit_trainer' trainer.user_id %}">Edit</a>
                         <button class="btn-sm btn-danger">
                             <a href="{% url 'toggle_trainer_status' trainer.user_id %}" style="text-decoration: none; color: white;"

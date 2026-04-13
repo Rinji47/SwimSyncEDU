@@ -93,83 +93,87 @@
             </div>
         </form>
 
-        {% if cards %}
-        <div class="dashboard-section today-grid">
-            {% for card in cards %}
-            <article class="class-card compact">
-                {% if card.type == 'group' %}
-                <div class="today-type">
-                    <i class="fa-solid fa-users"></i>
-                    Group Class
-                </div>
-                <h3>
-                    <span class="class-status
-                        {% if 'Cancelled' in card.status %}status-cancelled
-                        {% elif 'Completed' in card.status %}today-status-completed
-                        {% elif 'Upcoming' in card.status %}today-status-upcoming
-                        {% else %}today-status-ongoing{% endif %}">
-                        {{ card.status }}
-                    </span>
-                    {{ card.session.class_name }}
-                </h3>
-                <div class="today-card-meta">
-                    <strong>Pool:</strong> {{ card.session.pool.name }}<br>
-                    <strong>Trainer:</strong> {{ card.session.trainer.full_name|default:card.session.trainer.username }}<br>
-                    <strong>Type:</strong> {{ card.session.class_type.name }}<br>
-                    <strong>Dates:</strong> {{ card.session.start_date|date:"M d" }} - {{ card.session.end_date|date:"M d" }}<br>
-                    <strong>Time:</strong> {{ card.session.start_time|time:"H:i" }} - {{ card.session.end_time|time:"H:i" }}<br>
-                    <strong>Price:</strong> Rs. {{ card.session.total_price }}
-                </div>
-                <div class="card-actions">
-                    <a href="{% url 'my_bookings' %}" class="btn-sm btn-secondary" style="text-decoration:none;">All Bookings</a>
-                    <a href="{% url 'view_my_booking' card.booking.id %}"
-                       class="btn-sm btn-primary"
-                       style="text-decoration:none;">
-                        View
-                    </a>
-                </div>
-                {% else %}
-                <div class="today-type">
-                    <i class="fa-solid fa-user-lock"></i>
-                    Private Class
-                </div>
-                <h3>
-                    <span class="class-status
-                        {% if 'Cancelled' in card.status %}status-cancelled
-                        {% elif 'Completed' in card.status %}today-status-completed
-                        {% elif 'Upcoming' in card.status %}today-status-upcoming
-                        {% else %}today-status-ongoing{% endif %}">
-                        {{ card.status }}
-                    </span>
-                    Private Class
-                </h3>
-                <div class="today-card-meta">
-                    <strong>Pool:</strong> {{ card.private_class.pool.name }}<br>
-                    <strong>Trainer:</strong> {{ card.private_class.trainer.full_name|default:card.private_class.trainer.username }}<br>
-                    <strong>Dates:</strong> {{ card.private_class.start_date|date:"M d" }} - {{ card.private_class.end_date|date:"M d" }}<br>
-                    <strong>Time:</strong> {{ card.private_class.start_time|time:"H:i" }} - {{ card.private_class.end_time|time:"H:i" }}<br>
-                    <strong>Total Price:</strong> Rs. {{ card.private_class.total_price }}
-                </div>
-                <div class="card-actions">
-                    <a href="{% url 'my_private_classes' %}" class="btn-sm btn-secondary" style="text-decoration:none;">All Private</a>
-                    <a href="{% url 'view_my_private_class' card.private_class.id %}"
-                       class="btn-sm btn-primary"
-                       style="text-decoration:none;">
-                        View
-                    </a>
-                </div>
-                {% endif %}
-            </article>
-            {% endfor %}
+        {% if not is_weekday %}
+        <div class="today-empty">
+            {{ weekend }}
         </div>
         {% else %}
-        <div class="today-empty">
-            {% if request.GET.q %}
-            No classes matched your search for today.
-            {% else %}
-            No classes fall on today's schedule.
+            {% if group_bookings %}
+            <div class="dashboard-section">
+                <h2>Group Classes</h2>
+                <div class="today-grid">
+                    {% for booking in group_bookings %}
+                    <article class="class-card compact">
+                        <div class="today-type">
+                            <i class="fa-solid fa-users"></i>
+                            Group Class
+                        </div>
+                        <h3>
+                            <span class="class-status {% if booking.class_session.start_time > now_time %}today-status-upcoming{% else %}today-status-ongoing{% endif %}">
+                                {% if booking.class_session.start_time > now_time %}Upcoming Today{% else %}Ongoing{% endif %}
+                            </span>
+                            {{ booking.class_session.class_name }}
+                        </h3>
+                        <div class="today-card-meta">
+                            <strong>Pool:</strong> {{ booking.class_session.pool.name }}<br>
+                            <strong>Trainer:</strong> {{ booking.class_session.trainer.full_name|default:booking.class_session.trainer.username }}<br>
+                            <strong>Type:</strong> {{ booking.class_session.class_type.name }}<br>
+                            <strong>Dates:</strong> {{ booking.class_session.start_date|date:"M d" }} - {{ booking.class_session.end_date|date:"M d" }}<br>
+                            <strong>Time:</strong> {{ booking.class_session.start_time|time:"H:i" }} - {{ booking.class_session.end_time|time:"H:i" }}<br>
+                            <strong>Price:</strong> Rs. {{ booking.class_session.total_price }}
+                        </div>
+                        <div class="card-actions">
+                            <a href="{% url 'my_bookings' %}" class="btn-sm btn-secondary" style="text-decoration:none;">All Bookings</a>
+                            <a href="{% url 'view_my_booking' booking.id %}" class="btn-sm btn-primary" style="text-decoration:none;">View</a>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </div>
             {% endif %}
-        </div>
+
+            {% if private_classes %}
+            <div class="dashboard-section">
+                <h2>Private Classes</h2>
+                <div class="today-grid">
+                    {% for private_class in private_classes %}
+                    <article class="class-card compact">
+                        <div class="today-type">
+                            <i class="fa-solid fa-user-lock"></i>
+                            Private Class
+                        </div>
+                        <h3>
+                            <span class="class-status {% if private_class.start_time > now_time %}today-status-upcoming{% else %}today-status-ongoing{% endif %}">
+                                {% if private_class.start_time > now_time %}Upcoming Today{% else %}Ongoing{% endif %}
+                            </span>
+                            Private Class
+                        </h3>
+                        <div class="today-card-meta">
+                            <strong>Pool:</strong> {{ private_class.pool.name }}<br>
+                            <strong>Trainer:</strong> {{ private_class.trainer.full_name|default:private_class.trainer.username }}<br>
+                            <strong>Dates:</strong> {{ private_class.start_date|date:"M d" }} - {{ private_class.end_date|date:"M d" }}<br>
+                            <strong>Time:</strong> {{ private_class.start_time|time:"H:i" }} - {{ private_class.end_time|time:"H:i" }}<br>
+                            <strong>Total Price:</strong> Rs. {{ private_class.total_price }}
+                        </div>
+                        <div class="card-actions">
+                            <a href="{% url 'my_private_classes' %}" class="btn-sm btn-secondary" style="text-decoration:none;">All Private</a>
+                            <a href="{% url 'view_my_private_class' private_class.id %}" class="btn-sm btn-primary" style="text-decoration:none;">View</a>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if not group_bookings and not private_classes %}
+            <div class="today-empty">
+                {% if request.GET.q %}
+                No classes matched your search for today.
+                {% else %}
+                No classes fall on today's schedule.
+                {% endif %}
+            </div>
+            {% endif %}
         {% endif %}
     </main>
 </div>

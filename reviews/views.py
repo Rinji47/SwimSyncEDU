@@ -1,3 +1,5 @@
+import datetime
+
 from django.shortcuts import get_object_or_404, render
 from django.db.models import Q
 from certificate.models import CompletionCertificate
@@ -141,11 +143,6 @@ def public_select_trainer_for_reviews(request):
             'average_rating': round(row['total_rating'] / row['review_count'], 1),
         })
 
-    def get_trainer_name(row):
-        return row['trainer'].full_name or row['trainer'].username
-
-    trainer_cards.sort(key=get_trainer_name)
-
     return render(request, 'reviews/public_select_trainer_for_reviews.html', {
         'trainer_cards': trainer_cards,
     })
@@ -165,10 +162,36 @@ def public_trainer_review_list(request, trainer_id):
     trainer = None
     review_rows = []
 
+    rating = request.GET.get('rating')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+
     for review in reviews:
         review_trainer = get_review_trainer(review)
         if not review_trainer or review_trainer.pk != trainer_id:
             continue
+        
+        if rating:
+            try:
+                if review.rating != int(rating):
+                    continue
+            except ValueError:
+                pass
+        
+        if date_from:
+            try:
+                date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+                if review.created_at.date() < date_from_parsed:
+                    continue
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+                if review.created_at.date() > date_to_parsed:
+                    continue
+            except ValueError:
+                pass
 
         trainer = review_trainer
         review_rows.append({
@@ -303,8 +326,8 @@ def admin_all_trainer_reviews(request):
         source_type = 'group' if source_label.startswith('Group Class:') else 'private'
 
         if q:
-            user_name =  (review.user.full_name or review.user.username or '').lower()
-            trainer_name = (trainer.full_name or trainer.username or '').lower()
+            user_name =  ' '.join([review.user.username or '' or '', review.user.full_name or '']).lower()
+            trainer_name = ' '.join([trainer.username or '', trainer.full_name or '']).lower()
             comment = (review.comment or '').lower()
 
             if q not in user_name and q not in trainer_name and q not in comment:

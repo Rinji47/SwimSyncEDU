@@ -52,6 +52,8 @@ urlpatterns = [
     path('trainer/manage/private-class/<int:private_class_id>/attendance-history/', views.select_private_classes_for_attendance_history, name='select_private_classes_for_attendance_history'),
     path('trainer/manage/substitute-group-classes/', views.trainer_susitute_class_sessions_list, name='trainer_susitute_class_sessions_list'),
     path('trainer/manage/substitute-private-classes/', views.trainer_susitute_private_classes_list, name='trainer_susitute_private_classes_list'),
+    path('admin/trainer/<int:trainer_id>/classes/', views.list_trainer_classes, name='list_trainer_classes'),
+    path('admin/trainer/<int:trainer_id>/sub-classes/', views.list_trainer_sub_classes, name='list_trainer_sub_classes'),
     # Student list management
     path('student-lists/group/', views.select_session_to_view_students_list, name='select_session_to_view_students_list'),
     path('student-lists/group/<int:class_session_id>/', views.students_list_for_class_session, name='students_list_for_class_session'),

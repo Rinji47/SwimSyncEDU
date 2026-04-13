@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trainer Classes{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include '../../components/admin_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include '../../../../components/message.html' %}
+
+        <div class="dashboard-header">
+            <h1>{{ trainer.full_name|default:trainer.username }} - Main Classes</h1>
+            <div class="card-actions">
+                <a href="{% url 'list_trainer_sub_classes' trainer.pk %}" class="btn-secondary">View Sub Classes</a>
+                <a href="{% url 'manage_trainers' %}" class="btn-secondary">Back</a>
+            </div>
+        </div>
+
+        <form class="filter-bar" method="GET" action="{% url 'list_trainer_classes' trainer.pk %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search classes, pools, students..." value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-trainer-classes">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.status or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-trainer-classes">
+                <div class="filter-field">
+                    <label>Status</label>
+                    <select class="filter-select" name="status">
+                        <option value="">All</option>
+                        <option value="Upcoming" {% if request.GET.status == 'Upcoming' %}selected{% endif %}>Upcoming</option>
+                        <option value="Ongoing" {% if request.GET.status == 'Ongoing' %}selected{% endif %}>Ongoing</option>
+                        <option value="Completed" {% if request.GET.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Cancelled" {% if request.GET.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default:'' }}">
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
+                    <a href="{% url 'list_trainer_classes' trainer.pk %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
+        <div class="dashboard-section">
+            <h2>Group Class Sessions</h2>
+            <div class="attendance-grid" style="margin-top: 1rem;">
+                {% for class_session in classes %}
+                <div class="class-card">
+                    <h3>
+                        <span class="class-status
+                            {% if class_session.is_cancelled %}status-cancelled
+                            {% elif class_session.end_date < today %}status-completed{% endif %}">
+                            {% if class_session.is_cancelled %}
+                                Cancelled
+                            {% elif class_session.end_date < today %}
+                                Completed
+                            {% elif class_session.start_date > today %}
+                                Upcoming
+                            {% else %}
+                                Ongoing
+                            {% endif %}
+                        </span>
+                        {{ class_session.class_name }}
+                    </h3>
+                    <p><strong>Pool:</strong> {{ class_session.pool.name }}</p>
+                    <p><strong>Time:</strong> {{ class_session.start_time }} - {{ class_session.end_time }}</p>
+                    <p><strong>Dates:</strong> {{ class_session.start_date }} - {{ class_session.end_date }}</p>
+                    <p><strong>Role:</strong> Main trainer</p>
+                    <div class="card-actions">
+                        <a href="{% url 'admin_class_session_attendance_history' class_session.id %}" class="btn-sm btn-secondary">Attendance History</a>
+                    </div>
+                </div>
+                {% empty %}
+                <p>No group classes found.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <h2>Private Classes</h2>
+            <div class="attendance-grid" style="margin-top: 1rem;">
+                {% for private_class in private_classes %}
+                <div class="class-card">
+                    <h3>
+                        <span class="class-status
+                            {% if private_class.is_cancelled %}status-cancelled
+                            {% elif private_class.end_date < today %}status-completed{% endif %}">
+                            {% if private_class.is_cancelled %}
+                                Cancelled
+                            {% elif private_class.end_date < today %}
+                                Completed
+                            {% elif private_class.start_date > today %}
+                                Upcoming
+                            {% else %}
+                                Ongoing
+                            {% endif %}
+                        </span>
+                        {{ private_class.user.full_name|default:private_class.user.username }}
+                    </h3>
+                    <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
+                    <p><strong>Time:</strong> {{ private_class.start_time }} - {{ private_class.end_time }}</p>
+                    <p><strong>Dates:</strong> {{ private_class.start_date }} - {{ private_class.end_date }}</p>
+                    <p><strong>Role:</strong> Main trainer</p>
+                    <div class="card-actions">
+                        <a href="{% url 'admin_private_class_attendance_history' private_class.id %}" class="btn-sm btn-secondary">Attendance History</a>
+                    </div>
+                </div>
+                {% empty %}
+                <p>No private classes found.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

@@ -1,13 +1,8 @@
-import base64
-import hashlib
-import hmac
-import json
-import urllib.error
-import urllib.request
 from datetime import datetime, timedelta
 from decimal import Decimal
 from uuid import uuid4
 
+import requests
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -22,14 +17,6 @@ from pool.models import Pool
 
 from .models import Payment
 
-
-ESEWA_PRODUCT_CODE = getattr(settings, "ESEWA_PRODUCT_CODE", "EPAYTEST")
-ESEWA_SECRET_KEY = getattr(settings, "ESEWA_SECRET_KEY", "8gBm/:&EnhH.1/q")
-ESEWA_FORM_URL = getattr(
-    settings,
-    "ESEWA_FORM_URL",
-    "https://rc-epay.esewa.com.np/api/epay/main/v2/form",
-)
 KHALTI_SECRET_KEY = getattr(settings, "KHALTI_SECRET_KEY", "").strip()
 KHALTI_INITIATE_URL = getattr(
     settings,
@@ -43,71 +30,32 @@ KHALTI_LOOKUP_URL = getattr(
 )
 
 
-def sign_esewa_payment(total_amount, transaction_uuid, product_code):
-    message = (
-        f"total_amount={total_amount},transaction_uuid={transaction_uuid},"
-        f"product_code={product_code}"
-    )
-    digest = hmac.new(
-        ESEWA_SECRET_KEY.encode(),
-        message.encode(),
-        hashlib.sha256,
-    ).digest()
-    return base64.b64encode(digest).decode()
-
-
-def build_esewa_fields(payment, success_url, failure_url):
-    amount = str(payment.amount)
-    tax_amount = str(payment.tax_amount)
-    total_amount = str(payment.total_amount)
-    service_charge = str(payment.service_charge)
-    delivery_charge = str(payment.delivery_charge)
-    transaction_uuid = str(payment.uid)
-    
-    return {
-        "amount": amount,
-        "tax_amount": tax_amount,
-        "total_amount": total_amount,
-        "transaction_uuid": transaction_uuid,
-        "product_code": ESEWA_PRODUCT_CODE,
-        "product_service_charge": service_charge,
-        "product_delivery_charge": delivery_charge,
-        "success_url": success_url,
-        "failure_url": failure_url,
-        "signed_field_names": "total_amount,transaction_uuid,product_code",
-        "signature": sign_esewa_payment(
-            total_amount,
-            transaction_uuid,
-            ESEWA_PRODUCT_CODE,
-        ),
-    }
-
-
 def khalti_request_json(url, payload):
     if not KHALTI_SECRET_KEY:
         return None, "Khalti secret key is not configured."
 
-    data = json.dumps(payload).encode("utf-8")
-    request = urllib.request.Request(
-        url,
-        data=data,
-        headers={
-            "Authorization": f"Key {KHALTI_SECRET_KEY}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
-
     try:
-        with urllib.request.urlopen(request, timeout=25) as response:
-            return json.loads(response.read().decode("utf-8")), None
-    except urllib.error.HTTPError as exc:
+        response = requests.post(
+            url,
+            json=payload,
+            timeout=25,
+            headers={
+                "Authorization": f"Key {KHALTI_SECRET_KEY}",
+                "Content-Type": "application/json",
+            },
+        )
+        response.raise_for_status()
+        return response.json(), None
+    except requests.HTTPError as exc:
         try:
-            body = exc.read().decode("utf-8")
-        except Exception:
-            body = str(exc)
+            body = exc.response.json()
+        except ValueError:
+            if exc.response is not None:
+                body = exc.response.text 
+            else:
+                body = str(exc)
         return None, body
-    except Exception as exc:
+    except requests.RequestException as exc:
         return None, str(exc)
 
 
@@ -249,14 +197,6 @@ def group_class_payment_checkout(request, class_id):
         payment_status="Pending",
     )
 
-    success_url = request.build_absolute_uri(
-        reverse("group_class_payment_success", kwargs={"uid": payment.uid})
-    )
-    failure_url = request.build_absolute_uri(
-        reverse("group_class_payment_failure", kwargs={"uid": payment.uid})
-    )
-    esewa_fields = build_esewa_fields(payment, success_url, failure_url)
-
     return render(
         request,
         "payments/group_class_payment.html",
@@ -267,8 +207,6 @@ def group_class_payment_checkout(request, class_id):
             "service_charge": service_charge,
             "delivery_charge": delivery_charge,
             "total_amount": total_amount,
-            "esewa_form_url": ESEWA_FORM_URL,
-            "esewa_fields": esewa_fields,
             "khalti_start_url": reverse("khalti_payment_start", kwargs={"uid": payment.uid}),
         },
     )
@@ -330,14 +268,6 @@ def private_class_payment_checkout(request):
         },
     )
 
-    success_url = request.build_absolute_uri(
-        reverse("private_class_payment_success", kwargs={"uid": payment.uid})
-    )
-    failure_url = request.build_absolute_uri(
-        reverse("private_class_payment_failure", kwargs={"uid": payment.uid})
-    )
-    esewa_fields = build_esewa_fields(payment, success_url, failure_url)
-
     return render(
         request,
         "payments/private_class_payment.html",
@@ -355,142 +285,9 @@ def private_class_payment_checkout(request):
             "service_charge": service_charge,
             "delivery_charge": delivery_charge,
             "total_amount": total_amount,
-            "esewa_form_url": ESEWA_FORM_URL,
-            "esewa_fields": esewa_fields,
             "khalti_start_url": reverse("khalti_payment_start", kwargs={"uid": payment.uid}),
         },
     )
-
-
-@login_required
-def group_class_payment_success(request, uid):
-    payment = get_object_or_404(Payment, uid=uid, purpose="group", user=request.user)
-    data = request.GET.get("data")
-    if not data:
-        messages.error(request, "Payment verification failed. No data received.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("my_bookings")
-    
-    try:
-        decoded_data = base64.b64decode(data).decode()
-        payment_data = json.loads(decoded_data)
-    except (base64.binascii.Error, ValueError):
-        messages.error(request, "Payment verification failed. Invalid data format.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("my_bookings")
-
-
-    if str(payment_data.get("transaction_uuid")) != str(payment.uid):
-        messages.error(request, "Payment verification failed. Transaction ID mismatch.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("my_bookings")
-
-    expected_total_amount_str = str(payment.total_amount)
-    received_total_amount = payment_data.get("total_amount")
-    received_total_amount_str = str(received_total_amount)
-
-    if received_total_amount_str.rstrip('0').rstrip('.') != expected_total_amount_str.rstrip('0').rstrip('.'):
-        messages.error(request, "Payment verification failed. Amount mismatch.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("my_bookings")
-
-    if str(payment_data.get("product_code")) != ESEWA_PRODUCT_CODE:
-        messages.error(request, "Payment verification failed. Product code mismatch.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("my_bookings")
-
-    if payment_data.get("status") != "COMPLETE":
-        messages.error(request, "Payment was not completed.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("my_bookings")
-
-    ok, error_message = complete_group_payment(payment)
-    if not ok:
-        messages.error(request, error_message)
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("my_bookings")
-
-    return render(request, "payments/payment_success.html", {"payment": payment})
-
-
-@login_required
-def group_class_payment_failure(request, uid):
-    payment = get_object_or_404(Payment, uid=uid, purpose="group", user=request.user)
-    if payment.payment_status == "Pending":
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-    return render(request, "payments/payment_failure.html", {"payment": payment})
-
-
-@login_required
-def private_class_payment_success(request, uid):
-    payment = get_object_or_404(Payment, uid=uid, purpose="private", user=request.user)
-    data = request.GET.get("data")
-    if not data:
-        messages.error(request, "Payment verification failed. No data received.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("private_class_payment_failure", uid=payment.uid)
-
-    try:
-        decoded_data = base64.b64decode(data).decode()
-        payment_data = json.loads(decoded_data)
-    except (base64.binascii.Error, ValueError):
-        messages.error(request, "Payment verification failed. Invalid data format.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("private_class_payment_failure", uid=payment.uid)
-
-    if str(payment_data.get("transaction_uuid")) != str(payment.uid):
-        messages.error(request, "Payment verification failed. Transaction ID mismatch.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("private_class_payment_failure", uid=payment.uid)
-    
-    expected_total_amount_str = str(payment.total_amount)
-    received_total_amount = payment_data.get("total_amount")
-
-    if received_total_amount is None:
-        messages.error(request, "Payment verification failed. Amount data is missing.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("private_class_payment_failure", uid=payment.uid)
-    
-    received_total_amount_str = str(received_total_amount)
-
-    if received_total_amount_str.rstrip('0').rstrip('.') != expected_total_amount_str.rstrip('0').rstrip('.'):
-        messages.error(request, "Payment verification failed. Amount mismatch.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("private_class_payment_failure", uid=payment.uid)
-
-    if str(payment_data.get("product_code")) != ESEWA_PRODUCT_CODE:
-        messages.error(request, "Payment verification failed. Product code mismatch.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("private_class_payment_failure", uid=payment.uid)
-
-    if payment_data.get("status") != "COMPLETE":
-        messages.error(request, "Payment was not completed.")
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("private_class_payment_failure", uid=payment.uid)
-
-    ok, error_message = complete_private_payment(payment)
-    if not ok:
-        messages.error(request, error_message)
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-        return redirect("private_class_payment_failure", uid=payment.uid)
-
-    return render(request, "payments/payment_success.html", {"payment": payment})
 
 
 @login_required
@@ -504,11 +301,6 @@ def khalti_payment_start(request, uid):
         "amount": int(payment.total_amount * 100),
         "purchase_order_id": str(payment.uid),
         "purchase_order_name": f"{payment.purpose.title()} Payment",
-        "customer_info": {
-            "name": request.user.full_name or request.user.username,
-            "email": request.user.email or "",
-            "phone": request.user.phone or "",
-        },
     }
     data, error = khalti_request_json(KHALTI_INITIATE_URL, payload)
 
@@ -530,11 +322,17 @@ def khalti_payment_start(request, uid):
     payment.save(update_fields=["extra_payload", "gateway_response"])
     return redirect(data["payment_url"])
 
-
 @login_required
 def khalti_payment_verify(request, uid):
     payment = get_object_or_404(Payment, uid=uid, user=request.user)
     pidx = request.GET.get("pidx")
+    
+    purchase_order_id = request.GET.get("purchase_order_id")
+    if purchase_order_id and str(purchase_order_id) != str(payment.uid):
+        payment.payment_status = "Failed"
+        payment.save(update_fields=["payment_status"])
+        messages.error(request, "Purchase order ID mismatch. Payment verification failed.")
+        return render(request, "payments/payment_failure.html", {"payment": payment})
 
     if payment.payment_status == "Completed":
         return render(request, "payments/payment_success.html", {"payment": payment})
@@ -564,7 +362,7 @@ def khalti_payment_verify(request, uid):
         return render(request, "payments/payment_failure.html", {"payment": payment})
 
     expected_amount = int(payment.total_amount * 100)
-    if str(data.get("purchase_order_id")) != str(payment.uid) or int(data.get("total_amount", 0)) != expected_amount:
+    if int(data.get("total_amount", 0)) != expected_amount:
         payment.payment_status = "Failed"
         payment.save(update_fields=["payment_status"])
         messages.error(request, "Khalti verification mismatch detected.")
@@ -582,16 +380,6 @@ def khalti_payment_verify(request, uid):
         return render(request, "payments/payment_failure.html", {"payment": payment})
 
     return render(request, "payments/payment_success.html", {"payment": payment})
-
-
-@login_required
-def private_class_payment_failure(request, uid):
-    payment = get_object_or_404(Payment, uid=uid, purpose="private", user=request.user)
-    if payment.payment_status == "Pending":
-        payment.payment_status = "Failed"
-        payment.save(update_fields=["payment_status"])
-    return render(request, "payments/payment_failure.html", {"payment": payment})
-
 
 @login_required
 def group_class_payment_cancel(request, class_id):

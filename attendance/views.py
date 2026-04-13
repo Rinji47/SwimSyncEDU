@@ -12,7 +12,7 @@ from accounts.models import User
 from classes.models import ClassSession, PrivateClass, ClassBooking
 from pool.models import Pool, TrainerPoolAssignment
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 
 # Create your views here.
@@ -150,10 +150,6 @@ def mark_trainer_attendance(request, trainer_id):
                     'today': today,
                     'today_record': today_record,
                     'require_substitute_clear_confirmation': True,
-                    'pending_group_substitute_count': substitute_group_qs.count(),
-                    'pending_private_substitute_count': substitute_private_qs.count(),
-                    'pending_group_substitute_classes': substitute_group_qs[:3],
-                    'pending_private_substitute_classes': substitute_private_qs[:3],
                 },
             )
 
@@ -742,80 +738,6 @@ def cancel_private_class_for_today(request, private_class_id):
 
 
 @login_required
-def list_trainer_classes(request, trainer_id):
-    if request.user.role != 'admin' and request.user.pk != trainer_id:
-        messages.error(request, 'You do not have permission to access this page.')
-        return redirect('index')
-
-    trainer = get_object_or_404(User, pk=trainer_id)
-    today = date.today()
-    classes = ClassSession.objects.filter(
-        Q(trainer=trainer) | Q(substitute_trainer=trainer)
-    ).order_by('-start_date', '-start_time')
-
-    private_classes = PrivateClass.objects.filter(
-        Q(trainer=trainer) | Q(substitute_trainer=trainer)
-    ).order_by('-start_date', '-start_time')
-
-    q = (request.GET.get('q') or '').strip()
-    status = request.GET.get('status')
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-
-    if q:
-        classes = classes.filter(
-            Q(class_name__icontains=q) |
-            Q(pool__name__icontains=q) |
-            Q(class_type__name__icontains=q)
-        )
-        private_classes = private_classes.filter(
-            Q(user__full_name__icontains=q) |
-            Q(user__username__icontains=q) |
-            Q(pool__name__icontains=q)
-        )
-
-    if date_from:
-        try:
-            date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
-            classes = classes.filter(end_date__gte=date_from_parsed)
-            private_classes = private_classes.filter(end_date__gte=date_from_parsed)
-        except ValueError:
-            pass
-
-    if date_to:
-        try:
-            date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
-            classes = classes.filter(start_date__lte=date_to_parsed)
-            private_classes = private_classes.filter(start_date__lte=date_to_parsed)
-        except ValueError:
-            pass
-
-    if status == 'Upcoming':
-        classes = classes.filter(start_date__gt=today, is_cancelled=False)
-        private_classes = private_classes.filter(start_date__gt=today, is_cancelled=False)
-    elif status == 'Ongoing':
-        classes = classes.filter(start_date__lte=today, end_date__gte=today, is_cancelled=False)
-        private_classes = private_classes.filter(start_date__lte=today, end_date__gte=today, is_cancelled=False)
-    elif status == 'Completed':
-        classes = classes.filter(end_date__lt=today, is_cancelled=False)
-        private_classes = private_classes.filter(end_date__lt=today, is_cancelled=False)
-    elif status == 'Cancelled':
-        classes = classes.filter(is_cancelled=True)
-        private_classes = private_classes.filter(is_cancelled=True)
-
-    return render(
-        request,
-        'dashboards/admin/attendance/trainer/list_trainer_classes.html',
-        {
-            'trainer': trainer,
-            'classes': classes,
-            'private_classes': private_classes,
-            'today': today,
-        },
-    )
-
-
-@login_required
 def class_session_attendance_history(request, class_session_id):
     if request.user.role != 'trainer' and request.user.role != 'admin':
         messages.error(request, 'You do not have permission to access this page.')
@@ -932,102 +854,78 @@ def class_and_private_classes_cancellation_and_substitute_history(request):
     if request.user.role != 'admin':
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('index')
-
-    today = date.today()
+    
+    q = (request.GET.get('q') or '').strip()
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
-    section = request.GET.get('section', 'all')
+    private_or_group = request.GET.get('private_or_group', 'all')
     pool_id = request.GET.get('pool')
-    trainer_q = (request.GET.get('trainer') or '').strip()
 
-    try:
-        if date_from:
-            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
-        else:
-            from_date = today
-    except ValueError:
-        from_date = today
-    try:
-        if date_to:
-            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
-        else:
-            to_date = today
-    except ValueError:
-        to_date = today
-    if from_date > to_date:
-        from_date, to_date = to_date, from_date
-
-    if section not in {'all', 'group', 'private'}:
-        section = 'all'
-
-    group_classes = ClassSession.objects.filter(
-        start_date__lte=to_date,
-        end_date__gte=from_date,
-    ).select_related('pool', 'trainer', 'substitute_trainer')
-
+    class_sessions = ClassSession.objects.filter(
+        is_cancelled=False
+    )
     private_classes = PrivateClass.objects.filter(
-        start_date__lte=to_date,
-        end_date__gte=from_date,
-    ).select_related('pool', 'trainer', 'substitute_trainer')
+        is_cancelled=False
+    )
 
-    try:
-        if pool_id:
-            selected_pool_id = int(pool_id)
-        else:
-            selected_pool_id = None
-    except (TypeError, ValueError):
-        selected_pool_id = None
-
-    if selected_pool_id is not None:
-        group_classes = group_classes.filter(pool_id=selected_pool_id)
-        private_classes = private_classes.filter(pool_id=selected_pool_id)
-
-    if trainer_q:
-        group_classes = group_classes.filter(
-            Q(trainer__full_name__icontains=trainer_q) |
-            Q(trainer__email__icontains=trainer_q) |
-            Q(substitute_trainer__full_name__icontains=trainer_q) |
-            Q(substitute_trainer__email__icontains=trainer_q)
+    if q:
+        class_sessions = class_sessions.filter(
+            Q(class_name__icontains=q) |
+            Q(pool__name__icontains=q) |
+            Q(class_type__name__icontains=q) |
+            Q(trainer__full_name__icontains=q) |
+            Q(trainer__username__icontains=q) |
+            Q(substitute_trainer__full_name__icontains=q) |
+            Q(substitute_trainer__username__icontains=q)
         )
+
         private_classes = private_classes.filter(
-            Q(trainer__full_name__icontains=trainer_q) |
-            Q(trainer__email__icontains=trainer_q) |
-            Q(substitute_trainer__full_name__icontains=trainer_q) |
-            Q(substitute_trainer__email__icontains=trainer_q)
+            Q(user__full_name__icontains=q) |
+            Q(user__username__icontains=q) |
+            Q(pool__name__icontains=q) |
+            Q(trainer__full_name__icontains=q) |
+            Q(trainer__username__icontains=q) |
+            Q(substitute_trainer__full_name__icontains=q) |
+            Q(substitute_trainer__username__icontains=q)
         )
 
-    group_classes = group_classes.distinct().order_by('-start_date', '-start_time')
-    private_classes = private_classes.distinct().order_by('-start_date', '-start_time')
+    if date_from:
+        try:
+            date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+            class_sessions = class_sessions.filter(end_date__gte=date_from_parsed)
+            private_classes = private_classes.filter(end_date__gte=date_from_parsed)
+        except ValueError:
+            pass
 
-    if selected_pool_id is not None:
-        selected_pool_id_value = str(selected_pool_id)
-    else:
-        selected_pool_id_value = ''
+    if date_to:
+        try:
+            date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+            class_sessions = class_sessions.filter(start_date__lte=date_to_parsed)
+            private_classes = private_classes.filter(start_date__lte=date_to_parsed)
+        except ValueError:
+            pass
 
-    if section in {'all', 'group'}:
-        visible_group_classes = group_classes
-    else:
-        visible_group_classes = []
-
-    if section in {'all', 'private'}:
-        visible_private_classes = private_classes
-    else:
-        visible_private_classes = []
+    if private_or_group == 'private':
+        class_sessions = class_sessions.none()
+    elif private_or_group == 'group':
+        private_classes = private_classes.none()
+    
+    if pool_id:
+        try:
+            pool_id_int = int(pool_id)
+            class_sessions = class_sessions.filter(pool_id=pool_id_int)
+            private_classes = private_classes.filter(pool_id=pool_id_int)
+        except ValueError:
+            pass
 
     return render(
         request,
         'dashboards/admin/attendance/class_and_private_classes_cancellation_and_substitute_history.html',
         {
-            'today': today,
-            'from_date': from_date,
-            'to_date': to_date,
-            'section': section,
-            'pool_id': selected_pool_id_value,
-            'trainer_q': trainer_q,
+            'class_sessions': class_sessions.order_by('-start_date', '-start_time'),
+            'private_classes': private_classes.order_by('-start_date', '-start_time'),
             'pools': Pool.objects.all().order_by('name'),
-            'group_classes': visible_group_classes,
-            'private_classes': visible_private_classes
-        },
+        }
     )
 
 
@@ -1038,91 +936,130 @@ def admin_group_class_activity_detail(request, class_session_id):
         return redirect('index')
 
     class_session = get_object_or_404(ClassSession, id=class_session_id)
-    today = date.today()
+    
+    all_daily_records = ClassSessionAttendance.objects.filter(class_session=class_session).select_related('student', 'marked_by').order_by('-date')
+    
+    daily_records = all_daily_records
+
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        daily_records = daily_records.filter(
+            Q(marked_by__full_name__icontains=q) |
+            Q(marked_by__username__icontains=q) |
+            Q(marked_by__email__icontains=q)
+        )
+        if not daily_records.exists():
+            return render(
+                request,
+                'dashboards/admin/attendance/class_session/group_class_activity_detail.html',
+                {
+                    'class_session': class_session,
+                    'daily_record_rows': [],
+                },
+            )
+    
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
+    if date_from:
+        try:
+            date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+            daily_records = daily_records.filter(date__gte=date_from_parsed)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+            daily_records = daily_records.filter(date__lte=date_to_parsed)
+        except ValueError:
+            pass
+    
+    get_order_by = request.GET.get('order_by')
+    if get_order_by == 'date_asc':
+        daily_records = daily_records.order_by('date')
 
-    try:
-        if date_from:
-            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
-        else:
-            from_date = today
-    except ValueError:
-        from_date = today
-    try:
-        if date_to:
-            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
-        else:
-            to_date = today
-    except ValueError:
-        to_date = today
-    if from_date > to_date:
-        from_date, to_date = to_date, from_date
+    seen_dates = set()
+    daily_record_rows = []
+    for record in daily_records:
+        if record.date in seen_dates:
+            continue
 
-    active_from = max(class_session.start_date, from_date)
-    active_to = min(class_session.end_date, to_date)
+        seen_dates.add(record.date)
 
-    trainer_records = TrainerAttendanceRecord.objects.filter(
-        trainer=class_session.trainer,
-        date__gte=active_from,
-        date__lte=active_to,
-    )
-    trainer_status_map = {}
-    trainer_dates = set()
-    for record in trainer_records:
-        trainer_status_map[record.date] = record.status
-        trainer_dates.add(record.date)
-
-    cancelled_dates = set()
-    cancelled_date_rows = ClassSessionAttendance.objects.filter(
-        class_session=class_session,
-        date__gte=active_from,
-        date__lte=active_to,
-        status='class_cancelled',
-    ).values_list('date', flat=True).distinct()
-    for cancelled_date in cancelled_date_rows:
-        cancelled_dates.add(cancelled_date)
-
-    candidate_dates = sorted(trainer_dates.union(cancelled_dates), reverse=True)
-    daily_rows = []
-    for class_date in candidate_dates:
-        trainer_status_raw = trainer_status_map.get(class_date)
-        if trainer_status_raw == 'absent':
-            trainer_status = 'Absent'
-        elif trainer_status_raw == 'present':
-            trainer_status = 'Present'
-        else:
-            trainer_status = 'Not Marked'
-
-        has_substitute = bool(class_session.substitute_trainer_id and trainer_status_raw == 'absent')
-        is_cancelled_for_day = class_date in cancelled_dates or class_session.is_cancelled
-        if is_cancelled_for_day:
-            status = 'Cancelled'
-        elif trainer_status_raw == 'absent' and not has_substitute:
-            status = 'Not Conducted'
-        else:
+        if record.status == 'class_cancelled':
+            daily_record_rows.append({
+                'date': record.date,
+                'status': 'Cancelled',
+                'marked_by': 'Admin',
+            })
+        elif record.status == 'present' or record.status == 'absent':
             status = 'Conducted'
+            daily_record_rows.append({
+                'date': record.date,
+                'status': status,
+                'marked_by': record.marked_by.full_name or record.marked_by.username,
+            })
 
-        if has_substitute:
-            substitute_name = class_session.substitute_trainer.full_name or class_session.substitute_trainer.username
-        else:
-            substitute_name = '-'
+    current_date = class_session.start_date
 
-        daily_rows.append({
-            'date': class_date,
-            'main_trainer_status': trainer_status,
-            'substitute_name': substitute_name,
-            'status': status,
-        })
+    last_date = min(class_session.end_date, date.today())
+
+    if date_from:
+        try:
+            date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+            if date_from_parsed > current_date:
+                current_date = date_from_parsed
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+            if date_to_parsed < last_date:
+                last_date = date_to_parsed
+        except ValueError:
+            pass
+    
+    if current_date > last_date:
+        return render(
+            request,
+            'dashboards/admin/attendance/class_session/group_class_activity_detail.html',
+            {
+                'class_session': class_session,
+                'daily_record_rows': [],
+            },
+        )
+
+    while current_date <= last_date:
+        has_record_for_date = all_daily_records.filter(date=current_date).exists()
+
+        if not has_record_for_date:
+            row = {
+                'date': current_date,
+                'status': 'Not Conducted',
+                'marked_by': '-',
+            }
+
+            if current_date.weekday() >= 5:
+                row['status'] = 'Weekend'
+
+            daily_record_rows.append(row)
+
+        current_date += timedelta(days=1)
+
+    
+    status = request.GET.get('status')
+    if status in {'Conducted', 'Cancelled', 'Not Conducted', 'Weekend'}:
+        filtered_rows = []
+        for row in daily_record_rows:
+            if row['status'] == status:
+                filtered_rows.append(row)
+        daily_record_rows = filtered_rows
 
     return render(
         request,
         'dashboards/admin/attendance/class_session/group_class_activity_detail.html',
         {
             'class_session': class_session,
-            'from_date': from_date,
-            'to_date': to_date,
-            'daily_rows': daily_rows,
+            'daily_record_rows': daily_record_rows,
         },
     )
 
@@ -1134,91 +1071,130 @@ def admin_private_class_activity_detail(request, private_class_id):
         return redirect('index')
 
     private_class = get_object_or_404(PrivateClass, id=private_class_id)
-    today = date.today()
+    
+    all_daily_records = PrivateClassAttendance.objects.filter(private_class=private_class).select_related('student', 'marked_by').order_by('-date')
+    
+    daily_records = all_daily_records
+
+    q = (request.GET.get('q') or '').strip()
+    if q:
+        daily_records = daily_records.filter(
+            Q(marked_by__full_name__icontains=q) |
+            Q(marked_by__username__icontains=q) |
+            Q(marked_by__email__icontains=q)
+        )
+        if not daily_records.exists():
+            return render(
+                request,
+                'dashboards/admin/attendance/private_class/private_class_activity_detail.html',
+                {
+                    'private_class': private_class,
+                    'daily_record_rows': [],
+                },
+            )
+    
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
+    if date_from:
+        try:
+            date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+            daily_records = daily_records.filter(date__gte=date_from_parsed)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+            daily_records = daily_records.filter(date__lte=date_to_parsed)
+        except ValueError:
+            pass
+    
+    get_order_by = request.GET.get('order_by')
+    if get_order_by == 'date_asc':
+        daily_records = daily_records.order_by('date')
 
-    try:
-        if date_from:
-            from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
-        else:
-            from_date = today
-    except ValueError:
-        from_date = today
-    try:
-        if date_to:
-            to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
-        else:
-            to_date = today
-    except ValueError:
-        to_date = today
-    if from_date > to_date:
-        from_date, to_date = to_date, from_date
+    seen_dates = set()
+    daily_record_rows = []
+    for record in daily_records:
+        if record.date in seen_dates:
+            continue
 
-    active_from = max(private_class.start_date, from_date)
-    active_to = min(private_class.end_date, to_date)
+        seen_dates.add(record.date)
 
-    trainer_records = TrainerAttendanceRecord.objects.filter(
-        trainer=private_class.trainer,
-        date__gte=active_from,
-        date__lte=active_to,
-    )
-    trainer_status_map = {}
-    trainer_dates = set()
-    for record in trainer_records:
-        trainer_status_map[record.date] = record.status
-        trainer_dates.add(record.date)
-
-    cancelled_dates = set()
-    cancelled_date_rows = PrivateClassAttendance.objects.filter(
-        private_class=private_class,
-        date__gte=active_from,
-        date__lte=active_to,
-        status='class_cancelled',
-    ).values_list('date', flat=True).distinct()
-    for cancelled_date in cancelled_date_rows:
-        cancelled_dates.add(cancelled_date)
-
-    candidate_dates = sorted(trainer_dates.union(cancelled_dates), reverse=True)
-    daily_rows = []
-    for class_date in candidate_dates:
-        trainer_status_raw = trainer_status_map.get(class_date)
-        if trainer_status_raw == 'absent':
-            trainer_status = 'Absent'
-        elif trainer_status_raw == 'present':
-            trainer_status = 'Present'
-        else:
-            trainer_status = 'Not Marked'
-
-        has_substitute = bool(private_class.substitute_trainer_id and trainer_status_raw == 'absent')
-        is_cancelled_for_day = class_date in cancelled_dates or private_class.is_cancelled
-        if is_cancelled_for_day:
-            status = 'Cancelled'
-        elif trainer_status_raw == 'absent' and not has_substitute:
-            status = 'Not Conducted'
-        else:
+        if record.status == 'class_cancelled':
+            daily_record_rows.append({
+                'date': record.date,
+                'status': 'Cancelled',
+                'marked_by': 'Admin',
+            })
+        elif record.status == 'present' or record.status == 'absent':
             status = 'Conducted'
+            daily_record_rows.append({
+                'date': record.date,
+                'status': status,
+                'marked_by': record.marked_by.full_name or record.marked_by.username,
+            })
 
-        if has_substitute:
-            substitute_name = private_class.substitute_trainer.full_name or private_class.substitute_trainer.username
-        else:
-            substitute_name = '-'
+    current_date = private_class.start_date
 
-        daily_rows.append({
-            'date': class_date,
-            'main_trainer_status': trainer_status,
-            'substitute_name': substitute_name,
-            'status': status,
-        })
+    last_date = min(private_class.end_date, date.today())
+
+    if date_from:
+        try:
+            date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+            if date_from_parsed > current_date:
+                current_date = date_from_parsed
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+            if date_to_parsed < last_date:
+                last_date = date_to_parsed
+        except ValueError:
+            pass
+    
+    if current_date > last_date:
+        return render(
+            request,
+            'dashboards/admin/attendance/private_class/private_class_activity_detail.html',
+            {
+                'private_class': private_class,
+                'daily_record_rows': [],
+            },
+        )
+
+    while current_date <= last_date:
+        has_record_for_date = all_daily_records.filter(date=current_date).exists()
+
+        if not has_record_for_date:
+            row = {
+                'date': current_date,
+                'status': 'Not Conducted',
+                'marked_by': '-',
+            }
+
+            if current_date.weekday() >= 5:
+                row['status'] = 'Weekend'
+
+            daily_record_rows.append(row)
+
+        current_date += timedelta(days=1)
+
+    
+    status = request.GET.get('status')
+    if status in {'Conducted', 'Cancelled', 'Not Conducted', 'Weekend'}:
+        filtered_rows = []
+        for row in daily_record_rows:
+            if row['status'] == status:
+                filtered_rows.append(row)
+        daily_record_rows = filtered_rows
 
     return render(
         request,
         'dashboards/admin/attendance/private_class/private_class_activity_detail.html',
         {
             'private_class': private_class,
-            'from_date': from_date,
-            'to_date': to_date,
-            'daily_rows': daily_rows,
+            'daily_record_rows': daily_record_rows,
         },
     )
 
@@ -1369,3 +1345,4 @@ def admin_private_class_list_for_attendance_history(request):
             'trainers': User.objects.filter(role='trainer', is_active=True).order_by('full_name', 'username'),
         },
     )
+
