@@ -1,0 +1,147 @@
+.attendance-hero {
+  background: #eef9ff;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.25rem;
+}
+
+.attendance-hero h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.attendance-meta {
+  margin-top: 0.3rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.attendance-status {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.attendance-status.present {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.attendance-status.absent {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.attendance-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.attendance-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+}
+
+.attendance-form-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: end;
+}
+
+.attendance-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.attendance-form-group label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.attendance-form-group input,
+.attendance-form-group select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+}
+
+.attendance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.student-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.student-row {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.student-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.student-meta strong {
+  color: var(--text-primary);
+}
+
+.student-meta span {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.history-table-wrap {
+  overflow-x: auto;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-table th,
+.history-table td {
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  padding: 0.75rem;
+}
+
+.history-table th {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.quick-links {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.note-card {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  color: #92400e;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+}

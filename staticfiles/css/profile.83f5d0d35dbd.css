@@ -1,0 +1,145 @@
+.profile-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(320px, 1.1fr);
+  gap: 1.5rem;
+}
+
+.profile-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 6px 18px var(--shadow);
+}
+
+.profile-card + .profile-card {
+  align-self: stretch;
+}
+
+.profile-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #e0f2fe;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1rem;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar-placeholder {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #0284c7;
+}
+
+.profile-meta h3 {
+  margin-bottom: 0.25rem;
+}
+
+.profile-meta p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.profile-form .form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.profile-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.profile-form .form-group.full-width {
+  grid-column: span 2;
+}
+
+.profile-form label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.profile-form input,
+.profile-form select,
+.profile-form textarea {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-form input:focus,
+.profile-form select:focus,
+.profile-form textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.profile-form input[type="file"] {
+  padding: 0.45rem 0.6rem;
+  background: #f8fafc;
+}
+
+.form-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.form-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.25rem 0;
+}
+
+.required {
+  color: #ef4444;
+  font-size: 0.8em;
+}
+
+.optional {
+  color: var(--text-secondary);
+  font-weight: normal;
+  font-size: 0.8em;
+}
+
+@media (max-width: 980px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .profile-form .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-form .form-group.full-width {
+    grid-column: span 1;
+  }
+}
