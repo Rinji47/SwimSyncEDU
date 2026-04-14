@@ -786,7 +786,6 @@
   .filter-main,
   .filter-search,
   .filter-actions {
-    flex-direction: column;
     align-items: stretch;
   }
 
