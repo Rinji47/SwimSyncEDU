@@ -39,6 +39,39 @@
         line-height: 1.05;
     }
 
+    .trainer-card-identity {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-width: 0;
+    }
+
+    .trainer-card-identity h3 {
+        margin: 0;
+    }
+
+    .trainer-card-avatar,
+    .trainer-card-avatar-placeholder {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .trainer-card-avatar {
+        object-fit: cover;
+    }
+
+    .trainer-card-avatar-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #3b82f6;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
     .trainer-select-grid .btn-primary {
         width: 100%;
         justify-content: center;
@@ -83,7 +116,14 @@
                 {% for trainer in trainers %}
                 <article class="pool-card">
                     <div class="pool-card-header">
-                        <h3>{{ trainer.full_name|default:trainer.username }}</h3>
+                        <div class="trainer-card-identity">
+                            {% if trainer.profile_picture %}
+                            <img src="{{ trainer.profile_picture.url }}" alt="{{ trainer.full_name|default:trainer.username }}" class="trainer-card-avatar">
+                            {% else %}
+                            <div class="trainer-card-avatar-placeholder">{{ trainer.username|slice:":1"|upper }}</div>
+                            {% endif %}
+                            <h3>{{ trainer.full_name|default:trainer.username }}</h3>
+                        </div>
                         <span class="pool-status open">Available</span>
                     </div>
                     <p class="pool-meta"><strong>Email:</strong> {{ trainer.email }}</p>

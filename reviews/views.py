@@ -106,7 +106,7 @@ def public_select_trainer_for_reviews(request):
         'certificate',
         'certificate__class_booking__class_session__trainer',
         'certificate__private_class__trainer',
-    ).order_by('-created_at')
+    ).filter(is_active=True).order_by('-created_at')
     q = (request.GET.get('q') or '').strip().lower()
 
     trainer_map = {}
@@ -157,7 +157,7 @@ def public_trainer_review_list(request, trainer_id):
         'certificate__class_booking__class_session__pool',
         'certificate__private_class__trainer',
         'certificate__private_class__pool',
-    ).order_by('-created_at')
+    ).filter(is_active=True).order_by('-created_at')
 
     trainer = None
     review_rows = []
@@ -233,7 +233,7 @@ def trainer_my_reviews(request):
         'certificate__class_booking__class_session__pool',
         'certificate__private_class__trainer',
         'certificate__private_class__pool',
-    ).order_by('-created_at')
+    ).filter(is_active=True).order_by('-created_at')
     q = (request.GET.get('q') or '').strip().lower()
     rating = (request.GET.get('rating') or '').strip()
     date_from = request.GET.get('date_from')
@@ -391,6 +391,10 @@ def user_create_review(request, certificate_id):
             return redirect('user_create_review', certificate_id=certificate_id)
         comment = request.POST.get('comment', '').strip()
 
+        if len(comment) > 500:
+            messages.error(request, "Comment cannot exceed 500 characters.")
+            return redirect('user_create_review', certificate_id=certificate_id)
+
         if rating < 1 or rating > 5:
             messages.error(request, "Rating must be between 1 and 5.")
             return redirect('user_create_review', certificate_id=certificate_id)
@@ -445,6 +449,10 @@ def user_edit_review(request, certificate_id):
 
         comment = request.POST.get('comment', '').strip()
 
+        if len(comment) > 500:
+            messages.error(request, "Comment cannot exceed 500 characters.")
+            return redirect('user_edit_review', certificate_id=certificate_id)
+
         if rating < 1 or rating > 5:
             messages.error(request, "Rating must be between 1 and 5.")
             return redirect('user_edit_review', certificate_id=certificate_id)
@@ -484,3 +492,41 @@ def user_delete_review(request, certificate_id):
         'review': review,
     }
     return render(request, 'dashboards/user/reviews/user_confirm_delete_review.html', context)
+
+@login_required
+def admin_inactive_reviews(request, review_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    review = get_object_or_404(Review, id=review_id)
+
+    if review.is_active == False:
+        messages.info(request, "The review is already inactive.")
+        return redirect('admin_all_trainer_reviews')
+
+    if request.method == 'POST':
+        review.is_active = False
+        review.save(update_fields=['is_active'])
+        messages.success(request, "The review has been marked as inactive.")
+        return redirect('admin_all_trainer_reviews')
+    return redirect('admin_all_trainer_reviews')
+
+@login_required
+def admin_active_reviews(request, review_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    review = get_object_or_404(Review, id=review_id)
+
+    if review.is_active == True:
+        messages.info(request, "The review is already active.")
+        return redirect('admin_all_trainer_reviews')
+
+    if request.method == 'POST':
+        review.is_active = True
+        review.save(update_fields=['is_active'])
+        messages.success(request, "The review has been marked as active.")
+        return redirect('admin_all_trainer_reviews')
+    return redirect('admin_all_trainer_reviews')

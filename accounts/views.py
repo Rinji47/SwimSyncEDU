@@ -2,9 +2,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Q
 from .models import User
-from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth import login, logout, authenticate, views as auth_views
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
@@ -30,8 +30,12 @@ def login_view(request):
 
         user = authenticate(request, username=username, password=password)
         if user and user.check_password(password):
+            if not user.is_active:
+                messages.error(request, 'Your account is inactive. Please contact support.')
+                return render(request, 'auth/login.html')
+            
             login(request, user)
-            messages.success(request, f'Welcome back, {user.full_name}!')
+            messages.success(request, f'Welcome back, {user.full_name or user.username}!')
 
             if user.role == 'admin':
                 return redirect('admin_dashboard')
@@ -66,6 +70,20 @@ def signup_view(request):
         
         if User.objects.filter(email=email).exists():
             messages.error(request, 'Email already registered.')
+            return redirect('signup')\
+        
+        if not date_of_birth:
+            messages.error(request, 'Date of birth is required.')
+            return redirect('signup')
+
+        try:
+            dob = datetime.strptime(date_of_birth, '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, 'Invalid date format for date of birth. Use YYYY-MM-DD.')
+            return redirect('signup')
+
+        if dob >= date.today():
+            messages.error(request, 'Date of birth must be before today.')
             return redirect('signup')
 
         try:
@@ -76,7 +94,7 @@ def signup_view(request):
                 full_name=full_name,
                 phone=phone,
                 gender=gender,
-                date_of_birth=date_of_birth,
+                date_of_birth=dob,
                 profile_picture=profile_picture,
                 role='user'
             )
@@ -471,12 +489,17 @@ def admin_dashboard(request):
     total_revenue = Payment.objects.aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
 
     pending_payments = Payment.objects.filter(payment_status='Pending').count()
-    pool_quality = PoolQuality.objects.order_by('-created_at')[:5]
+    
+    ninety_days_ago = today - timedelta(days=90)
 
-    if pool_quality is None:
+    pool_quality = PoolQuality.objects.filter(
+        date__gte=ninety_days_ago, date__lte=today).order_by('-created_at')[:5]
+
+    if not pool_quality:
         pool_quality = "No pool quality records found."
 
-    recent_bookings = ClassBooking.objects.select_related("user", "class_session", "class_session__trainer", "class_session__pool").order_by('-booking_date')[:5]
+    recent_bookings = ClassBooking.objects.select_related("user", "class_session", "class_session__trainer", "class_session__pool"
+                                                          ).filter(booking_date__gte=ninety_days_ago, booking_date__lte=today).order_by('-booking_date')[:5]
 
     context = {
         'total_users': total_users,
@@ -756,3 +779,24 @@ def change_password(request):
         messages.success(request, 'Password changed successfully. Please login again.')
         return redirect('login')
     return _role_check_for_change_password(user)
+
+
+def password_reset_view(request):
+    view = auth_views.PasswordResetView.as_view(
+        template_name='auth/forgot_password/password_reset_form.html',
+        email_template_name='auth/forgot_password/password_reset_email.html',
+        subject_template_name='auth/forgot_password/password_reset_subject.txt',
+    )
+    return view(request)
+
+def password_reset_done_view(request):
+    view = auth_views.PasswordResetDoneView.as_view(template_name='auth/forgot_password/password_reset_done.html')
+    return view(request)
+
+def password_reset_confirm_view(request, uidb64, token):
+    view = auth_views.PasswordResetConfirmView.as_view(template_name='auth/forgot_password/password_reset_confirm.html')
+    return view(request, uidb64=uidb64, token=token)
+
+def password_reset_complete_view(request):
+    view = auth_views.PasswordResetCompleteView.as_view(template_name='auth/forgot_password/password_reset_complete.html')
+    return view(request)

@@ -23,6 +23,36 @@
         border-bottom: 1px solid #e2e8f0;
     }
 
+    .view-review-topbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 0.85rem;
+    }
+
+    .review-state-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.35rem 0.8rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        border: 1px solid transparent;
+    }
+
+    .review-state-pill.active {
+        background: #dcfce7;
+        border-color: #86efac;
+        color: #166534;
+    }
+
+    .review-state-pill.inactive {
+        background: #fee2e2;
+        border-color: #fca5a5;
+        color: #991b1b;
+    }
+
     .view-review-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -114,6 +144,11 @@
         <div class="dashboard-section" style="display:flex; justify-content:center;">
             <div class="modal-content view-review-shell" style="position: static; transform: none;">
                 <div class="view-review-top">
+                    <div class="view-review-topbar">
+                        <span class="review-state-pill {% if review.is_active %}active{% else %}inactive{% endif %}">
+                            {% if review.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
                     <div class="view-review-grid">
                         <div class="view-review-item">
                             <span class="view-review-label">Trainer</span>

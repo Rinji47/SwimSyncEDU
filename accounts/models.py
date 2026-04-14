@@ -2,6 +2,10 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 
+from PIL import Image
+from io import BytesIO
+from django.core.files.base import ContentFile
+
 # Custom account manager
 class UserManager(BaseUserManager):
     def create_user(self, username, email, password=None, role='user', **extra_fields):
@@ -61,8 +65,6 @@ class User(AbstractBaseUser):
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
 
-    objects = UserManager()
-
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email']
 
@@ -75,3 +77,37 @@ class User(AbstractBaseUser):
 
     def __str__(self):
         return f'{self.username} - {self.role}'
+    
+    def save(self, *args, **kwargs):
+        if self.profile_picture and hasattr(self.profile_picture, "content_type"):
+            validate_image(self.profile_picture)
+            self.profile_picture = compress_image(self.profile_picture)
+
+        if self.digital_signature and hasattr(self.digital_signature, "content_type"):
+            validate_image(self.digital_signature)
+            self.digital_signature = compress_image(self.digital_signature)
+
+        super().save(*args, **kwargs)
+    
+
+def compress_image(image_field):
+    img = Image.open(image_field)
+    img_io = BytesIO()
+    image_format = img.format
+
+    if image_format == 'JPEG':
+        img.save(img_io, format='JPEG', quality=70, optimize=True)
+    elif image_format == 'PNG':
+        img.save(img_io, format='PNG', optimize=True)
+    else:
+        return image_field
+    
+    new_image = ContentFile(img_io.getvalue(), name=image_field.name)
+    return new_image
+
+def validate_image(image):
+    if image:
+        if image.size > 2 * 1024 * 1024:
+            raise ValidationError("Image file too large ( > 2MB )")
+        if not image.content_type in ['image/jpeg', 'image/png']:
+            raise ValidationError("Unsupported file type. Only JPEG and PNG are allowed.")

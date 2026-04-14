@@ -160,6 +160,25 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                    <div class="pagination">
+                    {% if payments.has_previous %}
+                        <a href="?page={{ payments.previous_page_number }}" class="btn-secondary">Previous</a>
+                    {% endif %}
+
+                    <span>Page</span>
+
+                    <form method="get" class="pagination-jump">
+                        <input type="number" name="page" min="1" max="{{ payments.paginator.num_pages }}" value="{{ payments.number }}">
+
+
+                    <span>of {{ payments.paginator.num_pages }}</span>
+
+                    {% if payments.has_next %}
+                        <a href="?page={{ payments.next_page_number }}" class="btn-secondary">Next</a>
+                    {% endif %}
+                        <button type="submit" class="btn-secondary">Go</button>
+                    </form>
+                </div>
             </div>
 
             <div class="data-card-grid payment-card-grid">

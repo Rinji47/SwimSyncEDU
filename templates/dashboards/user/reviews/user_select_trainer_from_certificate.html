@@ -101,6 +101,11 @@
                     <a href="{% url 'user_view_certificate' item.certificate.id %}" class="btn-sm btn-secondary">
                         View Certificate
                     </a>
+                    {% if item.review %}
+                    <a href="{% url 'user_delete_review' item.certificate.id %}" class="btn-sm btn-danger">
+                        Delete Review
+                    </a>
+                    {% endif %}
                 </div>
             </div>
             {% empty %}

@@ -117,17 +117,6 @@
         box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
     }
 
-    .review-trainer-card::after {
-        content: "";
-        position: absolute;
-        inset: auto -32px -32px auto;
-        width: 110px;
-        height: 110px;
-        border-radius: 50%;
-        background: rgba(251, 191, 36, 0.12);
-        pointer-events: none;
-    }
-
     .review-score {
         display: inline-flex;
         align-items: center;
@@ -242,7 +231,7 @@
 <section class="reviews-browse-shell">
     <div class="container">
         <form class="quick-filter" method="get" action="{% url 'public_select_trainer_for_reviews' %}" style="margin-bottom: 1.25rem;">
-            <input type="text" name="q" placeholder="Search trainer name or specialty..." value="{{ request.GET.q|default_if_none:'' }}">
+            <input type="text" name="q" placeholder="Search trainer name or specialty..." value="{{ request.GET.q|default_if_none:'' }}" style="width: 20rem;">
             <button type="submit" class="btn-secondary">Search</button>
             <a href="{% url 'public_select_trainer_for_reviews' %}" class="btn-secondary">Clear</a>
         </form>

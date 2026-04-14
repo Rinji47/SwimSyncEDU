@@ -32,10 +32,7 @@
             </div>
             
             <div class="form-options">
-                <label class="checkbox-label">
-                    <input type="checkbox" name="remember"> Remember me
-                </label>
-                <a href="#" class="link">Forgot password?</a>
+                <a href="{% url 'password_reset' %}" class="link">Forgot password?</a>
             </div>
             
             <button type="submit" class="btn-primary btn-block">Sign In</button>

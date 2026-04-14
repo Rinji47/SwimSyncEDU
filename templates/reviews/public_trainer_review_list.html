@@ -93,9 +93,38 @@
         flex-wrap: wrap;
     }
 
-    .review-comment-top h3 {
+    .review-comment-user {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        min-width: 0;
+    }
+
+    .review-comment-user h3 {
         margin: 0;
         font-size: 1.1rem;
+    }
+
+    .review-comment-avatar,
+    .review-comment-avatar-placeholder {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .review-comment-avatar {
+        object-fit: cover;
+    }
+
+    .review-comment-avatar-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #3b82f6;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
     }
 
     .review-rating-pill {
@@ -181,7 +210,14 @@
             {% for row in review_rows %}
             <article class="review-comment-card">
                 <div class="review-comment-top">
-                    <h3>{{ row.review.user.full_name|default:row.review.user.username }}</h3>
+                    <div class="review-comment-user">
+                        {% if row.review.user.profile_picture %}
+                        <img src="{{ row.review.user.profile_picture.url }}" alt="{{ row.review.user.full_name|default:row.review.user.username }}" class="review-comment-avatar">
+                        {% else %}
+                        <div class="review-comment-avatar-placeholder">{{ row.review.user.username|slice:":1"|upper }}</div>
+                        {% endif %}
+                        <h3>{{ row.review.user.full_name|default:row.review.user.username }}</h3>
+                    </div>
                     <span class="review-rating-pill">{{ row.review.rating }}/5</span>
                 </div>
                 <div class="review-source-line">

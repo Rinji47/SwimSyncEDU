@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from django.utils import timezone
 from django.db import models
-from accounts.models import User
+from accounts.models import User, compress_image, validate_image
 
 # Create your models here.
 class Pool(models.Model):
@@ -30,6 +30,12 @@ class PoolImage(models.Model):
 
     def __str__(self):
         return f"{self.pool.name} Image {self.image_id}"
+    
+    def save(self, *args, **kwargs):
+        if self.image and hasattr(self.image, "content_type"):
+            validate_image(self.image)
+            self.image = compress_image(self.image)
+        super().save(*args, **kwargs)
 
 class PoolQuality(models.Model):
     quality_id = models.AutoField(primary_key=True)

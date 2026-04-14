@@ -480,6 +480,20 @@ def select_trainer_for_class_session(request, pool_id):
         'trainers': trainers,
     })
 
+def calculate_weekday_end_date(start_date, duration_days):
+
+    if duration_days <= 1:
+        return start_date
+
+    end_date = start_date
+    days_added = 0
+    while days_added < duration_days - 1:
+        end_date += timedelta(days=1)
+        if end_date.weekday() < 5:  # Monday to Friday are considered weekdays
+            days_added += 1
+
+    return end_date
+
 def create_class_session_for_pool(request, pool_id, trainer_id):
     if not request.user.is_authenticated or request.user.is_superuser == False:
         messages.error(request, 'You do not have permission to access this page.')
@@ -503,9 +517,14 @@ def create_class_session_for_pool(request, pool_id, trainer_id):
 
             class_type = get_object_or_404(ClassType, pk=class_type_id, is_closed=False)
             start_date = datetime.strptime(request.POST.get('start_date'), '%Y-%m-%d').date()
-            end_date = start_date + timedelta(days=max(class_type.duration_days - 1, 0))
             start_time = datetime.strptime(request.POST.get('start_time'), '%H:%M').time()
             end_time = datetime.strptime(request.POST.get('end_time'), '%H:%M').time()
+
+            if start_date.weekday() >= 5:
+                messages.error(request, 'Start date cannot be on a weekend. Please select a weekday.')
+                return redirect(redirect_url)
+
+            end_date = calculate_weekday_end_date(start_date, class_type.duration_days)
 
             if seats <= 0:
                 messages.error(request, 'Seats must be greater than zero.')
@@ -524,6 +543,11 @@ def create_class_session_for_pool(request, pool_id, trainer_id):
                 return redirect(redirect_url)
 
             today = datetime.now().date()
+
+            if start_date <= today:
+                messages.error(request, 'Start date must be after today.')
+                return redirect(redirect_url)
+
             max_start_date = today + timedelta(days=31)
             if start_date > max_start_date:
                 messages.error(request, 'Start date cannot be more than 1 month from today.')
@@ -969,6 +993,10 @@ def book_private_class(request, pool_id, trainer_id):
             return redirect('book_private_class', pool_id=pool_id, trainer_id=trainer_id)
 
         today = datetime.now().date()
+        if start_date <= today:
+            messages.error(request, 'Start date must be after today.')
+            return redirect('book_private_class', pool_id=pool_id, trainer_id=trainer_id)
+
         max_start_date = today + timedelta(days=31)
         if start_date > max_start_date:
             messages.error(request, 'Start date cannot be more than 1 month from today.')

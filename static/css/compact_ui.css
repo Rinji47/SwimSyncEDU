@@ -245,6 +245,10 @@
   box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.12);
 }
 
+.info-card input[type="checkbox"] {
+  width: auto;
+}
+
 @media (max-width: 980px) {
   .two-col {
     flex-direction: column;

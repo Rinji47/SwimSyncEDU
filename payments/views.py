@@ -14,6 +14,7 @@ from django.utils import timezone
 from accounts.models import User
 from classes.models import ClassBooking, ClassSession, PrivateClass
 from pool.models import Pool
+from django.core.paginator import Paginator
 
 from .models import Payment
 
@@ -408,6 +409,7 @@ def private_class_payment_cancel(request):
 def user_payment_report(request):
     cutoff_time = timezone.now() - timedelta(minutes=15)
 
+
     Payment.objects.filter(
         user=request.user,
         payment_status="Pending",
@@ -415,7 +417,7 @@ def user_payment_report(request):
     ).update(payment_status="Cancelled")
     
     payments = Payment.objects.filter(user=request.user).order_by("-payment_date")
-    
+
     q = (request.GET.get("q") or "").strip()
     status = (request.GET.get("status", "")).strip()
     purpose = (request.GET.get("purpose", "")).strip()
@@ -462,6 +464,10 @@ def user_payment_report(request):
         failed_count=Count("id", filter=Q(payment_status="Failed")),
         total_spend=Sum("total_amount", filter=Q(payment_status="Completed")),
     )
+
+    paginator = Paginator(payments, 10)
+    page_number = request.GET.get("page")
+    payments = paginator.get_page(page_number)
 
     return render(
         request,
@@ -534,6 +540,10 @@ def admin_payment_report(request):
         failed_count=Count("id", filter=Q(payment_status="Failed")),
         collected_total=Sum("total_amount", filter=Q(payment_status="Completed")),
     )
+
+    paginator = Paginator(payments, 10)
+    page_number = request.GET.get("page")
+    payments = paginator.get_page(page_number)
 
     return render(
         request,

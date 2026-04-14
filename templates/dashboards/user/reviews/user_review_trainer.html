@@ -172,15 +172,17 @@
 
     .review-comment-box {
         width: 100%;
-        min-height: 210px;
+        height: 180px;
+        max-height: 220px;
+        resize: vertical;
         padding: 1rem 1rem 1.05rem;
         border-radius: 20px;
         border: 1px solid #cbd5e1;
         background: #ffffff;
         font-size: 1rem;
         line-height: 1.65;
-        resize: vertical;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;   
+        overflow-y: auto;
     }
 
     .review-comment-box:focus {
@@ -228,7 +230,7 @@
         </div>
 
         <div class="dashboard-section" style="display:flex; justify-content:center;">
-            <div class="modal-content review-form-shell" style="position: static; transform: none;">
+            <div class="review-form-shell" style="position: static; transform: none;">
                 <form method="POST" action="{% if review %}{% url 'user_edit_review' certificate.id %}{% else %}{% url 'user_create_review' certificate.id %}{% endif %}">
                     {% csrf_token %}
 
@@ -337,10 +339,10 @@
                                 <span>Comment</span>
                                 <span class="comment-hint">Tell future swimmers what stood out.</span>
                             </label>
-                            <textarea id="comment" class="review-comment-box" name="comment" rows="6" placeholder="Share anything helpful about the trainer, communication, confidence-building, punctuality, and the overall learning experience.">{% if review %}{{ review.comment }}{% endif %}</textarea>
+                            <textarea maxlength="300" id="comment" class="review-comment-box" name="comment" rows="6" placeholder="Share anything helpful about the trainer, communication, confidence-building, punctuality, and the overall learning experience.">{% if review %}{{ review.comment }}{% endif %}</textarea>
                         </div>
 
-                        <div class="modal-footer review-form-actions">
+                        <div class="review-form-actions">
                             <a href="{% if review %}{% url 'user_view_review' certificate.id %}{% else %}{% url 'user_select_trainer_from_certificate' %}{% endif %}" class="btn-secondary">Cancel</a>
                             <button type="submit" class="btn-primary">{% if review %}Save Changes{% else %}Submit Review{% endif %}</button>
                         </div>

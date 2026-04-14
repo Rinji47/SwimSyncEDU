@@ -116,6 +116,8 @@
 .pool-card-header h3 {
   font-size: 1.1rem;
   color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
 }
 
 .pool-badges {
@@ -124,6 +126,7 @@
   gap: 0.4rem;
   flex-wrap: wrap;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .pool-distance {
@@ -133,6 +136,7 @@
   border-radius: 999px;
   background: #e0f2fe;
   color: #0c4a6e;
+  white-space: nowrap;
 }
 
 .pool-status {

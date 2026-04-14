@@ -24,4 +24,9 @@ urlpatterns = [
     path('trainers/view/<int:trainer_id>/', views.view_trainer, name='view_trainer'),
     path('trainers/edit/<int:trainer_id>/', views.edit_trainer, name='edit_trainer'),
     path('trainers/toggle_status/<int:trainer_id>/', views.toggle_trainer_status, name='toggle_trainer_status'),
+
+    path('password-reset/', views.password_reset_view, name='password_reset'),
+    path('password-reset/done/', views.password_reset_done_view, name='password_reset_done'),
+    path('password-reset-confirm/<uidb64>/<token>/', views.password_reset_confirm_view, name='password_reset_confirm'),
+    path('password-reset-complete/', views.password_reset_complete_view, name='password_reset_complete'),
 ]

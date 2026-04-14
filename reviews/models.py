@@ -13,6 +13,7 @@ class Review(models.Model):
     comment = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         if self.certificate.class_booking:
