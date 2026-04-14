@@ -241,8 +241,8 @@ def trainer_view_certificate(request, certificate_id):
     else:
         trainer = None
 
-    if User.objects.filter(role='admin').exists():
-        admin_signatre = User.objects.filter(role='admin').first().digital_signature
+    if User.objects.filter(role='admin', digital_signature__isnull=False).exists():
+        admin_signatre = User.objects.filter(role='admin', digital_signature__isnull=False).first().digital_signature
     else:
         admin_signatre = None
 
@@ -269,8 +269,8 @@ def user_view_certificate(request, certificate_id):
     else:
         trainer = None
 
-    if User.objects.filter(role='admin').exists():
-        admin_signatre = User.objects.filter(role='admin').first().digital_signature
+    if User.objects.filter(role='admin', digital_signature__isnull=False).exists():
+        admin_signatre = User.objects.filter(role='admin', digital_signature__isnull=False).first().digital_signature
     else:
         admin_signatre = None
 
@@ -300,8 +300,8 @@ def admin_view_certificate(request, certificate_id):
     else:
         trainer = None
 
-    if User.objects.filter(role='admin').exists():
-        admin_signatre = User.objects.filter(role='admin').first().digital_signature
+    if User.objects.filter(role='admin', digital_signature__isnull=False).exists():
+        admin_signatre = User.objects.filter(role='admin', digital_signature__isnull=False).first().digital_signature
     else:
         admin_signatre = None
 
