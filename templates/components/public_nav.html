@@ -1,7 +1,16 @@
 <nav class="navbar">
     <div class="container">
         <a class="nav-brand" href="{% url 'index' %}">SwimSync EDU</a>
-        <button class="mobile-menu-btn" id="mobileMenuBtn"><i class="fa-solid fa-bars"></i></button>
+        <button
+            class="mobile-menu-btn"
+            id="mobileMenuBtn"
+            type="button"
+            aria-expanded="false"
+            aria-controls="navMenu"
+            aria-label="Toggle navigation"
+        >
+            <i class="fa-solid fa-bars"></i>
+        </button>
         <ul class="nav-menu" id="navMenu">
             {% if request.resolver_match.url_name == 'index' %}
             <li><a href="{% url 'index' %}#features">Features</a></li>

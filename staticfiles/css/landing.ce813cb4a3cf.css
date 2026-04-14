@@ -72,9 +72,8 @@
   }
 
   .navbar .container {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     gap: 0.85rem;
     padding-top: 0.9rem;
     padding-bottom: 0.9rem;
@@ -83,12 +82,11 @@
 
   .nav-brand {
     margin-right: 0;
-    text-align: left;
+    text-align: center;
   }
 
   .nav-menu {
     display: flex;
-    grid-column: 1 / -1;
     position: static;
     flex-direction: column;
     align-items: stretch;
@@ -108,14 +106,6 @@
   .nav-menu li a {
     justify-content: center;
     padding: 0.75rem 0.9rem;
-  }
-
-  .js-enabled .nav-menu {
-    display: none;
-  }
-
-  .js-enabled .nav-menu.active {
-    display: flex;
   }
 }
 

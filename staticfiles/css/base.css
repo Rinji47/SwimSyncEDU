@@ -24,12 +24,49 @@ body {
   line-height: 1.6;
   color: var(--text-primary);
   background-color: var(--background);
+  overflow-x: hidden;
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 1.5rem;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+table {
+  width: 100%;
+}
+
+a,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+span,
+small,
+strong,
+td,
+th,
+label {
+  overflow-wrap: anywhere;
 }
 
 /* Button Styles */
@@ -146,7 +183,49 @@ body {
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+
   .mobile-menu-btn {
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #fff;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-success,
+  .btn-danger,
+  .btn-sm {
+    width: 100%;
+  }
+
+  .btn-primary.btn-inline,
+  .btn-secondary.btn-inline,
+  .btn-success.btn-inline,
+  .btn-danger.btn-inline,
+  .btn-sm.btn-inline {
+    width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 0.85rem;
+  }
+
+  body {
+    font-size: 0.97rem;
+  }
+
+  .mobile-menu-btn {
+    width: 44px;
+    height: 44px;
   }
 }

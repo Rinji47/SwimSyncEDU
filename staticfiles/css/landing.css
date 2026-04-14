@@ -67,19 +67,54 @@
 }
 
 @media (max-width: 768px) {
-  .nav-menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: white;
-    flex-direction: column;
-    padding: 1rem;
-    box-shadow: 0 4px 12px var(--shadow);
+  .navbar {
+    position: static;
   }
 
-  .nav-menu.active {
+  .navbar .container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.85rem;
+    padding-top: 0.9rem;
+    padding-bottom: 0.9rem;
+    min-height: 0;
+  }
+
+  .nav-brand {
+    margin-right: 0;
+    text-align: left;
+  }
+
+  .nav-menu {
+    display: flex;
+    grid-column: 1 / -1;
+    position: static;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+    width: 100%;
+    margin-left: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .nav-menu li,
+  .nav-menu li a,
+  .nav-menu li a.btn-primary {
+    width: 100%;
+  }
+
+  .nav-menu li a {
+    justify-content: center;
+    padding: 0.75rem 0.9rem;
+  }
+
+  .js-enabled .nav-menu {
+    display: none;
+  }
+
+  .js-enabled .nav-menu.active {
     display: flex;
   }
 }
@@ -150,6 +185,7 @@
   .hero .container {
     flex-direction: column;
     text-align: center;
+    gap: 2rem;
   }
 
   .hero h1 {
@@ -163,6 +199,30 @@
   .hero-illustration {
     width: 100%;
     max-width: 320px;
+  }
+
+  .features,
+  .roles,
+  .about {
+    padding: 3.5rem 0;
+  }
+
+  .section-title {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .features-grid,
+  .roles-grid,
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .feature-card,
+  .role-card,
+  .stat-item {
+    padding: 1.35rem;
   }
 }
 

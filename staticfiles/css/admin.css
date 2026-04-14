@@ -467,6 +467,13 @@
 
 /* Responsive adjustments */
 @media (max-width: 600px) {
+  .modal-content {
+    width: calc(100% - 1rem);
+    margin: 1rem auto;
+    padding: 1rem;
+    max-height: calc(100vh - 2rem);
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
     gap: 0.8rem;
@@ -474,6 +481,19 @@
   .form-group.full-width {
     grid-column: span 1;
   }
+
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modal-footer button,
+  .modal-footer .btn-primary,
+  .modal-footer .btn-secondary,
+  .modal-footer .btn-danger {
+    width: 100%;
+  }
+
   #map {
     height: 180px; /* smaller map on mobile */
   }
@@ -505,6 +525,12 @@
 @media (max-width: 768px) {
   .admin-hero {
     flex-direction: column;
+  }
+
+  .admin-hero-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .admin-kpi-grid,

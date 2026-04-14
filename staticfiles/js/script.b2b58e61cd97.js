@@ -4,22 +4,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const mobileMenuBtn = document.getElementById("mobileMenuBtn")
   const navMenu = document.getElementById("navMenu")
-  const sidebarToggleBtn = document.querySelector(".sidebar-toggle-btn")
-  const sidebarNav = document.getElementById("dashboardSidebarNav")
 
   if (mobileMenuBtn && navMenu) {
     mobileMenuBtn.addEventListener("click", () => {
       const expanded = mobileMenuBtn.getAttribute("aria-expanded") === "true"
       mobileMenuBtn.setAttribute("aria-expanded", String(!expanded))
       navMenu.classList.toggle("active", !expanded)
-    })
-  }
-
-  if (sidebarToggleBtn && sidebarNav) {
-    sidebarToggleBtn.addEventListener("click", () => {
-      const expanded = sidebarToggleBtn.getAttribute("aria-expanded") === "true"
-      sidebarToggleBtn.setAttribute("aria-expanded", String(!expanded))
-      sidebarNav.classList.toggle("active", !expanded)
     })
   }
 

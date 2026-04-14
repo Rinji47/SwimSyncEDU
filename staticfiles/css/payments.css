@@ -362,4 +362,14 @@
   .payment-card-grid {
     display: grid;
   }
+
+  .payment-row {
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .payment-record-card .payment-chip {
+    position: static;
+    margin-bottom: 0.8rem;
+  }
 }
