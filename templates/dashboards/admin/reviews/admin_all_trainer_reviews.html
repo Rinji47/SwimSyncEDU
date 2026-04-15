@@ -105,6 +105,10 @@
     .admin-review-meta strong {
         color: var(--text-primary);
         line-height: 1.45;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .admin-review-comment {
@@ -114,12 +118,18 @@
         background: #fcfdff;
         line-height: 1.6;
         color: #334155;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .admin-review-actions {
         margin-top: 0.95rem;
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
+        gap: 0.75rem;
+        align-items: center;
     }
 
     .admin-review-actions form {
@@ -220,14 +230,17 @@
                     </div>
 
                     <div class="admin-review-actions">
+                        <a href="{% url 'admin_view_review_detail' row.review.id %}" class="btn-sm btn-secondary">View Details</a>
                         {% if row.review.is_active %}
                         <form method="post" action="{% url 'admin_inactive_reviews' row.review.id %}">
                             {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
                             <button type="submit" class="btn-sm btn-danger">Inactive</button>
                         </form>
                         {% else %}
                         <form method="post" action="{% url 'admin_active_reviews' row.review.id %}">
                             {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
                             <button type="submit" class="btn-sm btn-success">Active</button>
                         </form>
                         {% endif %}

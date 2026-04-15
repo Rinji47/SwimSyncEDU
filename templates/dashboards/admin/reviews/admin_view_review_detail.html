@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Review Detail{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<style>
+    .review-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.9fr) minmax(300px, 0.95fr);
+        gap: 1.4rem;
+        align-items: start;
+    }
+
+    .review-main-card,
+    .review-side-card {
+        background: #fff;
+        border: 1px solid #dbe4f0;
+        border-radius: 24px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    }
+
+    .review-main-card {
+        padding: 1.35rem 1.45rem 1.2rem;
+    }
+
+    .review-side-card {
+        padding: 1.35rem;
+    }
+
+    .review-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 1.4rem;
+    }
+
+    .review-field {
+        padding: 0.8rem 0 0.95rem;
+        border-bottom: 1px dashed #d9e2ec;
+    }
+
+    .review-label {
+        display: block;
+        margin-bottom: 0.35rem;
+        color: #64748b;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .review-value {
+        color: #0f172a;
+        font-size: 1rem;
+        font-weight: 600;
+        line-height: 1.45;
+    }
+
+    .review-comment {
+        grid-column: 1 / -1;
+    }
+
+    .review-comment-box {
+        padding: 1rem 1.05rem;
+        border: 1px solid #dbe4f0;
+        border-radius: 18px;
+        background: #f8fbff;
+        color: #334155;
+        line-height: 1.7;
+        white-space: pre-wrap;
+        min-height: 132px;
+    }
+
+    .review-badge-row {
+        display: flex;
+        gap: 0.7rem;
+        flex-wrap: wrap;
+    }
+
+    .review-rating {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.42rem 0.85rem;
+        border-radius: 999px;
+        background: #fff7ed;
+        color: #b45309;
+        border: 1px solid #fed7aa;
+        font-weight: 700;
+    }
+
+    .review-state {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.38rem 0.84rem;
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        border: 1px solid transparent;
+    }
+
+    .review-state.active {
+        background: #dcfce7;
+        border-color: #86efac;
+        color: #166534;
+    }
+
+    .review-state.inactive {
+        background: #fee2e2;
+        border-color: #fca5a5;
+        color: #991b1b;
+    }
+
+    .review-side-title {
+        margin: 0 0 1rem;
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .review-side-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.9rem;
+    }
+
+    .review-side-actions form {
+        margin: 0;
+    }
+
+    .review-side-actions .btn-primary,
+    .review-side-actions .btn-secondary,
+    .review-side-actions .btn-danger,
+    .review-side-actions .btn-success {
+        min-width: 180px;
+        text-align: center;
+    }
+
+    @media (max-width: 980px) {
+        .review-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .review-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'dashboards/admin/components/admin_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include 'components/message.html' %}
+
+        <div class="page-head">
+            <div>
+                <h1>Review Detail</h1>
+                <p class="subtitle">View the full review information on a full page.</p>
+            </div>
+            <a href="{% url 'admin_all_trainer_reviews' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <section class="review-layout">
+            <article class="review-main-card">
+                <div class="review-grid">
+                    <div class="review-field">
+                        <span class="review-label">Trainer</span>
+                        <div class="review-value">{{ trainer.full_name|default:trainer.username }}</div>
+                    </div>
+                    <div class="review-field">
+                        <span class="review-label">Status</span>
+                        <div class="review-badge-row">
+                            <span class="review-rating">{{ review.rating }}/5</span>
+                            <span class="review-state {% if review.is_active %}active{% else %}inactive{% endif %}">
+                                {% if review.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="review-field">
+                        <span class="review-label">Reviewed By</span>
+                        <div class="review-value">{{ review.user.full_name|default:review.user.username }}</div>
+                    </div>
+                    <div class="review-field">
+                        <span class="review-label">Date</span>
+                        <div class="review-value">{{ review.created_at|date:"M d, Y h:i A" }}</div>
+                    </div>
+
+                    <div class="review-field">
+                        <span class="review-label">Class Type</span>
+                        <div class="review-value">{{ source_label }}</div>
+                    </div>
+                    <div class="review-field">
+                        <span class="review-label">Review ID</span>
+                        <div class="review-value">{{ review.id }}</div>
+                    </div>
+
+                    <div class="review-field review-comment">
+                        <span class="review-label">Comment</span>
+                        <div class="review-comment-box">{{ review.comment|default:"No comment provided." }}</div>
+                    </div>
+                </div>
+            </article>
+
+            <aside class="review-side-card">
+                <h3 class="review-side-title"><i class="fa-solid fa-circle-info"></i> Quick Actions</h3>
+                <div class="review-side-actions">
+                    <a href="{% url 'admin_all_trainer_reviews' %}" class="btn-secondary">Back to List</a>
+                    {% if review.is_active %}
+                    <form method="post" action="{% url 'admin_inactive_reviews' review.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn-danger">Inactive Review</button>
+                    </form>
+                    {% else %}
+                    <form method="post" action="{% url 'admin_active_reviews' review.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn-success">Active Review</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </aside>
+        </section>
+    </main>
+</div>
+{% endblock %}

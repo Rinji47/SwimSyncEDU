@@ -8,6 +8,7 @@ urlpatterns = [
     path('trainers/<int:trainer_id>/reviews/', views.public_trainer_review_list, name='public_trainer_review_list'),
     path('trainer/my-reviews/', views.trainer_my_reviews, name='trainer_my_reviews'),
     path('admin/all-reviews/', views.admin_all_trainer_reviews, name='admin_all_trainer_reviews'),
+    path('admin/reviews/<int:review_id>/view/', views.admin_view_review_detail, name='admin_view_review_detail'),
     path('admin/reviews/<int:review_id>/inactive/', views.admin_inactive_reviews, name='admin_inactive_reviews'),
     path('admin/reviews/<int:review_id>/active/', views.admin_active_reviews, name='admin_active_reviews'),
     path('certificate/<int:certificate_id>/review/', views.user_review_trainer, name='user_review_trainer'),

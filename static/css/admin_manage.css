@@ -59,7 +59,16 @@
 .card-actions {
   margin-top: 0.8rem;
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.card-actions .btn-sm,
+.card-actions button.btn-sm,
+.card-actions span.btn-sm {
+  min-width: 120px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .form-actions {

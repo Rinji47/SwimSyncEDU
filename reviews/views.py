@@ -495,17 +495,18 @@ def admin_inactive_reviews(request, review_id):
         return redirect('index')
 
     review = get_object_or_404(Review, id=review_id)
+    next_url = request.POST.get('next') or request.GET.get('next') or 'admin_all_trainer_reviews'
 
     if review.is_active == False:
         messages.info(request, "The review is already inactive.")
-        return redirect('admin_all_trainer_reviews')
+        return redirect(next_url)
 
     if request.method == 'POST':
         review.is_active = False
         review.save(update_fields=['is_active'])
         messages.success(request, "The review has been marked as inactive.")
-        return redirect('admin_all_trainer_reviews')
-    return redirect('admin_all_trainer_reviews')
+        return redirect(next_url)
+    return redirect(next_url)
 
 @login_required
 def admin_active_reviews(request, review_id):
@@ -514,14 +515,40 @@ def admin_active_reviews(request, review_id):
         return redirect('index')
 
     review = get_object_or_404(Review, id=review_id)
+    next_url = request.POST.get('next') or request.GET.get('next') or 'admin_all_trainer_reviews'
 
     if review.is_active == True:
         messages.info(request, "The review is already active.")
-        return redirect('admin_all_trainer_reviews')
+        return redirect(next_url)
 
     if request.method == 'POST':
         review.is_active = True
         review.save(update_fields=['is_active'])
         messages.success(request, "The review has been marked as active.")
-        return redirect('admin_all_trainer_reviews')
-    return redirect('admin_all_trainer_reviews')
+        return redirect(next_url)
+    return redirect(next_url)
+
+
+def admin_view_review_detail(request, review_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    review = get_object_or_404(Review.objects.select_related(
+        'user',
+        'certificate',
+        'certificate__class_booking__class_session__trainer',
+        'certificate__class_booking__class_session__pool',
+        'certificate__private_class__trainer',
+        'certificate__private_class__pool',
+    ), id=review_id)
+
+    trainer = get_review_trainer(review)
+    source_label = get_review_source_label(review)
+
+    context = {
+        'review': review,
+        'trainer': trainer,
+        'source_label': source_label,
+    }
+    return render(request, 'dashboards/admin/reviews/admin_view_review_detail.html', context)
