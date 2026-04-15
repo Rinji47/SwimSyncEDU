@@ -28,12 +28,12 @@
             <div class="info-card">
                 <form method="POST" action="{% url 'create_class_session_for_pool' pool.pool_id trainer.user_id %}" class="split-form">
                     {% csrf_token %}
-                    <input type="hidden" name="busy_from" value="{{ form_data.busy_from|default:request.GET.busy_from|default:'' }}">
-                    <input type="hidden" name="busy_to" value="{{ form_data.busy_to|default:request.GET.busy_to|default:'' }}">
+                    <input type="hidden" name="busy_from" value="{{ request.GET.busy_from|default:'' }}">
+                    <input type="hidden" name="busy_to" value="{{ request.GET.busy_to|default:'' }}">
 
                     <div class="full-span">
                         <label for="class_name">Class Name</label>
-                        <input type="text" id="class_name" name="class_name" value="{{ form_data.class_name|default:'' }}" required>
+                        <input type="text" id="class_name" name="class_name" required>
                     </div>
 
                     <div class="full-span">
@@ -47,13 +47,13 @@
 
                     <div>
                         <label for="seats">Available Seats</label>
-                        <input type="number" id="seats" name="seats" min="1" max="{{ pool.capacity }}" value="{{ form_data.seats|default:'' }}" required>
+                        <input type="number" id="seats" name="seats" min="1" max="{{ pool.capacity }}" required>
                     </div>
                     <div></div>
 
                     <div>
                         <label for="start_date">Start Date</label>
-                        <input type="date" id="start_date" name="start_date" value="{{ form_data.start_date|default:'' }}" min="{{ today|date:'Y-m-d' }}" max="{{ max_start_date|date:'Y-m-d' }}" required>
+                        <input type="date" id="start_date" name="start_date" min="{{ today|date:'Y-m-d' }}" max="{{ max_start_date|date:'Y-m-d' }}" required>
                     </div>
                     <div>
                         <label for="end_date">End Date</label>
@@ -62,11 +62,11 @@
 
                     <div>
                         <label for="start_time">Start Time</label>
-                        <input type="time" id="start_time" name="start_time" value="{{ form_data.start_time|default:'' }}" required>
+                        <input type="time" id="start_time" name="start_time" required>
                     </div>
                     <div>
                         <label for="end_time">End Time</label>
-                        <input type="time" id="end_time" name="end_time" value="{{ form_data.end_time|default:'' }}" required>
+                        <input type="time" id="end_time" name="end_time" required>
                     </div>
 
                     <div class="full-span">

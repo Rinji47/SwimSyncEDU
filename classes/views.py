@@ -521,129 +521,49 @@ def create_class_session_for_pool(request, pool_id, trainer_id):
 
             if start_date.weekday() >= 5:
                 messages.error(request, 'Start date cannot be on a weekend. Please select a weekday.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
-                    'pool': pool,
-                    'trainer': trainer,
-                    'class_type': class_type,
-                    'today': date.today(),
-                    'max_start_date': date.today() + timedelta(days=31),
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect(redirect_url)
 
             end_date = calculate_weekday_end_date(start_date, class_type.duration_days)
 
             if seats <= 0:
                 messages.error(request, 'Seats must be greater than zero.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
-                    'pool': pool,
-                    'trainer': trainer,
-                    'class_type': class_type,
-                    'today': date.today(),
-                    'max_start_date': date.today() + timedelta(days=31),
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect(redirect_url)
 
             if seats > pool.capacity:
                 messages.error(request, f'Seats cannot exceed the pool capacity of {pool.capacity}.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
-                    'pool': pool,
-                    'trainer': trainer,
-                    'class_type': class_type,
-                    'today': date.today(),
-                    'max_start_date': date.today() + timedelta(days=31),
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect(redirect_url)
 
             if start_date > end_date:
                 messages.error(request, 'Start date cannot be after end date.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
-                    'pool': pool,
-                    'trainer': trainer,
-                    'class_type': class_type,
-                    'today': date.today(),
-                    'max_start_date': date.today() + timedelta(days=31),
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect(redirect_url)
 
             if start_time >= end_time:
                 messages.error(request, 'Start time must be before end time. Overnight sessions are not allowed.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
-                    'pool': pool,
-                    'trainer': trainer,
-                    'class_type': class_type,
-                    'today': date.today(),
-                    'max_start_date': date.today() + timedelta(days=31),
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect(redirect_url)
 
             today = datetime.now().date()
 
             if start_date <= today:
                 messages.error(request, 'Start date must be after today.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
-                    'pool': pool,
-                    'trainer': trainer,
-                    'class_type': class_type,
-                    'today': date.today(),
-                    'max_start_date': date.today() + timedelta(days=31),
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect(redirect_url)
 
             max_start_date = today + timedelta(days=31)
             if start_date > max_start_date:
                 messages.error(request, 'Start date cannot be more than 1 month from today.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
-                    'pool': pool,
-                    'trainer': trainer,
-                    'class_type': class_type,
-                    'today': date.today(),
-                    'max_start_date': date.today() + timedelta(days=31),
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect(redirect_url)
 
             if start_time < datetime.strptime('06:00', '%H:%M').time() or end_time > datetime.strptime('19:00', '%H:%M').time():
                 messages.error(request, 'Class time must be between 06:00 and 19:00.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
-                    'pool': pool,
-                    'trainer': trainer,
-                    'class_type': class_type,
-                    'today': date.today(),
-                    'max_start_date': date.today() + timedelta(days=31),
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect(redirect_url)
 
             duration = (datetime.combine(datetime.today(), end_time) - datetime.combine(datetime.today(), start_time))
             if duration > timedelta(hours=3):
                 messages.error(request, 'Class session duration cannot exceed 3 hours.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
-                    'pool': pool,
-                    'trainer': trainer,
-                    'class_type': class_type,
-                    'today': date.today(),
-                    'max_start_date': date.today() + timedelta(days=31),
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect(redirect_url)
 
             if TrainerPoolAssignment.objects.filter(trainer=trainer, pool_id=pool_id, is_active=True).exists() == False:
                 messages.error(request, 'Selected trainer is not assigned to the selected pool. Please choose a different trainer or pool.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
-                    'pool': pool,
-                    'trainer': trainer,
-                    'class_type': class_type,
-                    'today': date.today(),
-                    'max_start_date': date.today() + timedelta(days=31),
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect(redirect_url)
 
             assignment = TrainerPoolAssignment.objects.filter(trainer=trainer, pool_id=pool_id, is_active=True).first()
             if not assignment or (assignment.end_date is not None and assignment.end_date < end_date):
@@ -652,15 +572,7 @@ def create_class_session_for_pool(request, pool_id, trainer_id):
                     request,
                     f'Trainer assignment to this pool ends on {end_date_str}, before the class session ends. Please choose a different trainer, pool, or date.'
                 )
-                return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
-                    'pool': pool,
-                    'trainer': trainer,
-                    'class_type': class_type,
-                    'today': date.today(),
-                    'max_start_date': date.today() + timedelta(days=31),
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect(redirect_url)
 
             busy_slots = get_pool_busy_slots(pool, start_date, end_date)
             for slot in busy_slots:
@@ -669,15 +581,7 @@ def create_class_session_for_pool(request, pool_id, trainer_id):
 
                 if dates_overlap and times_overlap:
                     messages.error(request, f'The selected time slot overlaps with an existing {slot[4]} from {slot[0]} to {slot[1]} between {slot[2]} and {slot[3]}. Please choose a different time or date.')
-                    return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
-                        'pool': pool,
-                        'trainer': trainer,
-                        'class_type': class_type,
-                        'today': date.today(),
-                        'max_start_date': date.today() + timedelta(days=31),
-                        'busy_slots': [],
-                        'form_data': request.POST,
-                    })
+                    return redirect(redirect_url)
 
             ClassSession.objects.create(
                 trainer=trainer,
@@ -696,15 +600,7 @@ def create_class_session_for_pool(request, pool_id, trainer_id):
         except (ValueError, TypeError) as e:
             print(e)
             messages.error(request, 'Invalid input. Please check your data and try again.')
-            return render(request, 'dashboards/admin/class_management/class_session_management/create_class_session_for_pool.html', {
-                'pool': pool,
-                'trainer': trainer,
-                'class_type': class_type if 'class_type' in locals() else None,
-                'today': date.today(),
-                'max_start_date': date.today() + timedelta(days=31),
-                'busy_slots': [],
-                'form_data': request.POST,
-            })
+            return redirect(redirect_url)
 
     # For GET requests, just render the form
     selected_class_type = None
@@ -1717,76 +1613,47 @@ def edit_class_session(request, class_id):
 
             trainer_id = request.POST.get('trainer_id') or class_session.trainer_id
             trainer = get_object_or_404(User, pk=int(trainer_id), role='trainer')
-            selected_trainer = trainer
 
             if seats <= 0:
                 messages.error(request, 'Seats must be greater than zero.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/edit_class_session.html', {
-                    'class_session': class_session,
-                    'selected_trainer': selected_trainer,
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect('edit_class', class_id=class_id)
 
             if start_date.weekday() >= 5:
                 messages.error(request, 'Start date cannot be on a weekend. Please select a weekday.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/edit_class_session.html', {
-                    'class_session': class_session,
-                    'selected_trainer': selected_trainer,
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect('edit_class', class_id=class_id)
 
             end_date = calculate_weekday_end_date(start_date, class_type.duration_days)
+
+            if seats < class_session.total_bookings:
+                messages.error(
+                    request,
+                    f'Seats cannot be less than the current total bookings ({class_session.total_bookings}).'
+                )
+                return redirect('edit_class', class_id=class_id)
 
             if seats > class_session.pool.capacity:
                 messages.error(
                     request,
                     f'Seats cannot exceed the pool capacity of {class_session.pool.capacity}.'
                 )
-                return render(request, 'dashboards/admin/class_management/class_session_management/edit_class_session.html', {
-                    'class_session': class_session,
-                    'selected_trainer': selected_trainer,
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect('edit_class', class_id=class_id)
 
             if start_date > end_date:
                 messages.error(request, 'Start date cannot be after end date.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/edit_class_session.html', {
-                    'class_session': class_session,
-                    'selected_trainer': selected_trainer,
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect('edit_class', class_id=class_id)
 
             if start_time >= end_time:
                 messages.error(request, 'Start time must be before end time. Overnight sessions are not allowed.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/edit_class_session.html', {
-                    'class_session': class_session,
-                    'selected_trainer': selected_trainer,
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect('edit_class', class_id=class_id)
 
             if start_time < datetime.strptime('06:00', '%H:%M').time() or end_time > datetime.strptime('19:00', '%H:%M').time():
                 messages.error(request, 'Class time must be between 06:00 and 19:00.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/edit_class_session.html', {
-                    'class_session': class_session,
-                    'selected_trainer': selected_trainer,
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect('edit_class', class_id=class_id)
 
             duration = (datetime.combine(datetime.today(), end_time) - datetime.combine(datetime.today(), start_time))
             if duration > timedelta(hours=3):
                 messages.error(request, 'Class session duration cannot exceed 3 hours.')
-                return render(request, 'dashboards/admin/class_management/class_session_management/edit_class_session.html', {
-                    'class_session': class_session,
-                    'selected_trainer': selected_trainer,
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect('edit_class', class_id=class_id)
 
             assignment = TrainerPoolAssignment.objects.filter(
                 trainer=trainer,
@@ -1801,12 +1668,7 @@ def edit_class_session(request, class_id):
                     request,
                     'Selected trainer is not actively assigned to this pool for the full class session period.'
                 )
-                return render(request, 'dashboards/admin/class_management/class_session_management/edit_class_session.html', {
-                    'class_session': class_session,
-                    'selected_trainer': selected_trainer,
-                    'busy_slots': [],
-                    'form_data': request.POST,
-                })
+                return redirect('edit_class', class_id=class_id)
 
             busy_slots = get_pool_busy_slots(class_session.pool, start_date, end_date)
             for slot in busy_slots:
@@ -1825,12 +1687,7 @@ def edit_class_session(request, class_id):
 
                 if dates_overlap and times_overlap:
                     messages.error(request, f'The selected time slot overlaps with an existing {slot[4]} from {slot[0]} to {slot[1]} between {slot[2]} and {slot[3]}. Please choose a different time or date.')
-                    return render(request, 'dashboards/admin/class_management/class_session_management/edit_class_session.html', {
-                        'class_session': class_session,
-                        'selected_trainer': selected_trainer,
-                        'busy_slots': [],
-                        'form_data': request.POST,
-                    })
+                    return redirect('edit_class', class_id=class_id)
 
             class_session.class_name = class_name
             class_session.seats = seats
@@ -1846,12 +1703,7 @@ def edit_class_session(request, class_id):
         except (ValueError, TypeError) as e:
             print(e)
             messages.error(request, 'Invalid input. Please check your data and try again.')
-            return render(request, 'dashboards/admin/class_management/class_session_management/edit_class_session.html', {
-                'class_session': class_session,
-                'selected_trainer': selected_trainer,
-                'busy_slots': [],
-                'form_data': request.POST,
-            })
+            return redirect('edit_class', class_id=class_id)
 
     busy_slots = []
     if busy_from and busy_to:
