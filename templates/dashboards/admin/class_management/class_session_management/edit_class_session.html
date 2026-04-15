@@ -23,39 +23,47 @@
             </div>
             <a href="{% url 'manage_classes' %}" class="btn-secondary">Back</a>
         </div>
-        
-        
+        {% now "Y-m-d" as today_str %}
+        {% if class_session.end_date|date:"Y-m-d" < today_str %}
+        <div class="info-card" style="margin-bottom:1rem;">
+            <p style="margin:0;">This class session has ended and can no longer be edited.</p>
+        </div>
+        {% endif %}
 
         <div class="two-col">
             <div class="info-card">
                 <form method="POST" class="split-form">
                     {% csrf_token %}
-                    <input type="hidden" name="busy_from" value="{{ request.GET.busy_from|default:'' }}">
-                    <input type="hidden" name="busy_to" value="{{ request.GET.busy_to|default:'' }}">
+                    <input type="hidden" name="busy_from" value="{{ form_data.busy_from|default:request.GET.busy_from|default:'' }}">
+                    <input type="hidden" name="busy_to" value="{{ form_data.busy_to|default:request.GET.busy_to|default:'' }}">
 
                     <div class="full-span">
                         <label for="class_name">Class Name</label>
-                        <input type="text" id="class_name" name="class_name" value="{{ class_session.class_name }}" required>
+                        <input type="text" id="class_name" name="class_name" value="{{ form_data.class_name|default:class_session.class_name }}" {% if class_session.end_date|date:"Y-m-d" < today_str %}readonly{% else %}required{% endif %}>
                     </div>
 
                     <div class="full-span">
                         <label>Trainer</label>
                         <div class="compact-row" style="gap:0.6rem;align-items:center;">
-                            <span>{{ selected_trainer.full_name|default:class_session.trainer.username }}</span>
+                            <span>{{ selected_trainer.full_name|default:selected_trainer.username|default:class_session.trainer.username }}</span>
+                            {% if class_session.end_date|date:"Y-m-d" < today_str %}
+                            <span class="btn-secondary btn-sm" style="pointer-events:none;opacity:0.9;">Change Trainer</span>
+                            {% else %}
                             <a href="{% url 'select_trainer_for_edit_class_session' class_session.id %}" class="btn-secondary btn-sm">Change Trainer</a>
+                            {% endif %}
                         </div>
-                        <input type="hidden" name="trainer_id" value="{% if selected_trainer %}{{ selected_trainer.pk }}{% else %}{{ class_session.trainer.pk }}{% endif %}">
+                        <input type="hidden" name="trainer_id" value="{{ form_data.trainer_id|default:selected_trainer.pk|default:class_session.trainer.pk }}">
                     </div>
 
                     <div>
                         <label for="seats">Available Seats</label>
-                        <input type="number" id="seats" name="seats" min="1" max="{{ class_session.pool.capacity }}" value="{{ class_session.seats }}" required>
+                        <input type="number" id="seats" name="seats" min="1" max="{{ class_session.pool.capacity }}" value="{{ form_data.seats|default:class_session.seats }}" {% if class_session.end_date|date:"Y-m-d" < today_str %}readonly{% else %}required{% endif %}>
                     </div>
                     <div></div>
 
                     <div>
                         <label for="start_date">Start Date</label>
-                        <input type="date" id="start_date" name="start_date" value="{{ class_session.start_date|date:'Y-m-d' }}" required>
+                        <input type="date" id="start_date" name="start_date" value="{% if form_data.start_date %}{{ form_data.start_date }}{% else %}{{ class_session.start_date|date:'Y-m-d' }}{% endif %}" {% if class_session.end_date|date:"Y-m-d" < today_str %}readonly{% else %}required{% endif %}>
                     </div>
                     <div>
                         <label for="end_date">End Date</label>
@@ -64,15 +72,19 @@
 
                     <div>
                         <label for="start_time">Start Time</label>
-                        <input type="time" id="start_time" name="start_time" value="{{ class_session.start_time|time:'H:i' }}" required>
+                        <input type="time" id="start_time" name="start_time" value="{% if form_data.start_time %}{{ form_data.start_time }}{% else %}{{ class_session.start_time|time:'H:i' }}{% endif %}" {% if class_session.end_date|date:"Y-m-d" < today_str %}readonly{% else %}required{% endif %}>
                     </div>
                     <div>
                         <label for="end_time">End Time</label>
-                        <input type="time" id="end_time" name="end_time" value="{{ class_session.end_time|time:'H:i' }}" required>
+                        <input type="time" id="end_time" name="end_time" value="{% if form_data.end_time %}{{ form_data.end_time }}{% else %}{{ class_session.end_time|time:'H:i' }}{% endif %}" {% if class_session.end_date|date:"Y-m-d" < today_str %}readonly{% else %}required{% endif %}>
                     </div>
 
                     <div class="full-span form-actions">
+                        {% if class_session.end_date|date:"Y-m-d" < today_str %}
+                        <button type="button" class="btn-primary" disabled>Save Changes</button>
+                        {% else %}
                         <button type="submit" class="btn-primary">Save Changes</button>
+                        {% endif %}
                         <a href="{% url 'edit_class_session' class_session.id %}" class="btn-secondary btn-sm reset-btn">Reset</a>
                     </div>
                 </form>
@@ -124,7 +136,15 @@
         }
 
         const d = new Date(startDate + 'T00:00:00');
-        d.setDate(d.getDate() + duration - 1);
+        let remainingWeekdays = duration - 1;
+
+        while (remainingWeekdays > 0) {
+            d.setDate(d.getDate() + 1);
+            const day = d.getDay();
+            if (day !== 0 && day !== 6) {
+                remainingWeekdays -= 1;
+            }
+        }
 
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, '0');

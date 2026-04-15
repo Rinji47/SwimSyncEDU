@@ -84,9 +84,13 @@
                 <div class="card-actions">
                     <a href="{% url 'view_class_session' session.id %}" class="btn-sm btn-primary">View</a>
 
-                    <a href="{% url 'edit_class_session' session.id %}" class="btn-sm btn-secondary">Edit</a>
-
                     {% now "Y-m-d" as today_str %}
+                    {% if session.end_date|date:"Y-m-d" < today_str %}
+                        <span class="btn-sm btn-secondary" style="pointer-events:none;opacity:0.9;">Edit Disabled</span>
+                    {% else %}
+                        <a href="{% url 'edit_class_session' session.id %}" class="btn-sm btn-secondary">Edit</a>
+                    {% endif %}
+
                     {% if session.end_date|date:"Y-m-d" < today_str %}
                         {% if session.is_cancelled %}
                             <span class="btn-sm btn-danger" style="pointer-events:none;opacity:0.9;">Cancelled</span>

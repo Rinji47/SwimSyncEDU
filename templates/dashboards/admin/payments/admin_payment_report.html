@@ -162,19 +162,25 @@
                 </table>
                     <div class="pagination">
                     {% if payments.has_previous %}
-                        <a href="?page={{ payments.previous_page_number }}" class="btn-secondary">Previous</a>
+                        <a href="?page={{ payments.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}{% if request.GET.purpose %}&purpose={{ request.GET.purpose|urlencode }}{% endif %}{% if request.GET.method %}&method={{ request.GET.method|urlencode }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from|urlencode }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to|urlencode }}{% endif %}" class="btn-secondary">Previous</a>
                     {% endif %}
 
                     <span>Page</span>
 
                     <form method="get" class="pagination-jump">
+                        {% if request.GET.q %}<input type="hidden" name="q" value="{{ request.GET.q }}">{% endif %}
+                        {% if request.GET.status %}<input type="hidden" name="status" value="{{ request.GET.status }}">{% endif %}
+                        {% if request.GET.purpose %}<input type="hidden" name="purpose" value="{{ request.GET.purpose }}">{% endif %}
+                        {% if request.GET.method %}<input type="hidden" name="method" value="{{ request.GET.method }}">{% endif %}
+                        {% if request.GET.date_from %}<input type="hidden" name="date_from" value="{{ request.GET.date_from }}">{% endif %}
+                        {% if request.GET.date_to %}<input type="hidden" name="date_to" value="{{ request.GET.date_to }}">{% endif %}
                         <input type="number" name="page" min="1" max="{{ payments.paginator.num_pages }}" value="{{ payments.number }}">
 
 
                     <span>of {{ payments.paginator.num_pages }}</span>
 
                     {% if payments.has_next %}
-                        <a href="?page={{ payments.next_page_number }}" class="btn-secondary">Next</a>
+                        <a href="?page={{ payments.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}{% if request.GET.purpose %}&purpose={{ request.GET.purpose|urlencode }}{% endif %}{% if request.GET.method %}&method={{ request.GET.method|urlencode }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from|urlencode }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to|urlencode }}{% endif %}" class="btn-secondary">Next</a>
                     {% endif %}
                         <button type="submit" class="btn-secondary">Go</button>
                     </form>
@@ -220,4 +226,3 @@
     </main>
 </div>
 {% endblock %}
-

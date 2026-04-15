@@ -2,6 +2,7 @@ import datetime
 
 from django.shortcuts import get_object_or_404, render
 from django.db.models import Q
+from accounts.models import User
 from certificate.models import CompletionCertificate
 from .models import Review
 from django.contrib import messages
@@ -98,8 +99,6 @@ def user_select_trainer_from_certificate(request):
     }
     return render(request, 'dashboards/user/reviews/user_select_trainer_from_certificate.html', context)
 
-
-@login_required
 def public_select_trainer_for_reviews(request):
     reviews = Review.objects.select_related(
         'user',
@@ -147,8 +146,6 @@ def public_select_trainer_for_reviews(request):
         'trainer_cards': trainer_cards,
     })
 
-
-@login_required
 def public_trainer_review_list(request, trainer_id):
     reviews = Review.objects.select_related(
         'user',
@@ -159,7 +156,7 @@ def public_trainer_review_list(request, trainer_id):
         'certificate__private_class__pool',
     ).filter(is_active=True).order_by('-created_at')
 
-    trainer = None
+    trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
     review_rows = []
 
     rating = request.GET.get('rating')
@@ -180,28 +177,26 @@ def public_trainer_review_list(request, trainer_id):
         
         if date_from:
             try:
-                date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+                date_from_parsed = datetime.datetime.strptime(date_from, '%Y-%m-%d').date()
                 if review.created_at.date() < date_from_parsed:
                     continue
             except ValueError:
                 pass
         if date_to:
             try:
-                date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+                date_to_parsed = datetime.datetime.strptime(date_to, '%Y-%m-%d').date()
                 if review.created_at.date() > date_to_parsed:
                     continue
             except ValueError:
                 pass
 
-        trainer = review_trainer
         review_rows.append({
             'review': review,
             'source_label': get_review_source_label(review),
         })
 
-    if not trainer:
-        messages.error(request, 'Trainer not found or no reviews available.')
-        return redirect('public_select_trainer_for_reviews')
+    if not review_rows:
+        messages.info(request, 'No reviews found for the selected filters.')
 
     total_reviews = len(review_rows)
     if total_reviews:
@@ -251,14 +246,14 @@ def trainer_my_reviews(request):
                     pass
             if date_from:
                 try:
-                    date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+                    date_from_parsed = datetime.datetime.strptime(date_from, '%Y-%m-%d').date()
                     if review.created_at.date() < date_from_parsed:
                         continue
                 except ValueError:
                     pass
             if date_to:
                 try:
-                    date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+                    date_to_parsed = datetime.datetime.strptime(date_to, '%Y-%m-%d').date()
                     if review.created_at.date() > date_to_parsed:
                         continue
                 except ValueError:

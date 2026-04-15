@@ -427,6 +427,10 @@ def user_payment_report(request):
 
     if q:
         payments = payments.filter(
+            Q(uid__icontains=q) |
+            Q(purpose__icontains=q) |
+            Q(payment_method__icontains=q) |
+            Q(payment_status__icontains=q) |
             Q(user__username__icontains=q) |
             Q(user__full_name__icontains=q) |
             Q(user__email__icontains=q) |
@@ -444,15 +448,15 @@ def user_payment_report(request):
 
     if date_from:
         try:
-            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d")
-            payments = payments.filter(payment_date__date__gte=date_from_obj)
+            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d").date()
+            payments = payments.filter(payment_date__gte=date_from_obj)
         except ValueError:
             messages.warning(request, "Invalid date format for 'From' date. Use YYYY-MM-DD.")
 
     if date_to:
         try:
-            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d")
-            payments = payments.filter(payment_date__date__lte=date_to_obj)
+            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d").date()
+            payments = payments.filter(payment_date__lte=date_to_obj)
         except ValueError:
             messages.warning(request, "Invalid date format for 'To' date. Use YYYY-MM-DD.")
 
@@ -502,6 +506,10 @@ def admin_payment_report(request):
 
     if q:
         payments = payments.filter(
+            Q(uid__icontains=q) |
+            Q(purpose__icontains=q) |
+            Q(payment_method__icontains=q) |
+            Q(payment_status__icontains=q) |
             Q(user__username__icontains=q) |
             Q(user__full_name__icontains=q) |
             Q(user__email__icontains=q) |
@@ -519,15 +527,15 @@ def admin_payment_report(request):
 
     if date_from:
         try:
-            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d")
-            payments = payments.filter(payment_date__date__gte=date_from_obj)
+            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d").date()
+            payments = payments.filter(payment_date__gte=date_from_obj)
         except ValueError:
             messages.warning(request, "Invalid date format for 'From' date. Use YYYY-MM-DD.")
 
     if date_to:
         try:
-            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d")
-            payments = payments.filter(payment_date__date__lte=date_to_obj)
+            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d").date()
+            payments = payments.filter(payment_date__lte=date_to_obj)
         except ValueError:
             messages.warning(request, "Invalid date format for 'To' date. Use YYYY-MM-DD.")
 

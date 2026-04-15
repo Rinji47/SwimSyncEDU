@@ -93,6 +93,29 @@
                     data-total-price="{{ session.total_price }}"
                     data-is-cancelled="{% if session.is_cancelled %}true{% else %}false{% endif %}"
                 >View Details</button>
+
+                {% now "Y-m-d" as today_str %}
+                {% if session.end_date|date:"Y-m-d" < today_str %}
+                    {% if session.is_cancelled %}
+                        <span class="btn-sm btn-danger" style="pointer-events:none;opacity:0.9;">Cancelled</span>
+                    {% else %}
+                        <span class="btn-sm btn-secondary" style="pointer-events:none;opacity:0.9;">Completed</span>
+                    {% endif %}
+                {% elif session.is_cancelled %}
+                    <button class="btn-sm btn-success">
+                        <a href="{% url 'admin_open_private_class' session.id %}" style="color:white;text-decoration:none;"
+                        onclick="return confirm('Are you sure you want to reopen this private class?');">
+                        Open
+                        </a>
+                    </button>
+                {% else %}
+                    <button class="btn-sm btn-danger">
+                        <a href="{% url 'admin_cancel_private_class' session.id %}" style="color:white;text-decoration:none;"
+                        onclick="return confirm('Are you sure you want to cancel this private class?');">
+                        Cancel
+                        </a>
+                    </button>
+                {% endif %}
             </div>
 
         </div>

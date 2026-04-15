@@ -60,31 +60,44 @@ def signup_view(request):
         date_of_birth = request.POST.get('date_of_birth')
         profile_picture = request.FILES.get('profile_picture', None)
 
+        if phone and not phone.isdigit():
+            messages.error(request, 'Phone number must contain only digits.')
+            return render(request, 'auth/signup.html', {'form_data': request.POST})
+        
+        if phone and len(phone) > 10:
+            messages.error(request, 'Phone number cannot exceed 10 digits.')
+            return render(request, 'auth/signup.html', {'form_data': request.POST})
+        
+        if phone:
+            phone = "+977" + phone
+        else:
+            phone = None
+
         if password != confirm_password:
             messages.error(request, 'Passwords do not match.')
-            return redirect('signup')
+            return render(request, 'auth/signup.html', {'form_data': request.POST})
         
         if User.objects.filter(username=username).exists():
             messages.error(request, 'Username already taken.')
-            return redirect('signup')
+            return render(request, 'auth/signup.html', {'form_data': request.POST})
         
         if User.objects.filter(email=email).exists():
             messages.error(request, 'Email already registered.')
-            return redirect('signup')\
+            return render(request, 'auth/signup.html', {'form_data': request.POST})
         
         if not date_of_birth:
             messages.error(request, 'Date of birth is required.')
-            return redirect('signup')
+            return render(request, 'auth/signup.html', {'form_data': request.POST})
 
         try:
             dob = datetime.strptime(date_of_birth, '%Y-%m-%d').date()
         except ValueError:
             messages.error(request, 'Invalid date format for date of birth. Use YYYY-MM-DD.')
-            return redirect('signup')
+            return render(request, 'auth/signup.html', {'form_data': request.POST})
 
         if dob >= date.today():
             messages.error(request, 'Date of birth must be before today.')
-            return redirect('signup')
+            return render(request, 'auth/signup.html', {'form_data': request.POST})
 
         try:
             User.objects.create_user(
@@ -103,10 +116,10 @@ def signup_view(request):
             return render(request, 'auth/login.html')
         except ValueError as e:
             messages.error(request, str(e))
-            return redirect('signup')
+            return render(request, 'auth/signup.html', {'form_data': request.POST})
         except Exception:
             messages.error(request, 'An error occurred while creating the account. Please try again')
-            return redirect('signup')
+            return render(request, 'auth/signup.html', {'form_data': request.POST})
     return render(request, 'auth/signup.html')
 
 def logout_view(request):
@@ -800,3 +813,41 @@ def password_reset_confirm_view(request, uidb64, token):
 def password_reset_complete_view(request):
     view = auth_views.PasswordResetCompleteView.as_view(template_name='auth/forgot_password/password_reset_complete.html')
     return view(request)
+
+def admin_cancel_private_class(request, private_class_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('index')
+
+    private_class = get_object_or_404(PrivateClass, pk=private_class_id)
+    if private_class.is_cancelled:
+        messages.info(request, 'This private class is already cancelled.')
+        return redirect('manage_private_classes')
+    
+    if private_class.end_date < date.today():
+        messages.error(request, 'Cannot cancel a private class that has already ended.')
+        return redirect('manage_private_classes')
+
+    private_class.is_cancelled = True
+    private_class.save()
+    messages.success(request, f'Private class "{private_class.title}" has been cancelled.')
+    return redirect('manage_private_classes')
+
+def admin_open_private_class(request, private_class_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('index')
+
+    private_class = get_object_or_404(PrivateClass, pk=private_class_id)
+    if not private_class.is_cancelled:
+        messages.info(request, 'This private class is already open.')
+        return redirect('manage_private_classes')
+    
+    if private_class.end_date < date.today():
+        messages.error(request, 'Cannot open a private class that has already ended.')
+        return redirect('manage_private_classes')
+
+    private_class.is_cancelled = False
+    private_class.save()
+    messages.success(request, f'Private class "{private_class.title}" has been opened.')
+    return redirect('manage_private_classes')

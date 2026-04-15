@@ -82,6 +82,39 @@
   border-color: var(--primary);
 }
 
+.phone-input-group {
+  display: flex;
+  align-items: center;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  transition: border-color 0.3s;
+  overflow: hidden;
+}
+
+.phone-input-group:focus-within {
+  border-color: var(--primary);
+}
+
+.phone-prefix {
+  padding: 0.75rem 0.9rem;
+  background: #f8fafc;
+  border-right: 2px solid var(--border);
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.phone-input-group input {
+  border: 0;
+  border-radius: 0;
+  flex: 1;
+}
+
+.phone-input-group input:focus {
+  border-color: transparent;
+}
+
 .form-options {
   display: flex;
   justify-content: space-between;

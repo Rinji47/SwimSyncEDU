@@ -29,4 +29,6 @@ urlpatterns = [
     path('password-reset/done/', views.password_reset_done_view, name='password_reset_done'),
     path('password-reset-confirm/<uidb64>/<token>/', views.password_reset_confirm_view, name='password_reset_confirm'),
     path('password-reset-complete/', views.password_reset_complete_view, name='password_reset_complete'),
+    path('private-classes/<int:private_class_id>/cancel/', views.admin_cancel_private_class, name='admin_cancel_private_class'),
+    path('private-classes/<int:private_class_id>/open/', views.admin_open_private_class, name='admin_open_private_class'),
 ]
