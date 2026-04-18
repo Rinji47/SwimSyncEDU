@@ -1763,3 +1763,74 @@ def select_trainer_for_edit_class_session(request, class_id):
             'trainers': trainers,
         }
     )
+
+
+def admin_todays_classes(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    today = timezone.localdate()
+    is_weekday = today.weekday() < 5
+
+    class_sessions = ClassSession.objects.none()
+    private_classes = PrivateClass.objects.none()
+    if is_weekday:
+        class_sessions = ClassSession.objects.filter(
+            is_cancelled=False,
+            start_date__lte=today,
+            end_date__gte=today,
+        ).select_related(
+            'trainer',
+            'substitute_trainer',
+            'pool',
+            'class_type',
+        ).order_by('start_time')
+
+        private_classes = PrivateClass.objects.filter(
+            is_cancelled=False,
+            start_date__lte=today,
+            end_date__gte=today,
+        ).select_related(
+            'trainer',
+            'substitute_trainer',
+            'pool',
+        ).order_by('start_time')
+
+    q = (request.GET.get('q') or '').strip()
+    private_or_group = request.GET.get('private_or_group')
+
+    if q:
+        class_sessions = class_sessions.filter(
+            Q(class_name__icontains=q) |
+            Q(pool__name__icontains=q) |
+            Q(class_type__name__icontains=q) |
+            Q(trainer__full_name__icontains=q) |
+            Q(trainer__username__icontains=q) |
+            Q(substitute_trainer__full_name__icontains=q) |
+            Q(substitute_trainer__username__icontains=q)
+        )
+        private_classes = private_classes.filter(
+            Q(pool__name__icontains=q) |
+            Q(trainer__full_name__icontains=q) |
+            Q(trainer__username__icontains=q) |
+            Q(substitute_trainer__full_name__icontains=q) |
+            Q(substitute_trainer__username__icontains=q)
+        )
+
+    if private_or_group == 'group':
+        private_classes = PrivateClass.objects.none()
+    
+    if private_or_group == 'private':
+        class_sessions = ClassSession.objects.none()
+    context = {
+        'today': today,
+        'is_weekday': is_weekday,
+        'class_sessions': class_sessions,
+        'private_classes': private_classes,
+    }
+
+    if not is_weekday:
+        context['weekend'] = "It is weekend today. No classes are scheduled for today."
+    
+    return render(request, 'dashboards/admin/todays_classes.html', context)

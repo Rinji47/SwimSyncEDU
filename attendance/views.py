@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.utils import timezone
 
 from .models import (
     TrainerAttendanceRecord,
@@ -116,7 +117,7 @@ def mark_trainer_attendance(request, trainer_id):
         if date_str != today:
             messages.error(request, 'You can only mark attendance for today.')
             return redirect('mark_trainer_attendance', trainer_id=trainer_id)
-
+        
         if date_str.weekday() >= 5:
             messages.error(request, "Attendance cannot be marked on weekends.")
             return redirect('mark_trainer_attendance', trainer_id=trainer_id)
@@ -185,6 +186,81 @@ def mark_trainer_attendance(request, trainer_id):
         'dashboards/admin/attendance/trainer/mark_trainer_attendance.html',
         {'trainer': trainer, 'today': today, 'today_record': today_record},
     )
+
+
+@login_required
+def admin_todays_classes(request):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    today = timezone.localdate()
+    is_weekday = today.weekday() < 5
+
+    class_sessions = ClassSession.objects.none()
+    private_classes = PrivateClass.objects.none()
+    if is_weekday:
+        class_sessions = ClassSession.objects.filter(
+            is_cancelled=False,
+            start_date__lte=today,
+            end_date__gte=today,
+        ).select_related(
+            'trainer',
+            'substitute_trainer',
+            'pool',
+            'class_type',
+        ).order_by('start_time')
+
+        private_classes = PrivateClass.objects.filter(
+            is_cancelled=False,
+            start_date__lte=today,
+            end_date__gte=today,
+        ).select_related(
+            'trainer',
+            'substitute_trainer',
+            'pool',
+            'user',
+        ).order_by('start_time')
+
+    q = (request.GET.get('q') or '').strip()
+    private_or_group = (request.GET.get('private_or_group') or '').strip()
+
+    if q:
+        class_sessions = class_sessions.filter(
+            Q(class_name__icontains=q) |
+            Q(pool__name__icontains=q) |
+            Q(class_type__name__icontains=q) |
+            Q(trainer__full_name__icontains=q) |
+            Q(trainer__username__icontains=q) |
+            Q(substitute_trainer__full_name__icontains=q) |
+            Q(substitute_trainer__username__icontains=q)
+        )
+        private_classes = private_classes.filter(
+            Q(user__full_name__icontains=q) |
+            Q(user__username__icontains=q) |
+            Q(pool__name__icontains=q) |
+            Q(trainer__full_name__icontains=q) |
+            Q(trainer__username__icontains=q) |
+            Q(substitute_trainer__full_name__icontains=q) |
+            Q(substitute_trainer__username__icontains=q)
+        )
+
+    if private_or_group == 'group':
+        private_classes = PrivateClass.objects.none()
+    elif private_or_group == 'private':
+        class_sessions = ClassSession.objects.none()
+
+    context = {
+        'today': today,
+        'is_weekday': is_weekday,
+        'class_sessions': class_sessions,
+        'private_classes': private_classes,
+    }
+
+    if not is_weekday:
+        context['weekend'] = "It is weekend today. No classes are scheduled for today."
+
+    return render(request, 'dashboards/admin/todays_classes.html', context)
 
 
 @login_required
@@ -302,6 +378,14 @@ def mark_class_attendance(request, class_booking_id):
         messages.error(request, "Attendance cannot be marked on weekends.")
         return redirect('select_student_for_attendance', class_session_id=class_session.id)
 
+    current_time = timezone.localtime().time()
+    if current_time < class_session.start_time:
+        messages.error(
+            request,
+            f"Attendance can only be marked after the class starts at {class_session.start_time.strftime('%I:%M %p')}."
+        )
+        return redirect('select_student_for_attendance', class_session_id=class_session.id)
+
     existing_cancel_record = ClassSessionAttendance.objects.filter(
         class_session=class_session,
         student=student,
@@ -319,6 +403,147 @@ def mark_class_attendance(request, class_booking_id):
     messages.success(request, 'Class attendance marked successfully.')
     return redirect('select_student_for_attendance', class_session_id=class_session.id)
 
+@login_required
+def admin_mark_class_attendance(request, class_session_id, student_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method.')
+        return redirect('admin_class_session_attendance_history', class_session_id=class_session_id)
+
+    class_session = get_object_or_404(ClassSession, id=class_session_id)
+    student = get_object_or_404(User, user_id=student_id)
+
+    next_url = (request.POST.get('next') or '').strip()
+    today = timezone.localdate()
+    now_time = timezone.localtime().time()
+
+    date_str = (request.POST.get('date') or '').strip()
+    try:
+        date_parsed = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        messages.error(request, 'Invalid date.')
+        return redirect(next_url or 'admin_class_session_attendance_history', class_session_id=class_session_id)
+
+    if date_parsed > today:
+        messages.error(request, 'You cannot mark attendance for a future date.')
+        return redirect(next_url or 'admin_class_session_attendance_history', class_session_id=class_session_id)
+
+    if date_parsed == today and now_time < class_session.start_time:
+        messages.error(
+            request,
+            f"Attendance can only be updated after the class starts at {class_session.start_time.strftime('%I:%M %p')}."
+        )
+        return redirect(next_url or 'admin_class_session_attendance_history', class_session_id=class_session_id)
+
+    if date_parsed < class_session.start_date or date_parsed > class_session.end_date:
+        messages.error(request, 'Date is out of range for this class session.')
+        return redirect(next_url or 'admin_class_session_attendance_history', class_session_id=class_session_id)
+
+    if date_parsed.weekday() >= 5:
+        messages.error(request, 'Attendance cannot be marked on weekends.')
+        return redirect(next_url or 'admin_class_session_attendance_history', class_session_id=class_session_id)
+
+    status = (request.POST.get('status') or '').strip()
+    if status not in {'present', 'absent'}:
+        messages.error(request, 'Invalid attendance status.')
+        return redirect(next_url or 'admin_class_session_attendance_history', class_session_id=class_session_id)
+
+    existing_record = ClassSessionAttendance.objects.filter(
+        student=student,
+        class_session=class_session,
+        date=date_parsed,
+    ).first()
+
+    if existing_record and existing_record.status == 'class_cancelled':
+        messages.error(request, 'Attendance cannot be changed because this class was already cancelled for this date.')
+        return redirect(next_url or 'admin_class_session_attendance_history', class_session_id=class_session_id)
+
+    if existing_record and existing_record.status == status:
+        messages.error(request, f'Attendance is already marked as {status}.')
+        return redirect(next_url or 'admin_class_session_attendance_history', class_session_id=class_session_id)
+
+    ClassSessionAttendance.objects.update_or_create(
+        student=student,
+        class_session=class_session,
+        date=date_parsed,
+        defaults={'status': status, 'marked_by': request.user},
+    )
+    messages.success(request, 'Class attendance updated successfully.')
+    return redirect(next_url or 'admin_class_session_attendance_history', class_session_id=class_session_id)
+
+
+@login_required
+def admin_mark_private_attendance(request, private_class_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method.')
+        return redirect('admin_private_class_attendance_history', private_class_id=private_class_id)
+
+    private_class = get_object_or_404(PrivateClass, id=private_class_id)
+
+    next_url = (request.POST.get('next') or '').strip()
+    today = timezone.localdate()
+    now_time = timezone.localtime().time()
+
+    date_str = (request.POST.get('date') or '').strip()
+    try:
+        date_parsed = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        messages.error(request, 'Invalid date.')
+        return redirect(next_url or 'admin_private_class_attendance_history', private_class_id=private_class_id)
+
+    if date_parsed > today:
+        messages.error(request, 'You cannot mark attendance for a future date.')
+        return redirect(next_url or 'admin_private_class_attendance_history', private_class_id=private_class_id)
+
+    if date_parsed == today and now_time < private_class.start_time:
+        messages.error(
+            request,
+            f"Attendance can only be updated after the class starts at {private_class.start_time.strftime('%I:%M %p')}."
+        )
+        return redirect(next_url or 'admin_private_class_attendance_history', private_class_id=private_class_id)
+
+    if date_parsed < private_class.start_date or date_parsed > private_class.end_date:
+        messages.error(request, 'Date is out of range for this private class.')
+        return redirect(next_url or 'admin_private_class_attendance_history', private_class_id=private_class_id)
+
+    if date_parsed.weekday() >= 5:
+        messages.error(request, 'Attendance cannot be marked on weekends.')
+        return redirect(next_url or 'admin_private_class_attendance_history', private_class_id=private_class_id)
+
+    status = (request.POST.get('status') or '').strip()
+    if status not in {'present', 'absent'}:
+        messages.error(request, 'Invalid attendance status.')
+        return redirect(next_url or 'admin_private_class_attendance_history', private_class_id=private_class_id)
+
+    existing_record = PrivateClassAttendance.objects.filter(
+        private_class=private_class,
+        student=private_class.user,
+        date=date_parsed,
+    ).first()
+
+    if existing_record and existing_record.status == 'class_cancelled':
+        messages.error(request, 'Attendance cannot be changed because this class was already cancelled for this date.')
+        return redirect(next_url or 'admin_private_class_attendance_history', private_class_id=private_class_id)
+
+    if existing_record and existing_record.status == status:
+        messages.error(request, f'Attendance is already marked as {status}.')
+        return redirect(next_url or 'admin_private_class_attendance_history', private_class_id=private_class_id)
+
+    PrivateClassAttendance.objects.update_or_create(
+        private_class=private_class,
+        student=private_class.user,
+        date=date_parsed,
+        defaults={'status': status, 'marked_by': request.user},
+    )
+    messages.success(request, 'Private class attendance updated successfully.')
+    return redirect(next_url or 'admin_private_class_attendance_history', private_class_id=private_class_id)
 
 @login_required
 def select_private_class_for_attendance(request):
@@ -390,6 +615,14 @@ def mark_private_class_attendance(request, private_class_id):
             messages.error(request, "Attendance cannot be marked on weekends.")
             return redirect('select_private_class_for_attendance')
 
+        current_time = timezone.localtime().time()
+        if current_time < private_class.start_time:
+            messages.error(
+                request,
+                f"Attendance can only be marked after the class starts at {private_class.start_time.strftime('%I:%M %p')}."
+            )
+            return redirect('select_private_class_for_attendance')
+
         existing_cancel_record = PrivateClassAttendance.objects.filter(
             private_class=private_class,
             student=student,
@@ -427,7 +660,7 @@ def list_ongoing_classes_of_absent_trainer(request):
     today = date.today()
     absent_trainers = TrainerAttendanceRecord.objects.filter(date=today, status='absent').values_list('trainer_id', flat=True)
     ongoing_classes = ClassSession.objects.filter(
-        Q(trainer_id__in=absent_trainers) | Q(substitute_trainer_id__in=absent_trainers),
+        trainer_id__in=absent_trainers,
         start_date__lte=today,
         end_date__gte=today,
         is_cancelled=False,
@@ -458,7 +691,7 @@ def list_ongoing_private_classes_of_absent_trainer(request):
     today = date.today()
     absent_trainers = TrainerAttendanceRecord.objects.filter(date=today, status='absent').values_list('trainer_id', flat=True)
     ongoing_private_classes = PrivateClass.objects.filter(
-        Q(trainer_id__in=absent_trainers) | Q(substitute_trainer_id__in=absent_trainers),
+        trainer_id__in=absent_trainers,
         start_date__lte=today,
         end_date__gte=today,
         is_cancelled=False,
@@ -574,7 +807,6 @@ def choose_substitute_trainer_for_class_session(request, class_session_id):
         {'class_session': class_session, 'today': today, 'candidate_rows': candidate_rows},
     )
 
-
 @login_required
 def assign_substitute_trainer_for_private_class(request, private_class_id):
     if request.user.role != 'admin':
@@ -668,21 +900,40 @@ def choose_substitute_trainer_for_private_class(request, private_class_id):
     )
 
 @login_required
-def cancel_group_class_for_today(request, class_session_id):
+def cancel_group_class_for_day(request, class_session_id):
     if request.user.role != 'admin':
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('index')
+    next_url = (request.POST.get('next') or request.GET.get('next') or '').strip()
 
     if request.method != 'POST':
         messages.error(request, 'Invalid request method.')
-        return redirect('list_ongoing_classes_of_absent_trainer')
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
 
     class_session = get_object_or_404(ClassSession, id=class_session_id)
     today = date.today()
+    date_str = (request.POST.get('date') or request.GET.get('date') or '').strip()
+    if not date_str:
+        messages.error(request, 'Date is required.')
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
 
-    if class_session.start_date > today or class_session.end_date < today:
-        messages.error(request, 'This class session is not ongoing today.')
-        return redirect('list_ongoing_classes_of_absent_trainer')
+    try:
+        date_parsed = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        messages.error(request, 'Invalid date format.')
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
+    
+    if date_parsed > today:
+        messages.error(request, 'Date cannot be in the future.')
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
+    
+    if date_parsed < class_session.start_date or date_parsed > class_session.end_date:
+        messages.error(request, 'Date is out of range for this class session.')
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
+    
+    if date_parsed.weekday() >= 5:
+        messages.error(request, "Date cannot be a weekend.")
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
 
     bookings = (
         ClassBooking.objects.filter(class_session=class_session)
@@ -691,51 +942,186 @@ def cancel_group_class_for_today(request, class_session_id):
     )
     if not bookings.exists():
         messages.info(request, 'No bookings found for this class. Nothing to mark as cancelled.')
-        return redirect('list_ongoing_classes_of_absent_trainer')
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
 
     cancelled_count = 0
     for booking in bookings:
         ClassSessionAttendance.objects.update_or_create(
             class_session=class_session,
             student=booking.user,
-            date=today,
+            date=date_parsed,
             defaults={'status': 'class_cancelled', 'marked_by': request.user},
         )
         cancelled_count += 1
 
     messages.success(
         request,
-        f'Cancelled class for today and marked {cancelled_count} student attendance record(s) as class cancelled.',
+        f'Cancelled class for {date_parsed} and marked {cancelled_count} student attendance record(s) as class cancelled.'
     )
-    return redirect('list_ongoing_classes_of_absent_trainer')
-
+    return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
 
 @login_required
-def cancel_private_class_for_today(request, private_class_id):
+def cancel_private_class_for_day(request, private_class_id):
     if request.user.role != 'admin':
         messages.error(request, 'You do not have permission to perform this action.')
         return redirect('index')
+    next_url = (request.POST.get('next') or request.GET.get('next') or '').strip()
 
     if request.method != 'POST':
         messages.error(request, 'Invalid request method.')
-        return redirect('list_ongoing_private_classes_of_absent_trainer')
+        return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
 
     private_class = get_object_or_404(PrivateClass, id=private_class_id)
     today = date.today()
+    date_str = (request.POST.get('date') or request.GET.get('date') or '').strip()
+    if not date_str:
+        messages.error(request, 'Date is required.')
+        return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
 
-    if private_class.start_date > today or private_class.end_date < today:
-        messages.error(request, 'This private class is not ongoing today.')
-        return redirect('list_ongoing_private_classes_of_absent_trainer')
+    try:
+        date_parsed = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        messages.error(request, 'Invalid date format.')
+        return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
+    
+    if date_parsed > today:
+        messages.error(request, 'Date cannot be in the future.')
+        return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
+    
+    if date_parsed < private_class.start_date or date_parsed > private_class.end_date:
+        messages.error(request, 'Date is out of range for this class session.')
+        return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
+    
+    if date_parsed.weekday() >= 5:
+        messages.error(request, "Date cannot be a weekend.")
+        return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
 
     PrivateClassAttendance.objects.update_or_create(
         private_class=private_class,
         student=private_class.user,
-        date=today,
+        date=date_parsed,
         defaults={'status': 'class_cancelled', 'marked_by': request.user},
     )
-    messages.success(request, 'Cancelled private class for today and marked attendance as class cancelled.')
-    return redirect('list_ongoing_private_classes_of_absent_trainer')
+    messages.success(
+        request,
+        f'Cancelled private class for {date_parsed} and marked attendance as class cancelled.'
+    )
+    return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
+@login_required
+def undo_cancel_group_class_for_day(request, class_session_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('index')
+    next_url = (request.POST.get('next') or request.GET.get('next') or '').strip()
 
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method.')
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
+
+    class_session = get_object_or_404(ClassSession, id=class_session_id)
+    today = date.today()
+
+    date_str = (request.POST.get('date') or request.GET.get('date') or '').strip()
+    if not date_str:
+        messages.error(request, 'Date is required.')
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
+
+    try:
+        date_parsed = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        messages.error(request, 'Invalid date format.')
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
+
+    if date_parsed > today:
+        messages.error(request, 'Date cannot be in the future.')
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
+    
+    if date_parsed < class_session.start_date or date_parsed > class_session.end_date:
+        messages.error(request, 'Date is out of range for this class session.')
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
+
+    if date_parsed.weekday() >= 5:
+        messages.error(request, "Date cannot be a weekend.")
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
+
+    attendances = ClassSessionAttendance.objects.filter(
+        class_session=class_session,
+        date=date_parsed,
+        status='class_cancelled',
+    )
+    if not attendances.exists():
+        messages.info(request, 'No cancelled attendance records found for the selected date. Nothing to undo.')
+        return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
+
+    undone_count = 0
+    for attendance in attendances:
+        attendance.status = 'absent'
+        attendance.marked_by = request.user
+        attendance.save(update_fields=['status', 'marked_by'])
+        undone_count += 1
+
+    messages.success(
+        request,
+        f'Undid cancellation of class for {date_parsed} and marked {undone_count} student attendance record(s) as absent.'
+    )
+    return redirect(next_url or 'list_ongoing_classes_of_absent_trainer')
+
+
+@login_required
+def undo_cancel_private_class_for_day(request, private_class_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('index')
+    next_url = (request.POST.get('next') or request.GET.get('next') or '').strip()
+
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method.')
+        return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
+
+    private_class = get_object_or_404(PrivateClass, id=private_class_id)
+    today = date.today()
+
+    date_str = (request.POST.get('date') or request.GET.get('date') or '').strip()
+    if not date_str:
+        messages.error(request, 'Date is required.')
+        return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
+
+    try:
+        date_parsed = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        messages.error(request, 'Invalid date format.')
+        return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
+
+    if date_parsed > today:
+        messages.error(request, 'Date cannot be in the future.')
+        return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
+    
+    if date_parsed < private_class.start_date or date_parsed > private_class.end_date:
+        messages.error(request, 'Date is out of range for this class session.')
+        return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
+
+    if date_parsed.weekday() >= 5:
+        messages.error(request, "Date cannot be a weekend.")
+        return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
+
+    attendance = PrivateClassAttendance.objects.filter(
+        private_class=private_class,
+        date=date_parsed,
+        status='class_cancelled',
+    ).first()
+    if not attendance:
+        messages.info(request, 'No cancelled attendance records found for the selected date. Nothing to undo.')
+        return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
+    
+    attendance.status = 'absent'
+    attendance.marked_by = request.user
+    attendance.save(update_fields=['status', 'marked_by'])
+
+    messages.success(
+        request,
+        f'Undid cancellation of private class for {date_parsed} and marked attendance as absent.'
+    )
+    return redirect(next_url or 'list_ongoing_private_classes_of_absent_trainer')
 
 @login_required
 def class_session_attendance_history(request, class_session_id):
@@ -749,7 +1135,6 @@ def class_session_attendance_history(request, class_session_id):
     date_to = request.GET.get('date_to')
     student_and_trainer_name = request.GET.get('student_and_trainer_name', '').strip()
     status = request.GET.get('status')
-
 
     if request.user.role == 'trainer':
             if class_session.trainer != request.user and class_session.substitute_trainer != request.user:
@@ -781,8 +1166,44 @@ def class_session_attendance_history(request, class_session_id):
             Q(marked_by__username__icontains=student_and_trainer_name) |
             Q(marked_by__email__icontains=student_and_trainer_name)
         )
-    if status in {'present', 'absent', 'class_cancelled'}:
-        attendance_records = attendance_records.filter(status=status)
+
+    bookings = ClassBooking.objects.filter(
+        class_session=class_session,
+        is_cancelled=False
+    ).select_related('user').distinct()
+    history_rows = list(attendance_records)
+    today = date.today()
+
+    last_date = class_session.end_date
+    if last_date > today:
+        last_date = today
+
+    current_date = class_session.start_date
+
+    while current_date <= last_date:
+        if current_date.weekday() < 5:
+            for booking in bookings:
+                if not attendance_records.filter(class_session=class_session, student=booking.user, date=current_date).exists():
+                    history_rows.append({
+                        'student': booking.user,
+                        'student_id': booking.user.user_id,
+                        'date': current_date,
+                        'status': 'not_marked',
+                        'marked_by': None,
+                    })
+        current_date += timedelta(days=1)
+
+    if status in {'present', 'absent', 'class_cancelled', 'not_marked'}:
+        filtered_rows = []
+        for row in history_rows:
+            if hasattr(row, 'status'):
+                row_status = row.status
+            else:
+                row_status = row['status']
+
+            if row_status == status:
+                filtered_rows.append(row)
+        history_rows = filtered_rows
 
     template=''
     if request.user.role == 'admin':
@@ -792,7 +1213,7 @@ def class_session_attendance_history(request, class_session_id):
     return render(
         request,
         template,
-        {'class_session': class_session, 'attendance_records': attendance_records},
+        {'class_session': class_session, 'attendance_records': history_rows},
     )
 
 
@@ -835,8 +1256,37 @@ def private_class_attendance_history(request, private_class_id):
             Q(marked_by__username__icontains=trainer_name) |
             Q(marked_by__email__icontains=trainer_name)
         )
-    if status in {'present', 'absent', 'class_cancelled'}:
-        attendance_records = attendance_records.filter(status=status)
+
+    history_rows = list(attendance_records)
+    today = date.today()
+    last_date = private_class.end_date
+    if last_date > today:
+        last_date = today
+
+    current_date = private_class.start_date
+    while current_date <= last_date:
+        if current_date.weekday() < 5:
+            if not attendance_records.filter(date=current_date).exists():
+                history_rows.append({
+                    'student': private_class.user,
+                    'student_id': private_class.user.user_id,
+                    'date': current_date,
+                    'status': 'not_marked',
+                    'marked_by': None,
+                })
+        current_date += timedelta(days=1)
+
+    if status in {'present', 'absent', 'class_cancelled', 'not_marked'}:
+        filtered_rows = []
+        for row in history_rows:
+            if hasattr(row, 'status'):
+                row_status = row.status
+            else:
+                row_status = row['status']
+
+            if row_status == status:
+                filtered_rows.append(row)
+        history_rows = filtered_rows
 
     template=''
     if request.user.role == 'admin':
@@ -846,7 +1296,7 @@ def private_class_attendance_history(request, private_class_id):
     return render(
         request,
         template,
-        {'private_class': private_class, 'attendance_records': attendance_records},
+        {'private_class': private_class, 'attendance_records': history_rows},
     )
 
 @login_required
@@ -1247,14 +1697,79 @@ def trainers_attandance_history(request, trainer_id):
         except ValueError:
             pass
         
-    if status in {'present', 'absent'}:
-        attendance_records = attendance_records.filter(status=status)
+    history_rows = list(attendance_records)
+    today = date.today()
+    current_date = trainer.created_at.date()
+
+    while current_date <= today:
+        if current_date.weekday() < 5:
+            if not attendance_records.filter(date=current_date).exists():
+                history_rows.append({
+                    'date': current_date,
+                    'status': 'not_marked',
+                })
+        current_date += timedelta(days=1)
+
+    if status in {'present', 'absent', 'not_marked'}:
+        filtered_rows = []
+        for row in history_rows:
+            if hasattr(row, 'status'):
+                row_status = row.status
+            else:
+                row_status = row['status']
+
+            if row_status == status:
+                filtered_rows.append(row)
+        history_rows = filtered_rows
 
     return render(
         request,
         'dashboards/admin/attendance/trainer/trainer_attendance_history.html',
-        {'trainer': trainer, 'attendance_records': attendance_records},
+        {'trainer': trainer, 'attendance_records': history_rows},
     )
+
+
+@login_required
+def admin_mark_trainer_attendance_for_day(request, trainer_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method.')
+        return redirect('trainers_attandance_history', trainer_id=trainer_id)
+
+    trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
+    next_url = (request.POST.get('next') or '').strip()
+
+    date_str = (request.POST.get('date') or '').strip()
+    try:
+        date_parsed = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        messages.error(request, 'Invalid date.')
+        return redirect(next_url or 'trainers_attandance_history', trainer_id=trainer_id)
+
+    today = timezone.localdate()
+    if date_parsed > today:
+        messages.error(request, 'You cannot mark attendance for a future date.')
+        return redirect(next_url or 'trainers_attandance_history', trainer_id=trainer_id)
+
+    if date_parsed.weekday() >= 5:
+        messages.error(request, 'Attendance cannot be marked on weekends.')
+        return redirect(next_url or 'trainers_attandance_history', trainer_id=trainer_id)
+
+    status = (request.POST.get('status') or '').strip()
+    if status not in {'present', 'absent'}:
+        messages.error(request, 'Invalid attendance status.')
+        return redirect(next_url or 'trainers_attandance_history', trainer_id=trainer_id)
+
+    TrainerAttendanceRecord.objects.update_or_create(
+        trainer=trainer,
+        date=date_parsed,
+        defaults={'status': status},
+    )
+    messages.success(request, 'Trainer attendance updated successfully.')
+    return redirect(next_url or 'trainers_attandance_history', trainer_id=trainer_id)
 
 @login_required
 def admin_class_session_list_for_attendance_history(request):

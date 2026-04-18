@@ -85,12 +85,19 @@
                         <a href="{% url 'list_trainer_classes' trainer.pk %}" class="btn-sm btn-secondary">View Classes</a>
                         <a href="{% url 'list_trainer_sub_classes' trainer.pk %}" class="btn-sm btn-secondary">View Sub Classes</a>
                         <a class="btn-sm btn-secondary" href="{% url 'edit_trainer' trainer.user_id %}">Edit</a>
-                        <button class="btn-sm btn-danger">
-                            <a href="{% url 'toggle_trainer_status' trainer.user_id %}" style="text-decoration: none; color: white;"
+                        <form method="post" action="{%url 'toggle_trainer_status' trainer.user_id%}">
+                             {% csrf_token %}
+                            <button 
+                            type="submit" 
+                            class="btn-sm {% if trainer.is_active %}btn-danger{% else %}btn-primary{% endif %}"
                             onclick="return confirm('Are you sure you want to {% if trainer.is_active %}deactivate{% else %}activate{% endif %} this trainer?');">
-                                {% if trainer.is_active %}Deactivate{% else %}Activate{% endif %}
-                            </a>
-                        </button>
+                                {% if trainer.is_active %}
+                                    Deactivate
+                                {% else %}
+                                    Activate
+                                {% endif %}
+                            </button>
+                        </form>
                     </div>
                 </div>
                 {% empty %}

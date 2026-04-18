@@ -18,7 +18,7 @@
 
         <div class="dashboard-header">
             <h1>Private Class Attendance History</h1>
-            <a href="javascript:history.back()" class="btn-secondary">Back</a>
+            <a href="{% url 'admin_list_to_check_private_class_attendance_history' %}" class="btn-secondary">Back</a>
         </div>
 
         <div class="dashboard-section">
@@ -43,6 +43,7 @@
                         <option value="present" {% if request.GET.status == 'present' %}selected{% endif %}>Present</option>
                         <option value="absent" {% if request.GET.status == 'absent' %}selected{% endif %}>Absent</option>
                         <option value="class_cancelled" {% if request.GET.status == 'class_cancelled' %}selected{% endif %}>Class Cancelled</option>
+                        <option value="not_marked" {% if request.GET.status == 'not_marked' %}selected{% endif %}>Not Marked</option>
                     </select>
                 </div>
                 <div class="filter-field">
@@ -67,6 +68,7 @@
                         <th>Date</th>
                         <th>Status</th>
                         <th>Marked By</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -74,12 +76,61 @@
                     <tr>
                         <td>{{ record.date }}</td>
                         <td>
-                            <span class="attendance-status {% if record.status == 'present' %}present{% elif record.status == 'absent' %}absent{% else %}pending{% endif %}">{{ record.get_status_display }}</span>
+                            <span class="attendance-status {% if record.status == 'present' %}present{% elif record.status == 'absent' %}absent{% else %}pending{% endif %}">
+                                {% if record.status == 'present' %}
+                                    Student Present
+                                {% elif record.status == 'absent' %}
+                                    Student Absent
+                                {% elif record.status == 'class_cancelled' %}
+                                    Class Cancelled
+                                {% else %}
+                                    Not Marked
+                                {% endif %}
+                            </span>
                         </td>
-                        <td>{{ record.marked_by.full_name|default:record.marked_by.username|default:'-' }}</td>
+                        <td>
+                            {% if record.marked_by %}
+                                {{ record.marked_by.full_name|default:record.marked_by.username }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="attendance-actions">
+                                {% if record.status == 'class_cancelled' %}
+                                <form method="post" action="{% url 'undo_cancel_private_class_for_day' private_class.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="date" value="{{ record.date|date:'Y-m-d' }}">
+                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                    <button type="submit" class="btn-sm btn-secondary">Undo Cancel</button>
+                                </form>
+                                {% else %}
+                                    {%if record.status == 'present' or record.status == 'absent' or record.status == 'not_marked' %}
+                                    <form method="post" action="{% url 'admin_mark_private_attendance' private_class.id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="date" value="{{ record.date|date:'Y-m-d' }}">
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+                                        <select name="status" class="filter-select">
+                                            <option value="present">Present</option>
+                                            <option value="absent">Absent</option>
+                                        </select>
+                                        <button type="submit" class="btn-sm btn-secondary">Mark Present</button>
+                                    </form>
+                                    {% endif %}
+                                    
+                                    <form method="post" action="{% url 'cancel_private_class_for_day' private_class.id %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="date" value="{{ record.date|date:'Y-m-d' }}">
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button type="submit" class="btn-sm btn-danger" onclick="return confirm('Mark this private class date as cancelled?');">Cancel Class</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="3">No records found.</td></tr>
+                    <tr><td colspan="4">No records found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

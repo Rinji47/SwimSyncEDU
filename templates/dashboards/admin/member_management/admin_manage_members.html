@@ -79,7 +79,19 @@
                     <div class="data-card-actions">
                         <a class="btn-sm btn-primary" href="{% url 'view_member' member.user_id %}">View</a>
                         <a class="btn-sm btn-secondary" href="{% url 'edit_member' member.user_id %}">Edit</a>
-                        <button class="btn-sm btn-danger" type="button">Deactivate</button>
+                        <form method="post" action="{%url 'toggle_member_status' member.user_id%}">
+                             {% csrf_token %}
+                            <button 
+                            type="submit" 
+                            class="btn-sm {% if member.is_active %}btn-danger{% else %}btn-primary{% endif %}"
+                            onclick="return confirm('Are you sure you want to {% if member.is_active %}deactivate{% else %}activate{% endif %} this member?');">
+                                {% if member.is_active %}
+                                    Deactivate
+                                {% else %}
+                                    Activate
+                                {% endif %}
+                            </button>
+                        </form>
                     </div>
                 </div>
                 {% empty %}

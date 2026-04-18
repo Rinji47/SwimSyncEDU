@@ -34,6 +34,7 @@
                         <option value="">All</option>
                         <option value="present" {% if request.GET.status == 'present' %}selected{% endif %}>Present</option>
                         <option value="absent" {% if request.GET.status == 'absent' %}selected{% endif %}>Absent</option>
+                        <option value="not_marked" {% if request.GET.status == 'not_marked' %}selected{% endif %}>Not Marked</option>
                     </select>
                 </div>
                 <div class="filter-field">
@@ -57,6 +58,7 @@
                     <tr>
                         <th>Date</th>
                         <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -64,13 +66,31 @@
                     <tr>
                         <td>{{ record.date }}</td>
                         <td>
-                            <span class="attendance-status {% if record.status == 'present' %}present{% else %}absent{% endif %}">
-                                {{ record.get_status_display }}
+                            <span class="attendance-status {% if record.status == 'present' %}present{% elif record.status == 'absent' %}absent{% else %}pending{% endif %}">
+                                {% if record.status == 'present' %}
+                                    Trainer Present
+                                {% elif record.status == 'absent' %}
+                                    Trainer Absent
+                                {% else %}
+                                    Not Marked
+                                {% endif %}
                             </span>
+                        </td>
+                        <td>
+                            <form method="post" action="{% url 'admin_mark_trainer_attendance_for_day' trainer.user_id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="date" value="{{ record.date|date:'Y-m-d' }}">
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <select name="status" class="filter-select">
+                                    <option value="present" {% if record.status == 'present' %}selected{% endif %}>Present</option>
+                                    <option value="absent" {% if record.status == 'absent' %}selected{% endif %}>Absent</option>
+                                </select>
+                                <button type="submit" class="btn-sm btn-secondary">Update</button>
+                            </form>
                         </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="2">No attendance records found.</td></tr>
+                    <tr><td colspan="3">No attendance records found.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

@@ -50,6 +50,10 @@
             <span class="nav-icon"><i class="fa-solid fa-user-check"></i></span>
             Mark Trainer Attendance
         </a>
+        <a href="{% url 'admin_todays_classes' %}" class="nav-item {% if request.resolver_match.url_name == 'admin_todays_classes' %}active{% endif %}">
+            <span class="nav-icon"><i class="fa-solid fa-calendar-day"></i></span>
+            Today's Classes
+        </a>
         <a href="{% url 'select_trainer_for_attendance_history' %}" class="nav-item {% if request.resolver_match.url_name == 'select_trainer_for_attendance_history' or request.resolver_match.url_name == 'trainers_attandance_history' %}active{% endif %}">
             <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span>
             Trainer Attendance History

@@ -3,6 +3,7 @@ from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
+from django.core.management import call_command
 from django.db import transaction
 from django.utils import timezone
 
@@ -38,33 +39,49 @@ class Command(BaseCommand):
         parser.add_argument("--members", type=int, default=36)
         parser.add_argument("--trainers", type=int, default=8)
         parser.add_argument("--password", type=str, default=DEMO_PASSWORD)
+        parser.add_argument("--reference-date", type=str, default="")
+        parser.add_argument("--wipe-all", action="store_true")
+        parser.add_argument("--historical-only", action="store_true")
 
-    @transaction.atomic
     def handle(self, *args, **options):
         self.random = random.Random(20260407)
         self.password = options["password"]
-        self.today = timezone.localdate()
+        reference_date = (options.get("reference_date") or "").strip()
+        if reference_date:
+            try:
+                self.today = datetime.strptime(reference_date, "%Y-%m-%d").date()
+            except ValueError as exc:
+                raise ValueError("reference-date must be in YYYY-MM-DD format.") from exc
+        else:
+            self.today = timezone.localdate()
         self.member_count = max(18, options["members"])
         self.trainer_count = max(4, options["trainers"])
+        self.historical_only = options["historical_only"]
 
-        self._clear_previous_demo_data()
-        self._ensure_private_class_settings()
+        if options["wipe_all"]:
+            self.stdout.write(self.style.WARNING("Wiping all database data before seeding demo data..."))
+            call_command("flush", interactive=False, verbosity=0)
+        else:
+            self._clear_previous_demo_data()
 
-        admin = self._create_demo_admin()
-        trainers = self._create_demo_trainers()
-        members = self._create_demo_members()
-        pools = self._create_demo_pools()
-        class_types = self._create_demo_class_types()
+        with transaction.atomic():
+            self._ensure_private_class_settings()
 
-        self._create_pool_assignments(trainers, pools)
-        sessions = self._create_group_sessions(trainers, pools, class_types)
-        private_classes = self._create_private_classes(trainers, pools, members)
-        bookings = self._create_group_bookings_and_payments(sessions, members)
-        self._create_private_payments(private_classes)
-        self._create_pool_quality_history(pools)
-        self._create_attendance_history(trainers, sessions, private_classes, bookings)
-        certificates = self._create_certificates(bookings, private_classes)
-        self._create_reviews(certificates)
+            admin = self._create_demo_admin()
+            trainers = self._create_demo_trainers()
+            members = self._create_demo_members()
+            pools = self._create_demo_pools()
+            class_types = self._create_demo_class_types()
+
+            self._create_pool_assignments(trainers, pools)
+            sessions = self._create_group_sessions(trainers, pools, class_types)
+            private_classes = self._create_private_classes(trainers, pools, members)
+            bookings = self._create_group_bookings_and_payments(sessions, members)
+            self._create_private_payments(private_classes)
+            self._create_pool_quality_history(pools)
+            self._create_attendance_history(trainers, sessions, private_classes, bookings)
+            certificates = self._create_certificates(bookings, private_classes)
+            self._create_reviews(certificates)
 
         self.stdout.write(self.style.SUCCESS("Demo data seeded successfully."))
         self.stdout.write(f"Admin login: demo_admin / {self.password}")
@@ -169,6 +186,15 @@ class Command(BaseCommand):
                 digital_signature=SIGNATURE_PATH,
                 is_active=True,
             )
+            trainer_created_at = datetime.combine(
+                self.today - timedelta(days=61 + index),
+                time(9, 0),
+            )
+            User.objects.filter(user_id=trainer.user_id).update(
+                created_at=trainer_created_at,
+                updated_at=trainer_created_at,
+            )
+            trainer.refresh_from_db(fields=["created_at", "updated_at"])
             trainers.append(trainer)
         return trainers
 
@@ -269,7 +295,8 @@ class Command(BaseCommand):
         sessions = []
         sessions.extend(self._build_sessions(trainers, pools, class_types, "past", 10))
         sessions.extend(self._build_sessions(trainers, pools, class_types, "active", 8))
-        sessions.extend(self._build_sessions(trainers, pools, class_types, "upcoming", 10))
+        if not self.historical_only:
+            sessions.extend(self._build_sessions(trainers, pools, class_types, "upcoming", 10))
         sessions.extend(self._build_sessions(trainers, pools, class_types, "cancelled", 4))
         return sessions
 
@@ -295,7 +322,10 @@ class Command(BaseCommand):
             elif mode == "upcoming":
                 start_date = self.today + timedelta(days=2 + (index * 2))
             else:
-                start_date = self.today + timedelta(days=3 + index)
+                if self.historical_only:
+                    start_date = self.today - timedelta(days=12 + (index * 3))
+                else:
+                    start_date = self.today + timedelta(days=3 + index)
             end_date = start_date + duration
             start_time, end_time = time_slots[index % len(time_slots)]
             substitute = None
@@ -328,7 +358,10 @@ class Command(BaseCommand):
             (time(18, 0), time(19, 0)),
         ]
         for index in range(12):
-            if index < 4:
+            if self.historical_only:
+                start_date = self.today - timedelta(days=24 + (index * 2))
+                end_date = min(self.today, start_date + timedelta(days=8))
+            elif index < 4:
                 start_date = self.today - timedelta(days=28 + (index * 5))
                 end_date = start_date + timedelta(days=9)
             elif index < 8:
@@ -444,12 +477,13 @@ class Command(BaseCommand):
                 max_days=5 if session.end_date < self.today else 2,
             )
             for session_date in session_dates:
+                cancel_whole_day = index % 6 == 0 and session_date == session_dates[-1]
                 for booking_index, booking in enumerate(active_bookings_by_session.get(session.id, [])):
                     status = "present"
-                    if (booking_index + index + session_date.day) % 7 == 0:
-                        status = "absent"
-                    if index % 6 == 0 and booking_index == 0 and session_date == session_dates[-1]:
+                    if cancel_whole_day:
                         status = "class_cancelled"
+                    elif (booking_index + index + session_date.day) % 7 == 0:
+                        status = "absent"
                     ClassSessionAttendance.objects.create(
                         class_session=session,
                         student=booking.user,
@@ -482,9 +516,12 @@ class Command(BaseCommand):
 
     def _create_trainer_attendance(self, trainers):
         for trainer_index, trainer in enumerate(trainers):
-            for days_back in range(0, 21):
+            for days_back in range(0, 62):
                 attendance_date = self.today - timedelta(days=days_back)
                 if attendance_date.weekday() >= 5:
+                    continue
+                # Leave a few weekday gaps so admin history can surface "Not Marked" rows.
+                if (trainer_index + attendance_date.day) % 9 == 0:
                     continue
                 status = "present"
                 if days_back in {3, 11} and trainer_index % 3 == 0:

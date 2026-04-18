@@ -48,8 +48,10 @@
                         <button type="submit" class="btn-primary" {% if not selected_trainer %}disabled{% endif %}>Confirm Assign</button>
                     </form>
 
-                    <form method="post" action="{% url 'cancel_group_class_for_today' class_session.id %}" style="display:inline-flex;">
+                    <form method="post" action="{% url 'cancel_group_class_for_day' class_session.id %}" style="display:inline-flex;">
                         {% csrf_token %}
+                        <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
+                        <input type="hidden" name="next" value="{% url 'list_ongoing_classes_of_absent_trainer' %}">
                         <button
                             type="submit"
                             class="btn-danger"

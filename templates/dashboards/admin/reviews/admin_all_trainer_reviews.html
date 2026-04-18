@@ -226,7 +226,7 @@
                     </div>
 
                     <div class="admin-review-comment">
-                        {{ row.review.comment|default:"No comment provided." }}
+                        {{ row.review.comment|default:"No comment provided."|truncatewords:18 }}
                     </div>
 
                     <div class="admin-review-actions">

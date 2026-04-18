@@ -18,6 +18,7 @@ urlpatterns = [
     path('members/add/', views.add_member, name='add_member'),
     path('members/view/<int:member_id>/', views.view_member, name='view_member'),
     path('members/edit/<int:member_id>/', views.edit_member, name='edit_member'),
+    path('members/toggle_status/<int:member_id>/', views.toggle_member_status, name='toggle_member_status'),
 
     path('trainers/', views.manage_trainer, name='manage_trainers'),
     path('trainers/add/', views.add_trainer, name='add_trainer'),

@@ -28,12 +28,14 @@ def login_view(request):
         username = request.POST.get('username')
         password = request.POST.get('password')
 
+        existing_user = User.objects.filter(username=username).first()
+        if existing_user and not existing_user.is_active:
+            messages.error(request, 'Your account is inactive. Please contact support.')
+            return render(request, 'auth/login.html')
+
+
         user = authenticate(request, username=username, password=password)
-        if user and user.check_password(password):
-            if not user.is_active:
-                messages.error(request, 'Your account is inactive. Please contact support.')
-                return render(request, 'auth/login.html')
-            
+        if user:
             login(request, user)
             messages.success(request, f'Welcome back, {user.full_name or user.username}!')
 
@@ -472,12 +474,33 @@ def toggle_trainer_status(request, trainer_id):
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('index')
 
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method.')
+        return redirect('manage_members')
+
     trainer = get_object_or_404(User, pk=trainer_id, role='trainer')
     trainer.is_active = not trainer.is_active
     trainer.save()
     status = 'activated' if trainer.is_active else 'deactivated'
     messages.success(request, f'Trainer "{trainer.username}" has been {status}.')
     return redirect('manage_trainers')
+
+@login_required
+def toggle_member_status(request, member_id):
+    if request.user.role != 'admin':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+    
+    if request.method != 'POST':
+        messages.error(request, 'Invalid request method.')
+        return redirect('manage_members')
+
+    member = get_object_or_404(User, pk=member_id, role='user')
+    member.is_active = not member.is_active
+    member.save()
+    status = 'activated' if member.is_active else 'deactivated'
+    messages.success(request, f'Member "{member.username}" has been {status}.')
+    return redirect('manage_members')
 
 @login_required
 def admin_dashboard(request):

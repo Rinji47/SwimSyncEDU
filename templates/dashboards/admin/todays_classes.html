@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Today's Classes - SwimSync EDU{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/attendance.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'dashboards/admin/components/admin_sidebar.html' %}
+
+    <main class="dashboard-main">
+        {% include 'components/message.html' %}
+
+        <div class="dashboard-header">
+            <h1>Today's Classes</h1>
+            <p class="attendance-meta">Overview of active group and private classes for {{ today }}.</p>
+        </div>
+
+        <form class="filter-bar" method="GET" action="{% url 'admin_todays_classes' %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="q" placeholder="Search class, student, pool, trainer..." value="{{ request.GET.q|default:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.private_or_group %}true{% else %}false{% endif %}" aria-controls="filters-todays-classes">Filters v</button>
+                </div>
+            </div>
+            <div class="filter-advanced {% if request.GET.private_or_group %}show{% endif %}" id="filters-todays-classes">
+                <div class="filter-field">
+                    <label>Class Type</label>
+                    <select class="filter-select" name="private_or_group">
+                        <option value="">All</option>
+                        <option value="group" {% if request.GET.private_or_group == 'group' %}selected{% endif %}>Group Classes</option>
+                        <option value="private" {% if request.GET.private_or_group == 'private' %}selected{% endif %}>Private Classes</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <a href="{% url 'admin_todays_classes' %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
+        {% if class_sessions %}
+        <div class="dashboard-section">
+            <div class="dashboard-header">
+                <h2>Group Classes</h2>
+                <p class="attendance-meta">{{ class_sessions|length }} active group class{{ class_sessions|length|pluralize }} today.</p>
+            </div>
+            <div class="card-grid">
+                {% for class_session in class_sessions %}
+                <div class="class-card">
+                    <h3>{{ class_session.class_name }}</h3>
+                    <p><strong>Pool:</strong> {{ class_session.pool.name }}</p>
+                    <p><strong>Type:</strong> {{ class_session.class_type.name }}</p>
+                    <p><strong>Trainer:</strong> {{ class_session.trainer.full_name|default:class_session.trainer.username }}</p>
+                    <p><strong>Time:</strong> {{ class_session.start_time }} - {{ class_session.end_time }}</p>
+                    {% if class_session.substitute_trainer %}
+                    <p><strong>Substitute:</strong> {{ class_session.substitute_trainer.full_name|default:class_session.substitute_trainer.username }}</p>
+                    {% endif %}
+                    <div class="card-actions">
+                        <a href="{% url 'admin_class_session_attendance_history' class_session.id %}" class="btn-sm btn-secondary">History</a>
+                        <a href="{% url 'admin_group_class_activity_detail' class_session.id %}" class="btn-sm btn-secondary">Activity</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if private_classes %}
+        <div class="dashboard-section">
+            <div class="dashboard-header">
+                <h2>Private Classes</h2>
+                <p class="attendance-meta">{{ private_classes|length }} active private class{{ private_classes|length|pluralize }} today.</p>
+            </div>
+            <div class="card-grid">
+                {% for private_class in private_classes %}
+                <div class="class-card">
+                    <h3>{{ private_class.user.full_name|default:private_class.user.username }}</h3>
+                    <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
+                    <p><strong>Trainer:</strong> {{ private_class.trainer.full_name|default:private_class.trainer.username }}</p>
+                    <p><strong>Time:</strong> {{ private_class.start_time }} - {{ private_class.end_time }}</p>
+                    {% if private_class.substitute_trainer %}
+                    <p><strong>Substitute:</strong> {{ private_class.substitute_trainer.full_name|default:private_class.substitute_trainer.username }}</p>
+                    {% endif %}
+                    <div class="card-actions">
+                        <a href="{% url 'admin_private_class_attendance_history' private_class.id %}" class="btn-sm btn-secondary">History</a>
+                        <a href="{% url 'admin_private_class_activity_detail' private_class.id %}" class="btn-sm btn-secondary">Activity</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not class_sessions and not private_classes %}
+        <div class="dashboard-section">
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fa-solid fa-calendar-xmark"></i>
+                </div>
+                <h3>No Classes Found</h3>
+                <p>{% if weekend %}There are no classes scheduled today because it is a weekend.{% else %}No active classes matched your current search or filter.{% endif %}</p>
+            </div>
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

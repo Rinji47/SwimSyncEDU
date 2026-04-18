@@ -70,7 +70,10 @@
                 <p><strong>Class:</strong> {{ row.source_label }}</p>
                 <p><strong>Reviewed On:</strong> {{ row.review.created_at|date:"M d, Y" }}</p>
                 <p><strong>Comment:</strong></p>
-                <p>{{ row.review.comment|default:"No comment provided." }}</p>
+                <p>{{ row.review.comment|default:"No comment provided."|truncatewords:18 }}</p>
+                <div style="margin-top: 1rem;">
+                    <a href="{% url 'trainer_view_review_detail' row.review.id %}" class="btn-sm btn-secondary">View Review</a>
+                </div>
             </div>
             {% empty %}
             <p>No reviews have been written about you yet.</p>

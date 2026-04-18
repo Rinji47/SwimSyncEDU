@@ -552,3 +552,31 @@ def admin_view_review_detail(request, review_id):
         'source_label': source_label,
     }
     return render(request, 'dashboards/admin/reviews/admin_view_review_detail.html', context)
+
+def trainer_view_review_detail(request, review_id):
+    if request.user.role != 'trainer':
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('index')
+
+    review = get_object_or_404(Review.objects.select_related(
+        'user',
+        'certificate',
+        'certificate__class_booking__class_session__trainer',
+        'certificate__class_booking__class_session__pool',
+        'certificate__private_class__trainer',
+        'certificate__private_class__pool',
+    ), id=review_id)
+
+    trainer = get_review_trainer(review)
+    if not trainer or trainer.pk != request.user.pk:
+        messages.error(request, 'You do not have permission to view this review.')
+        return redirect('index')
+
+    source_label = get_review_source_label(review)
+
+    context = {
+        'review': review,
+        'trainer': trainer,
+        'source_label': source_label,
+    }
+    return render(request, 'dashboards/trainer/reviews/trainer_view_review_detail.html', context)
