@@ -13,7 +13,6 @@ urlpatterns = [
     # Manage Class Sessions
     path('manage_classes/', views.manage_class_sessions, name='manage_classes'),
     path('class-session/<int:class_id>/view/', views.view_class_session, name='view_class_session'),
-    # path('edit_classes/<int:class_id>/', views.edit_class_session, name='edit_class'),
     path('open_class_session/<int:class_id>/', views.open_class_session, name='open_class_session'),
     path('close_class_session/<int:class_id>/', views.close_class_session, name='close_class_session'),
 

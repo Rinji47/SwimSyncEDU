@@ -26,6 +26,16 @@
             <p class="attendance-meta">Trainer: {{ class_session.trainer.full_name|default:class_session.trainer.username }} | {{ class_session.pool.name }} | {{ class_session.class_type.name }} | {{ class_session.start_time }} - {{ class_session.end_time }}</p>
         </div>
 
+        <form class="filter-bar" method="get" action="{% url 'students_list_for_class_session' class_session.id %}">
+            <div class="filter-main">
+                <div class="filter-search">
+                    <input type="text" class="filter-input" name="student_name" placeholder="Search student name or username..." value="{{ request.GET.student_name|default_if_none:'' }}">
+                    <button type="submit" class="btn-secondary">Search</button>
+                    <a href="{% url 'students_list_for_class_session' class_session.id %}" class="btn-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
         <div class="dashboard-section">
             <div class="student-list">
                 {% for booking in bookings %}
