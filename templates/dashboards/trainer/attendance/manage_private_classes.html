@@ -66,6 +66,8 @@
                             Cancelled
                         {% elif private_class.end_date|date:'Y-m-d' < today_str %}
                             Completed
+                        {% elif private_class.start_date|date:'Y-m-d' > today_str %}
+                            Upcoming
                         {% else %}
                             Ongoing
                         {% endif %}

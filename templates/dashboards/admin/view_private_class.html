@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Private Class Details{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_manage.css' %}">
+<link rel="stylesheet" href="{% static 'css/compact_ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/message.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include "dashboards/admin/components/admin_sidebar.html" %}
+    <main class="dashboard-main">
+        {% include "components/message.html" %}
+
+        <div class="page-head">
+            <div>
+                <h1>Private Class Details</h1>
+                <p class="subtitle">View the private class information on a full page.</p>
+            </div>
+            <a href="{% url 'manage_private_classes' %}" class="btn-secondary">Back</a>
+        </div>
+
+        <div class="two-col">
+            <div class="info-card">
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Class Name</span>
+                        <span class="detail-value">Private: {{ private_class.user.full_name|default:private_class.user.username }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Status</span>
+                        <span class="detail-value">{% if private_class.is_cancelled %}Cancelled{% else %}Active{% endif %}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Pool</span>
+                        <span class="detail-value">{{ private_class.pool.name }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Trainer</span>
+                        <span class="detail-value">{{ private_class.trainer.full_name|default:private_class.trainer.username }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Class Type</span>
+                        <span class="detail-value">Private Class</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Learner</span>
+                        <span class="detail-value">{{ private_class.user.full_name|default:private_class.user.username }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Start Date</span>
+                        <span class="detail-value">{{ private_class.start_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">End Date</span>
+                        <span class="detail-value">{{ private_class.end_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Start Time</span>
+                        <span class="detail-value">{{ private_class.start_time }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">End Time</span>
+                        <span class="detail-value">{{ private_class.end_time }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Total Price</span>
+                        <span class="detail-value">Rs. {{ private_class.total_price }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Total Sessions</span>
+                        <span class="detail-value">{{ private_class.weekdays_count }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="side-panel">
+                <h3><i class="fa-solid fa-circle-info"></i> Quick Actions</h3>
+                <div class="inline-actions" style="margin-top: 0.75rem;">
+                    <a href="{% url 'manage_private_classes' %}" class="btn-secondary">Back to List</a>
+                </div>
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}

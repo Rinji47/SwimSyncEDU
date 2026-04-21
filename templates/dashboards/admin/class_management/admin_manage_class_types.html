@@ -58,7 +58,7 @@
                             {% if type.is_closed %}Closed{% else %}Open{% endif %}
                         </span>
                         {{ type.name }}
-                    </h3>s
+                    </h3>
                     <div class="data-card-row data-card-row-stack">
                         <span class="data-card-label">Description:</span>
                         <span class="data-card-clamp">{{ type.description|default:"No description provided." }}</span>
@@ -77,15 +77,11 @@
                         <a class="btn-sm btn-primary" href="{% url 'view_class_type' type.class_type_id %}">View</a>
                         <a class="btn-sm btn-secondary" href="{% url 'edit_class_types' type.class_type_id %}">Edit</a>
                         {% if type.is_closed %}
-                        <button class="btn-sm btn-success">
-                            <a href="{% url 'open_class_type' type.class_type_id %}" style="text-decoration: none; color: white;"
-                            onclick="return confirm('Are you sure you want to open this class type?');">Open</a>
-                        </button>
+                        <a href="{% url 'open_class_type' type.class_type_id %}" class="btn-sm btn-success"
+                        onclick="return confirm('Are you sure you want to open this class type?');">Open</a>
                         {% else %}
-                        <button class="btn-sm btn-danger">
-                            <a href="{% url 'close_class_type' type.class_type_id %}" style="text-decoration: none; color: white;"
-                            onclick="return confirm('Are you sure you want to close this class type?');">Close</a>
-                        </button>
+                        <a href="{% url 'close_class_type' type.class_type_id %}" class="btn-sm btn-danger"
+                        onclick="return confirm('Are you sure you want to close this class type?');">Close</a>
                         {% endif %}
                     </div>
                 </div>
@@ -97,4 +93,3 @@
     </main>
 </div>
 {% endblock %}
-

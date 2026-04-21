@@ -82,15 +82,10 @@
                         <a class="btn-sm btn-primary" href="{% url 'view_pool' pool.pool_id %}">View</a>
                         <a class="btn-sm btn-secondary" href="{% url 'edit_pool' pool.pool_id %}">Edit</a>
                         {% if not pool.is_closed %}
-                            <button class="btn-sm btn-danger">
-                                <a href="{% url 'close_pool' pool.pool_id %}" style="text-decoration: none; color: white;"
-                                onclick="return confirm('Are you sure you want to close this pool?');">Close</a>
-                            </button>
+                            <a href="{% url 'close_pool' pool.pool_id %}" class="btn-sm btn-danger"
+                            onclick="return confirm('Are you sure you want to close this pool?');">Close</a>
                             {% else %}
-                            <button class="btn-sm btn-success" disabled>
-                                <a href="{% url 'open_pool' pool.pool_id %}" style="text-decoration: none; color: white;"
-                                onclick="return confirm('Are you sure you want to open this pool?');">Open</a>
-                            </button>
+                            <span class="btn-sm btn-success" style="pointer-events:none;opacity:0.65;">Open</span>
                         {% endif %}
                     </div>
                 </div>
@@ -102,4 +97,3 @@
     </main>
 </div>
 {% endblock %}
-

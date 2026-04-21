@@ -117,6 +117,35 @@
         box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
     }
 
+    .review-trainer-head {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        margin-top: 1rem;
+    }
+
+    .review-trainer-avatar,
+    .review-trainer-avatar-placeholder {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .review-trainer-avatar {
+        object-fit: cover;
+    }
+
+    .review-trainer-avatar-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #0ea5c6;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
     .review-score {
         display: inline-flex;
         align-items: center;
@@ -134,7 +163,7 @@
     }
 
     .review-trainer-card h3 {
-        margin: 1rem 0 0.45rem;
+        margin: 0 0 0.25rem;
         font-size: 1.45rem;
         line-height: 1.05;
     }
@@ -205,13 +234,13 @@
                     </div>
                     <div class="review-stat">
                         <strong>
-                            {% if trainer_cards %}
-                            {{ trainer_cards.0.average_rating }}/5
+                            {% if top_rating %}
+                            {{ top_rating }}/5
                             {% else %}
                             --
                             {% endif %}
                         </strong>
-                        <span>top card rating</span>
+                        <span>highest average rating</span>
                     </div>
                 </div>
             </div>
@@ -239,8 +268,17 @@
             {% for card in trainer_cards %}
             <article class="review-trainer-card">
                 <span class="review-score"><i class="fa-solid fa-star"></i> {{ card.average_rating }}/5</span>
-                <h3>{{ card.trainer.full_name|default:card.trainer.username }}</h3>
-                <p class="review-specialty">{{ card.trainer.specialization|default:"No specialization added yet" }}</p>
+                <div class="review-trainer-head">
+                    {% if card.trainer.profile_picture %}
+                    <img src="{{ card.trainer.profile_picture.url }}" alt="{{ card.trainer.full_name|default:card.trainer.username }}" class="review-trainer-avatar">
+                    {% else %}
+                    <div class="review-trainer-avatar-placeholder">{{ card.trainer.username|slice:":1"|upper }}</div>
+                    {% endif %}
+                    <div>
+                        <h3>{{ card.trainer.full_name|default:card.trainer.username }}</h3>
+                        <p class="review-specialty">{{ card.trainer.specialization|default:"No specialization added yet" }}</p>
+                    </div>
+                </div>
                 <div class="review-card-meta">
                     <div>
                         <span>Total Reviews</span>

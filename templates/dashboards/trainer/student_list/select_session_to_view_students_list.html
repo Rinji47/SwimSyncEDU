@@ -19,7 +19,7 @@
 
         <div class="attendance-hero">
             <h2>Group Class Student Lists</h2>
-            <p class="attendance-meta">Choose one of your assigned or substitute group classes to see the booked students.</p>
+            <p class="attendance-meta">Choose one of your assigned group classes to see the booked students.</p>
         </div>
 
         <form class="filter-bar" method="GET" action="{% url 'select_session_to_view_students_list' %}">
@@ -27,10 +27,10 @@
                 <div class="filter-search">
                     <input type="text" class="filter-input" name="q" placeholder="Search classes..." value="{{ request.GET.q|default_if_none:'' }}">
                     <button type="submit" class="btn-secondary">Search</button>
-                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status %}true{% else %}false{% endif %}" aria-controls="filters-trainer-group-students">Filters v</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-trainer-group-students">Filters v</button>
                 </div>
             </div>
-            <div class="filter-advanced {% if request.GET.status %}show{% endif %}" id="filters-trainer-group-students">
+            <div class="filter-advanced {% if request.GET.status or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-trainer-group-students">
                 <div class="filter-field">
                     <label>Status</label>
                     <select class="filter-select" name="status">
@@ -39,7 +39,16 @@
                         <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
                     </select>
                 </div>
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default:'' }}">
+                </div>
                 <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
                     <a href="{% url 'select_session_to_view_students_list' %}" class="btn-secondary">Clear</a>
                 </div>
             </div>
@@ -53,7 +62,6 @@
                 <p><strong>Level:</strong> {{ class_session.class_type.name }}</p>
                 <p><strong>Time:</strong> {{ class_session.start_time }} - {{ class_session.end_time }}</p>
                 <p><strong>Dates:</strong> {{ class_session.start_date }} to {{ class_session.end_date }}</p>
-                <p><strong>Role:</strong> {% if class_session.trainer == request.user %}Main trainer{% else %}Substitute trainer{% endif %}</p>
                 <div class="card-actions">
                     <a href="{% url 'students_list_for_class_session' class_session.id %}" class="btn-sm btn-primary">View Students</a>
                 </div>

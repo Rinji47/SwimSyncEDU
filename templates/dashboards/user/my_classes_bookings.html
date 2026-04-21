@@ -66,11 +66,11 @@
             <div class="class-card compact">
                 <h3 style="font-size:1rem;margin-bottom:0.3rem;">
                     <span class="class-status
-                        {% if booking.class_session.is_cancelled %}status-cancelled
+                        {% if booking.is_cancelled or booking.class_session.is_cancelled %}status-cancelled
                         {% elif booking.class_session.end_date < today %}status-completed
                         {% elif booking.class_session.start_date > today %}today-status-upcoming
                         {% else %}status-open{% endif %}">
-                        {% if booking.class_session.is_cancelled %}
+                        {% if booking.is_cancelled or booking.class_session.is_cancelled %}
                             Cancelled
                         {% elif booking.class_session.end_date < today %}
                             Completed

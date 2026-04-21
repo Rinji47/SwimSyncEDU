@@ -142,8 +142,12 @@ def public_select_trainer_for_reviews(request):
             'average_rating': round(row['total_rating'] / row['review_count'], 1),
         })
 
+    trainer_cards.sort(key=lambda card: (-card['average_rating'], -card['review_count']))
+    top_rating = trainer_cards[0]['average_rating'] if trainer_cards else None
+
     return render(request, 'reviews/public_select_trainer_for_reviews.html', {
         'trainer_cards': trainer_cards,
+        'top_rating': top_rating,
     })
 
 def public_trainer_review_list(request, trainer_id):

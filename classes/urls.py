@@ -26,9 +26,13 @@ urlpatterns = [
 
     # Manage Private Classes
     path('manage_private_classes/', views.manage_private_classes, name='manage_private_classes'),
+    path('private-class/<int:private_class_id>/view/', views.admin_view_private_class, name='admin_view_private_class'),
+    path('private-class/<int:private_class_id>/open/', views.admin_open_private_class, name='admin_open_private_class'),
+    path('private-class/<int:private_class_id>/cancel/', views.admin_cancel_private_class, name='admin_cancel_private_class'),
 
     # Manage Private Class Prices
     path('manage_private_class_prices/', views.manage_private_class_prices, name='manage_private_class_prices'),
+    path('manage_private_class_prices/set/', views.set_private_class_price_page, name='set_private_class_price_page'),
     path('new_private_class_price/', views.new_private_class_price, name='new_private_class_price'),
     
     # User booking URLs

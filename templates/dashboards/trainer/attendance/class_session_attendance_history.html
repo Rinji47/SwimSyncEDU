@@ -70,11 +70,25 @@
                         <td>{{ record.date }}</td>
                         <td>{{ record.student.full_name|default:record.student.username }}</td>
                         <td>
-                            <span class="attendance-status {% if record.status == 'present' %}present{% elif record.status == 'absent' %}absent{% else %}pending{% endif %}">
-                                {{ record.get_status_display }}
+                            <span class="attendance-status {% if record.status == 'present' %}present{% elif record.status == 'absent' %}absent{% elif record.status == 'class_cancelled' %}cancelled{% else %}pending{% endif %}">
+                                {% if record.status == 'present' %}
+                                    Student Present
+                                {% elif record.status == 'absent' %}
+                                    Student Absent
+                                {% elif record.status == 'class_cancelled' %}
+                                    Class Cancelled
+                                {% else %}
+                                    Not Marked
+                                {% endif %}
                             </span>
                         </td>
-                        <td>{{ record.marked_by.full_name|default:record.marked_by.username|default:'-' }}</td>
+                        <td>
+                            {% if record.marked_by %}
+                                {{ record.marked_by.full_name|default:record.marked_by.username }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>

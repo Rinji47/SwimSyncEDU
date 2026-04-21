@@ -64,6 +64,10 @@
                     </div>
 
                     <div>
+                        <label for="date_of_birth">Date of Birth</label>
+                        <input type="date" id="date_of_birth" name="date_of_birth" value="{{ form_data.date_of_birth|default:trainer.date_of_birth|date:'Y-m-d' }}" required>
+                    </div>
+                    <div>
                         <label for="experience_years">Experience (years)</label>
                         <input type="number" id="experience_years" name="experience_years" min="0" value="{{ form_data.experience_years|default:trainer.experience_years }}">
                     </div>

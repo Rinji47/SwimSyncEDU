@@ -1,5 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
+from django.conf import settings
+from django.core.mail import send_mail
 from django.db.models import Q
 from .models import User
 from django.contrib.auth import login, logout, authenticate, views as auth_views
@@ -13,10 +15,68 @@ from django.utils import timezone
 
 from classes.models import ClassBooking, ClassSession, PrivateClass
 from payments.models import Payment
-from pool.models import PoolQuality
+from pool.models import PoolQuality, TrainerPoolAssignment
 
 
 # Create your views here.
+def _send_expiry_reminder_email(user, session_name, end_date, days_left):
+    if not user.email:
+        return False
+
+    day_label = "day" if days_left == 1 else "days"
+    message = (
+        f"Hi {user.full_name or user.username},\n\n"
+        f"Your {session_name} is ending on {end_date.strftime('%B %d, %Y')}.\n"
+        f"You have {days_left} {day_label} left.\n\n"
+        "Please renew or make your next booking if needed.\n\n"
+        "SwimSync EDU"
+    )
+
+    try:
+        sent_count = send_mail(
+            subject=f"Reminder: {session_name} ends in {days_left} {day_label}",
+            message=message,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', None),
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+        return sent_count > 0
+    except Exception:
+        return False
+
+
+def _attach_days_left_and_send_reminders(user, upcoming_bookings, upcoming_private_bookings, today):
+    for booking in upcoming_bookings:
+        booking.days_left = (booking.class_session.end_date - today).days
+        if (
+            0 <= booking.days_left <= 2
+            and not booking.expiry_reminder_sent
+            and _send_expiry_reminder_email(
+                user,
+                f"group class '{booking.class_session.class_name}'",
+                booking.class_session.end_date,
+                booking.days_left,
+            )
+        ):
+            booking.expiry_reminder_sent = True
+            booking.save(update_fields=['expiry_reminder_sent'])
+
+    for private_class in upcoming_private_bookings:
+        private_class.days_left = (private_class.end_date - today).days
+        if (
+            0 <= private_class.days_left <= 2
+            and not private_class.expiry_reminder_sent
+            and _send_expiry_reminder_email(
+                user,
+                "private class",
+                private_class.end_date,
+                private_class.days_left,
+            )
+        ):
+            private_class.expiry_reminder_sent = True
+            private_class.save(update_fields=['expiry_reminder_sent'])
+
+
 def index(request):
     print("is_authenticated:", request.user.is_authenticated)
     print("is_superuser:", request.user.is_superuser)
@@ -329,6 +389,7 @@ def add_trainer(request):
         email = request.POST.get('email')
         phone = request.POST.get('phone')
         gender = request.POST.get('gender')
+        date_of_birth = request.POST.get('date_of_birth')
         digital_signature = request.FILES.get('digital_signature', None)
         specialization = request.POST.get('specialization')
         experience_years = request.POST.get('experience_years') or None
@@ -345,12 +406,21 @@ def add_trainer(request):
         if not digital_signature:
             messages.error(request, 'Digital signature is required for trainers.')
             return render(request, 'dashboards/admin/trainer_management/add_trainer.html', {'form_data': request.POST})
+        if not date_of_birth:
+            messages.error(request, 'Date of birth is required.')
+            return render(request, 'dashboards/admin/trainer_management/add_trainer.html', {'form_data': request.POST})
         if experience_years is not None:
             try:
                 experience_years = int(experience_years)
             except:
                 messages.error(request, 'Experience years must be a valid integer.')
                 return render(request, 'dashboards/admin/trainer_management/add_trainer.html', {'form_data': request.POST})
+
+        try:
+            parsed_dob = datetime.strptime(date_of_birth, '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, 'Invalid date format for date of birth.')
+            return render(request, 'dashboards/admin/trainer_management/add_trainer.html', {'form_data': request.POST})
     
         try:
             trainer = User.objects.create_user(
@@ -360,6 +430,7 @@ def add_trainer(request):
                 full_name=full_name,
                 phone=phone,
                 gender=gender,
+                date_of_birth=parsed_dob,
                 specialization=specialization,
                 experience_years=experience_years,
                 profile_picture=profile_picture,
@@ -395,6 +466,7 @@ def edit_trainer(request, trainer_id):
         email = request.POST.get('email')
         phone = request.POST.get('phone')
         gender = request.POST.get('gender')
+        date_of_birth = request.POST.get('date_of_birth')
         specialization = request.POST.get('specialization')
         experience_years = request.POST.get('experience_years') or None
         profile_picture = request.FILES.get('profile_picture', None)
@@ -417,8 +489,18 @@ def edit_trainer(request, trainer_id):
             messages.error(request, 'Gender is required.')
             return render(request, 'dashboards/admin/trainer_management/edit_trainer.html', {'trainer': trainer, 'form_data': request.POST})
 
+        if not date_of_birth:
+            messages.error(request, 'Date of birth is required.')
+            return render(request, 'dashboards/admin/trainer_management/edit_trainer.html', {'trainer': trainer, 'form_data': request.POST})
+
         if not trainer.digital_signature and not digital_signature:
             messages.error(request, 'Digital signature is required for trainers.')
+            return render(request, 'dashboards/admin/trainer_management/edit_trainer.html', {'trainer': trainer, 'form_data': request.POST})
+
+        try:
+            parsed_dob = datetime.strptime(date_of_birth, '%Y-%m-%d').date()
+        except ValueError:
+            messages.error(request, 'Invalid date format for date of birth.')
             return render(request, 'dashboards/admin/trainer_management/edit_trainer.html', {'trainer': trainer, 'form_data': request.POST})
 
         if experience_years is None:
@@ -433,6 +515,7 @@ def edit_trainer(request, trainer_id):
         trainer.email = email
         trainer.phone = phone
         trainer.gender = gender
+        trainer.date_of_birth = parsed_dob
         trainer.specialization = specialization
         trainer.experience_years = experience_years
         if remove_profile_picture == '1' and trainer.profile_picture:
@@ -509,7 +592,12 @@ def admin_dashboard(request):
         return redirect('index')
     
     today = date.today()
-    now = timezone.now()
+    now = timezone.localtime()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if month_start.month == 12:
+        next_month_start = month_start.replace(year=month_start.year + 1, month=1)
+    else:
+        next_month_start = month_start.replace(month=month_start.month + 1)
 
     total_users = User.objects.filter(role='user').count()
     total_trainers = User.objects.filter(role='trainer').count()
@@ -519,23 +607,26 @@ def admin_dashboard(request):
 
     monthly_revenue = Payment.objects.filter(
         payment_status='Completed',
-        payment_date__year=now.year,
-        payment_date__month=now.month
+        payment_date__gte=month_start,
+        payment_date__lt=next_month_start,
     ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
-    total_revenue = Payment.objects.aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
+    total_revenue = Payment.objects.filter(
+        payment_status='Completed'
+    ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
 
     pending_payments = Payment.objects.filter(payment_status='Pending').count()
     
     ninety_days_ago = today - timedelta(days=90)
 
     pool_quality = PoolQuality.objects.filter(
-        date__gte=ninety_days_ago, date__lte=today).order_by('-created_at')[:5]
-
-    if not pool_quality:
-        pool_quality = "No pool quality records found."
+        date__gte=ninety_days_ago, date__lte=today
+    ).order_by('-created_at')[:5]
 
     recent_bookings = ClassBooking.objects.select_related("user", "class_session", "class_session__trainer", "class_session__pool"
-                                                          ).filter(booking_date__gte=ninety_days_ago, booking_date__lte=today).order_by('-booking_date')[:5]
+                                                          ).filter(
+        booking_date__date__gte=ninety_days_ago,
+        booking_date__date__lte=today
+    ).order_by('-booking_date')[:5]
 
     context = {
         'total_users': total_users,
@@ -569,6 +660,11 @@ def trainer_dashboard(request):
         end_date__gte=today
     ).order_by('start_date', 'start_time')[:5]
 
+    assigned_pools = TrainerPoolAssignment.objects.select_related('pool').filter(
+        trainer=trainer,
+        is_active=True,
+    ).order_by('start_date', 'pool__name')
+
     is_weekend = today.weekday() >= 5
     if is_weekend:
         today_group_classes = "No group classes scheduled for today (weekends)."
@@ -576,9 +672,11 @@ def trainer_dashboard(request):
         today_group_classes = ClassSession.objects.filter(trainer=trainer, start_date__lte=today, end_date__gte=today)[:5]
 
     context = {
+        'today': today,
         'upcoming_classes': upcoming_classes,
         'upcoming_private_classes': upcoming_private_classes,
         'today_group_classes': today_group_classes,
+        'assigned_pools': assigned_pools,
     }
     return render(request, 'dashboards/trainer/trainer_dashboard.html', context)
 
@@ -602,6 +700,8 @@ def user_dashboard(request):
         end_date__gte=today,
         is_cancelled=False
     ).select_related('trainer', 'pool').order_by('start_date', 'start_time')[:5]
+
+    _attach_days_left_and_send_reminders(user, upcoming_bookings, upcoming_private_bookings, today)
 
     context = {
         'upcoming_bookings': upcoming_bookings,

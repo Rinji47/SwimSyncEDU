@@ -60,6 +60,7 @@
                 <div class="filter-search payment-filter-search">
                     <input type="text" class="filter-input" name="q" placeholder="Search by user, transaction..." value="{{ request.GET.q|default:'' }}">
                     <button type="submit" class="btn-secondary">Search</button>
+                    <a class="btn-secondary" href="{% url 'export_admin_payment_report' %}?q={{ request.GET.q|urlencode }}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}{% if request.GET.purpose %}&purpose={{ request.GET.purpose|urlencode }}{% endif %}{% if request.GET.method %}&method={{ request.GET.method|urlencode }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from|urlencode }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to|urlencode }}{% endif %}">Export CSV</a>
                     <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status or request.GET.purpose or request.GET.method or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-payments">Filters v</button>
                 </div>
             </div>

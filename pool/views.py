@@ -830,10 +830,13 @@ def unassign_trainer(request, assignment_id):
     if has_substitute_private_classes:
         substitute_private_classes.update(substitute_trainer=None)
 
-    if not has_substitute_group_classes and not has_substitute_private_classes:
-        messages.success(request, 'Trainer unassigned successfully.')
-
     assignment.end_date = timezone.now().date()
     assignment.is_active = False
     assignment.save(update_fields=['end_date', 'is_active'])
+
+    if has_substitute_group_classes or has_substitute_private_classes:
+        messages.success(request, 'Trainer unassigned successfully and substitute class assignments were cleared.')
+    else:
+        messages.success(request, 'Trainer unassigned successfully.')
+
     return redirect('assign_trainer_manager')

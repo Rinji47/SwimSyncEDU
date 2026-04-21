@@ -45,7 +45,9 @@
                         <span>{{ booking.user.email }}</span>
                     </div>
                     <div>
-                        <span class="attendance-status present">Booked</span>
+                        <span class="attendance-status {% if booking.is_cancelled %}absent{% else %}present{% endif %}">
+                            {% if booking.is_cancelled %}Cancelled{% else %}Booked{% endif %}
+                        </span>
                     </div>
                 </div>
                 {% endfor %}

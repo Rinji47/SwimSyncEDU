@@ -1,3 +1,4 @@
+import csv
 from datetime import datetime, timedelta
 from decimal import Decimal
 from uuid import uuid4
@@ -7,6 +8,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Sum
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -29,6 +31,26 @@ KHALTI_LOOKUP_URL = getattr(
     "KHALTI_LOOKUP_URL",
     "https://a.khalti.com/api/v2/epayment/lookup/",
 )
+
+
+def apply_payment_date_filters(queryset, request, date_from, date_to):
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d").date()
+            start_of_day = timezone.make_aware(datetime.combine(date_from_obj, datetime.min.time()))
+            queryset = queryset.filter(payment_date__gte=start_of_day)
+        except ValueError:
+            messages.warning(request, "Invalid date format for 'From' date. Use YYYY-MM-DD.")
+
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d").date()
+            end_of_day = timezone.make_aware(datetime.combine(date_to_obj, datetime.max.time()))
+            queryset = queryset.filter(payment_date__lte=end_of_day)
+        except ValueError:
+            messages.warning(request, "Invalid date format for 'To' date. Use YYYY-MM-DD.")
+
+    return queryset
 
 
 def khalti_request_json(url, payload):
@@ -446,19 +468,7 @@ def user_payment_report(request):
     if method:
         payments = payments.filter(payment_method=method)
 
-    if date_from:
-        try:
-            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d").date()
-            payments = payments.filter(payment_date__gte=date_from_obj)
-        except ValueError:
-            messages.warning(request, "Invalid date format for 'From' date. Use YYYY-MM-DD.")
-
-    if date_to:
-        try:
-            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d").date()
-            payments = payments.filter(payment_date__lte=date_to_obj)
-        except ValueError:
-            messages.warning(request, "Invalid date format for 'To' date. Use YYYY-MM-DD.")
+    payments = apply_payment_date_filters(payments, request, date_from, date_to)
 
     summary = payments.aggregate(
         total_records=Count("id"),
@@ -525,19 +535,7 @@ def admin_payment_report(request):
     if method:
         payments = payments.filter(payment_method=method)
 
-    if date_from:
-        try:
-            date_from_obj = datetime.strptime(date_from, "%Y-%m-%d").date()
-            payments = payments.filter(payment_date__gte=date_from_obj)
-        except ValueError:
-            messages.warning(request, "Invalid date format for 'From' date. Use YYYY-MM-DD.")
-
-    if date_to:
-        try:
-            date_to_obj = datetime.strptime(date_to, "%Y-%m-%d").date()
-            payments = payments.filter(payment_date__lte=date_to_obj)
-        except ValueError:
-            messages.warning(request, "Invalid date format for 'To' date. Use YYYY-MM-DD.")
+    payments = apply_payment_date_filters(payments, request, date_from, date_to)
 
 
     summary = payments.aggregate(
@@ -561,3 +559,79 @@ def admin_payment_report(request):
             "summary": summary,
         },
     )
+
+
+@login_required
+def export_admin_payment_report(request):
+    if not request.user.is_staff:
+        messages.error(request, "You do not have permission to access this page.")
+        return redirect("index")
+
+    payments = Payment.objects.select_related("user").all().order_by("-payment_date")
+
+    q = (request.GET.get("q") or "").strip()
+    status = (request.GET.get("status", "")).strip()
+    purpose = (request.GET.get("purpose", "")).strip()
+    method = (request.GET.get("method", "")).strip()
+    date_from = (request.GET.get("date_from", "")).strip()
+    date_to = (request.GET.get("date_to", "")).strip()
+
+    if q:
+        payments = payments.filter(
+            Q(uid__icontains=q) |
+            Q(purpose__icontains=q) |
+            Q(payment_method__icontains=q) |
+            Q(payment_status__icontains=q) |
+            Q(user__username__icontains=q) |
+            Q(user__full_name__icontains=q) |
+            Q(user__email__icontains=q) |
+            Q(user__phone__icontains=q)
+        )
+
+    if status:
+        payments = payments.filter(payment_status=status)
+
+    if purpose:
+        payments = payments.filter(purpose=purpose)
+
+    if method:
+        payments = payments.filter(payment_method=method)
+
+    payments = apply_payment_date_filters(payments, request, date_from, date_to)
+
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="admin_payment_report.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        "Username",
+        "Full Name",
+        "Transaction ID",
+        "Purpose",
+        "Payment Method",
+        "Amount",
+        "Tax Amount",
+        "Service Charge",
+        "Delivery Charge",
+        "Total Amount",
+        "Payment Status",
+        "Payment Date",
+    ])
+
+    for payment in payments:
+        writer.writerow([
+            payment.user.username,
+            payment.user.full_name or "",
+            payment.uid,
+            payment.get_purpose_display(),
+            payment.get_payment_method_display(),
+            payment.amount,
+            payment.tax_amount,
+            payment.service_charge,
+            payment.delivery_charge,
+            payment.total_amount,
+            payment.get_payment_status_display(),
+            timezone.localtime(payment.payment_date).strftime("%Y-%m-%d %I:%M %p") if payment.payment_date else "",
+        ])
+
+    return response

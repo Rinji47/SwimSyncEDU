@@ -28,6 +28,34 @@
         box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
     }
 
+    .review-trainer-summary {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .review-trainer-summary-avatar,
+    .review-trainer-summary-avatar-placeholder {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .review-trainer-summary-avatar {
+        object-fit: cover;
+    }
+
+    .review-trainer-summary-avatar-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #0ea5c6;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.25rem;
+    }
+
     .review-detail-head h1 {
         font-size: clamp(2.2rem, 4vw, 3.4rem);
         line-height: 0.96;
@@ -173,10 +201,19 @@
         {% include 'components/message.html' %}
         <div class="review-detail-head">
             <div>
-                <h1>{{ trainer.full_name|default:trainer.username }}</h1>
-                <p class="review-detail-sub">
-                    {{ total_reviews }} review{{ total_reviews|pluralize }}{% if average_rating %} | {{ average_rating }}/5 average{% endif %}
-                </p>
+                <div class="review-trainer-summary">
+                    {% if trainer.profile_picture %}
+                    <img src="{{ trainer.profile_picture.url }}" alt="{{ trainer.full_name|default:trainer.username }}" class="review-trainer-summary-avatar">
+                    {% else %}
+                    <div class="review-trainer-summary-avatar-placeholder">{{ trainer.username|slice:":1"|upper }}</div>
+                    {% endif %}
+                    <div>
+                        <h1>{{ trainer.full_name|default:trainer.username }}</h1>
+                        <p class="review-detail-sub">
+                            {{ total_reviews }} review{{ total_reviews|pluralize }}{% if average_rating %} | {{ average_rating }}/5 average{% endif %}
+                        </p>
+                    </div>
+                </div>
                 <div class="review-summary-row">
                     <div class="review-summary-pill">
                         <span>Total Reviews</span>

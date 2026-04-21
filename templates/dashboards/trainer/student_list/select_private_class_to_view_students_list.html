@@ -19,7 +19,7 @@
 
         <div class="attendance-hero">
             <h2>Private Class Student Lists</h2>
-            <p class="attendance-meta">Choose one of your assigned or substitute private classes to view the student details.</p>
+            <p class="attendance-meta">Choose one of your assigned private classes to view the student details.</p>
         </div>
 
         <form class="filter-bar" method="GET" action="{% url 'select_private_class_to_view_students_list' %}">
@@ -27,10 +27,10 @@
                 <div class="filter-search">
                     <input type="text" class="filter-input" name="q" placeholder="Search private classes..." value="{{ request.GET.q|default_if_none:'' }}">
                     <button type="submit" class="btn-secondary">Search</button>
-                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status %}true{% else %}false{% endif %}" aria-controls="filters-trainer-private-students">Filters v</button>
+                    <button type="button" class="btn-secondary filter-toggle" aria-expanded="{% if request.GET.status or request.GET.date_from or request.GET.date_to %}true{% else %}false{% endif %}" aria-controls="filters-trainer-private-students">Filters v</button>
                 </div>
             </div>
-            <div class="filter-advanced {% if request.GET.status %}show{% endif %}" id="filters-trainer-private-students">
+            <div class="filter-advanced {% if request.GET.status or request.GET.date_from or request.GET.date_to %}show{% endif %}" id="filters-trainer-private-students">
                 <div class="filter-field">
                     <label>Status</label>
                     <select class="filter-select" name="status">
@@ -39,7 +39,16 @@
                         <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
                     </select>
                 </div>
+                <div class="filter-field">
+                    <label>From</label>
+                    <input type="date" class="filter-date" name="date_from" value="{{ request.GET.date_from|default:'' }}">
+                </div>
+                <div class="filter-field">
+                    <label>To</label>
+                    <input type="date" class="filter-date" name="date_to" value="{{ request.GET.date_to|default:'' }}">
+                </div>
                 <div class="filter-actions">
+                    <button type="submit" class="btn-primary">Apply Filters</button>
                     <a href="{% url 'select_private_class_to_view_students_list' %}" class="btn-secondary">Clear</a>
                 </div>
             </div>
@@ -52,7 +61,6 @@
                 <p><strong>Pool:</strong> {{ private_class.pool.name }}</p>
                 <p><strong>Time:</strong> {{ private_class.start_time }} - {{ private_class.end_time }}</p>
                 <p><strong>Dates:</strong> {{ private_class.start_date }} to {{ private_class.end_date }}</p>
-                <p><strong>Role:</strong> {% if private_class.trainer == request.user %}Main trainer{% else %}Substitute trainer{% endif %}</p>
                 <div class="card-actions">
                     <a href="{% url 'students_list_for_private_class' private_class.id %}" class="btn-sm btn-primary">View Student</a>
                 </div>

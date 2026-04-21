@@ -1131,8 +1131,8 @@ def class_session_attendance_history(request, class_session_id):
 
     class_session = get_object_or_404(ClassSession, id=class_session_id)
 
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
+    date_from = (request.GET.get('date_from') or '').strip()
+    date_to = (request.GET.get('date_to') or '').strip()
     student_and_trainer_name = request.GET.get('student_and_trainer_name', '').strip()
     status = request.GET.get('status')
 
@@ -1142,6 +1142,9 @@ def class_session_attendance_history(request, class_session_id):
                 return redirect('select_class_for_attendance')
 
     attendance_records = ClassSessionAttendance.objects.filter(class_session=class_session).order_by('-date')
+
+    date_from_parsed = None
+    date_to_parsed = None
 
     if date_from:
         try:
@@ -1182,6 +1185,13 @@ def class_session_attendance_history(request, class_session_id):
 
     while current_date <= last_date:
         if current_date.weekday() < 5:
+            if date_from_parsed and current_date < date_from_parsed:
+                current_date += timedelta(days=1)
+                continue
+
+            if date_to_parsed and current_date > date_to_parsed:
+                current_date += timedelta(days=1)
+                continue
             for booking in bookings:
                 if not attendance_records.filter(class_session=class_session, student=booking.user, date=current_date).exists():
                     history_rows.append({
@@ -1232,10 +1242,13 @@ def private_class_attendance_history(request, private_class_id):
 
     attendance_records = PrivateClassAttendance.objects.filter(private_class=private_class).order_by('-date')
 
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
+    date_from = (request.GET.get('date_from') or '').strip()
+    date_to = (request.GET.get('date_to') or '').strip()
     trainer_name = request.GET.get('trainer_name', '').strip()
     status = request.GET.get('status')
+
+    date_from_parsed = None
+    date_to_parsed = None
 
     if date_from:
         try:
@@ -1266,6 +1279,14 @@ def private_class_attendance_history(request, private_class_id):
     current_date = private_class.start_date
     while current_date <= last_date:
         if current_date.weekday() < 5:
+            if date_from_parsed and current_date < date_from_parsed:
+                current_date += timedelta(days=1)
+                continue
+
+            if date_to_parsed and current_date > date_to_parsed:
+                current_date += timedelta(days=1)
+                continue
+
             if not attendance_records.filter(date=current_date).exists():
                 history_rows.append({
                     'student': private_class.user,
@@ -1680,9 +1701,12 @@ def trainers_attandance_history(request, trainer_id):
     attendance_records = TrainerAttendanceRecord.objects.filter(trainer=trainer).order_by('-date')
 
 
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
+    date_from = (request.GET.get('date_from') or '').strip()
+    date_to = (request.GET.get('date_to') or '').strip()
     status = request.GET.get('status')
+
+    date_from_parsed = None
+    date_to_parsed = None
 
     if date_from:
         try:
@@ -1703,6 +1727,14 @@ def trainers_attandance_history(request, trainer_id):
 
     while current_date <= today:
         if current_date.weekday() < 5:
+            if date_from_parsed and current_date < date_from_parsed:
+                current_date += timedelta(days=1)
+                continue
+
+            if date_to_parsed and current_date > date_to_parsed:
+                current_date += timedelta(days=1)
+                continue
+
             if not attendance_records.filter(date=current_date).exists():
                 history_rows.append({
                     'date': current_date,
@@ -1783,6 +1815,8 @@ def admin_class_session_list_for_attendance_history(request):
     status = (request.GET.get('status') or '').strip()
     pool_filter = (request.GET.get('pool') or '').strip()
     trainer_filter = (request.GET.get('trainer') or '').strip()
+    date_from = (request.GET.get('date_from') or '').strip()
+    date_to = (request.GET.get('date_to') or '').strip()
 
     if q:
         class_session = class_session.filter(
@@ -1804,6 +1838,20 @@ def admin_class_session_list_for_attendance_history(request):
 
     if trainer_filter:
         class_session = class_session.filter(trainer_id=trainer_filter)
+
+    if date_from:
+        try:
+            date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+            class_session = class_session.filter(end_date__gte=date_from_parsed)
+        except ValueError:
+            pass
+
+    if date_to:
+        try:
+            date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+            class_session = class_session.filter(start_date__lte=date_to_parsed)
+        except ValueError:
+            pass
 
     return render(
         request,
@@ -1828,6 +1876,8 @@ def admin_private_class_list_for_attendance_history(request):
     status = (request.GET.get('status') or '').strip()
     pool_filter = (request.GET.get('pool') or '').strip()
     trainer_filter = (request.GET.get('trainer') or '').strip()
+    date_from = (request.GET.get('date_from') or '').strip()
+    date_to = (request.GET.get('date_to') or '').strip()
 
     if q:
         private_classes = private_classes.filter(
@@ -1850,6 +1900,20 @@ def admin_private_class_list_for_attendance_history(request):
 
     if trainer_filter:
         private_classes = private_classes.filter(trainer_id=trainer_filter)
+
+    if date_from:
+        try:
+            date_from_parsed = datetime.strptime(date_from, '%Y-%m-%d').date()
+            private_classes = private_classes.filter(end_date__gte=date_from_parsed)
+        except ValueError:
+            pass
+
+    if date_to:
+        try:
+            date_to_parsed = datetime.strptime(date_to, '%Y-%m-%d').date()
+            private_classes = private_classes.filter(start_date__lte=date_to_parsed)
+        except ValueError:
+            pass
 
     return render(
         request,

@@ -78,21 +78,7 @@
             <p><strong>Current Price:</strong> Rs. {{ session.total_price }}</p>
 
             <div class="card-actions">
-                <button type="button" class="btn-sm btn-primary"
-                    onclick="openViewPrivateModal(this)"
-                    data-class-name="Private: {{ session.user.full_name|default:session.user.username|escape }}"
-                    data-pool-name="{{ session.pool.name|escape }}"
-                    data-trainer-name="{{ session.trainer.full_name|default:session.trainer.username|escape }}"
-                    data-class-type="Private Class"
-                    data-start-date="{{ session.start_date|date:"Y-m-d" }}"
-                    data-end-date="{{ session.end_date|date:"Y-m-d" }}"
-                    data-start-time="{{ session.start_time|time:"H:i" }}"
-                    data-end-time="{{ session.end_time|time:"H:i" }}"
-                    data-seats="-"
-                    data-total-sessions="{{ session.weekdays_count|default:'' }}"
-                    data-total-price="{{ session.total_price }}"
-                    data-is-cancelled="{% if session.is_cancelled %}true{% else %}false{% endif %}"
-                >View Details</button>
+                <a href="{% url 'admin_view_private_class' session.id %}" class="btn-sm btn-primary">View Details</a>
 
                 {% now "Y-m-d" as today_str %}
                 {% if session.end_date|date:"Y-m-d" < today_str %}
@@ -102,19 +88,15 @@
                         <span class="btn-sm btn-secondary" style="pointer-events:none;opacity:0.9;">Completed</span>
                     {% endif %}
                 {% elif session.is_cancelled %}
-                    <button class="btn-sm btn-success">
-                        <a href="{% url 'admin_open_private_class' session.id %}" style="color:white;text-decoration:none;"
-                        onclick="return confirm('Are you sure you want to reopen this private class?');">
-                        Open
-                        </a>
-                    </button>
+                    <a href="{% url 'admin_open_private_class' session.id %}" class="btn-sm btn-success"
+                    onclick="return confirm('Are you sure you want to reopen this private class?');">
+                    Open
+                    </a>
                 {% else %}
-                    <button class="btn-sm btn-danger">
-                        <a href="{% url 'admin_cancel_private_class' session.id %}" style="color:white;text-decoration:none;"
-                        onclick="return confirm('Are you sure you want to cancel this private class?');">
-                        Cancel
-                        </a>
-                    </button>
+                    <a href="{% url 'admin_cancel_private_class' session.id %}" class="btn-sm btn-danger"
+                    onclick="return confirm('Are you sure you want to cancel this private class?');">
+                    Cancel
+                    </a>
                 {% endif %}
             </div>
 
@@ -125,88 +107,9 @@
         </div>
     </main>
 </div>
-
-<!-- Removed Set Private Class Price Modal; price management is now on a separate page -->
-
-<!-- VIEW DETAILS MODAL -->
-<div id="viewPrivateModal" class="modal">
-    <div class="modal-content modal-lg">
-        <div class="modal-header">
-            <h2 id="view_private_class_name">Private Class Details</h2>
-            <span class="close" onclick="toggleModal('viewPrivateModal')">&times;</span>
-        </div>
-        <div class="details-grid">
-            <div class="detail-item">
-                <span class="detail-label">Class Name</span>
-                <span class="detail-value" id="view_private_name"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Pool</span>
-                <span class="detail-value" id="view_private_pool"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Trainer</span>
-                <span class="detail-value" id="view_private_trainer"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Class Type</span>
-                <span class="detail-value" id="view_private_type"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Dates</span>
-                <span class="detail-value" id="view_private_dates"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Time</span>
-                <span class="detail-value" id="view_private_time"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Seats</span>
-                <span class="detail-value" id="view_private_seats"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Total Sessions</span>
-                <span class="detail-value" id="view_private_sessions"></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Total Price</span>
-                <span class="detail-value">Rs. <span id="view_private_price"></span></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Status</span>
-                <span class="detail-value" id="view_private_cancelled"></span>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn-secondary" onclick="toggleModal('viewPrivateModal')">Close</button>
-        </div>
-    </div>
-</div>
-
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/admin_manage.js' %}"></script>
-<script>
-function openViewPrivateModal(btn) {
-    if (!btn || !btn.dataset) return;
-
-    const isCancelled = btn.dataset.isCancelled === "true";
-
-    document.getElementById('view_private_name').textContent = btn.dataset.className || "";
-    document.getElementById('view_private_pool').textContent = btn.dataset.poolName || "";
-    document.getElementById('view_private_trainer').textContent = btn.dataset.trainerName || "";
-    document.getElementById('view_private_type').textContent = btn.dataset.classType || "";
-    document.getElementById('view_private_dates').textContent = `${btn.dataset.startDate || ""} - ${btn.dataset.endDate || ""}`;
-    document.getElementById('view_private_time').textContent = `${btn.dataset.startTime || ""} - ${btn.dataset.endTime || ""}`;
-    document.getElementById('view_private_seats').textContent = btn.dataset.seats || "";
-    document.getElementById('view_private_sessions').textContent = btn.dataset.totalSessions || "N/A";
-    document.getElementById('view_private_price').textContent = btn.dataset.totalPrice || "";
-    document.getElementById('view_private_cancelled').textContent = isCancelled ? "Cancelled" : "Active";
-
-    toggleModal('viewPrivateModal');
-}
-
-</script>
 {% endblock %}
 

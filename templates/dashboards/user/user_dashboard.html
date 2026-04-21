@@ -79,6 +79,7 @@
                         <p><strong>Trainer:</strong> {{ booking.class_session.trainer.full_name|default:booking.class_session.trainer.username }}</p>
                         <p><strong>Dates:</strong> {{ booking.class_session.start_date|date:"M d, Y" }} to {{ booking.class_session.end_date|date:"M d, Y" }}</p>
                         <p><strong>Time:</strong> {{ booking.class_session.start_time|time:"H:i" }} - {{ booking.class_session.end_time|time:"H:i" }}</p>
+                        <p><strong>Days Left:</strong> {{ booking.days_left }}</p>
                     </div>
                     <div class="card-actions">
                         <a href="{% url 'my_bookings' %}" class="btn-sm btn-primary">Manage Booking</a>
@@ -116,6 +117,7 @@
                         <p><strong>Trainer:</strong> {{ private_class.trainer.full_name|default:private_class.trainer.username }}</p>
                         <p><strong>Dates:</strong> {{ private_class.start_date|date:"M d, Y" }} to {{ private_class.end_date|date:"M d, Y" }}</p>
                         <p><strong>Time:</strong> {{ private_class.start_time|time:"H:i" }} - {{ private_class.end_time|time:"H:i" }}</p>
+                        <p><strong>Days Left:</strong> {{ private_class.days_left }}</p>
                     </div>
                     <div class="card-actions">
                         <a href="{% url 'my_private_classes' %}" class="btn-sm btn-primary">Manage Class</a>

@@ -98,19 +98,15 @@
                             <span class="btn-sm btn-secondary" style="pointer-events:none;opacity:0.9;">Completed</span>
                         {% endif %}
                     {% elif session.is_cancelled %}
-                        <button class="btn-sm btn-success">
-                            <a href="{% url 'open_class_session' session.id %}" style="color:white;text-decoration:none;"
-                            onclick="return confirm('Are you sure you want to reopen this class session?');">
-                            Open
-                            </a>
-                        </button>
+                        <a href="{% url 'open_class_session' session.id %}" class="btn-sm btn-success"
+                        onclick="return confirm('Are you sure you want to reopen this class session?');">
+                        Open
+                        </a>
                     {% else %}
-                        <button class="btn-sm btn-danger">
-                            <a href="{% url 'close_class_session' session.id %}" style="color:white;text-decoration:none;"
-                            onclick="return confirm('Are you sure you want to cancel this class session?');">
-                            Cancel
-                            </a>
-                        </button>
+                        <a href="{% url 'close_class_session' session.id %}" class="btn-sm btn-danger"
+                        onclick="return confirm('Are you sure you want to cancel this class session?');">
+                        Cancel
+                        </a>
                     {% endif %}
                 </div>
             </div>

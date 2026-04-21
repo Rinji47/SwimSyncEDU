@@ -43,7 +43,7 @@
                     {% csrf_token %}
                     <div class="attendance-form-group">
                         <label>Date</label>
-                        <input type="date" name="date" value="{{ today|date:'Y-m-d' }}" required>
+                        <input type="date" name="date" value="{{ today|date:'Y-m-d' }}" readonly required>
                     </div>
                     <div class="attendance-form-group">
                         <label>Status</label>

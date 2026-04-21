@@ -54,6 +54,7 @@ class ClassBooking(models.Model):
     class_session = models.ForeignKey(ClassSession, on_delete=models.CASCADE)
     booking_date = models.DateTimeField(auto_now_add=True)
     is_cancelled = models.BooleanField(default=False)
+    expiry_reminder_sent = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username} booked {self.class_session.class_name}"
@@ -85,6 +86,7 @@ class PrivateClass(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     is_cancelled = models.BooleanField(default=False)
+    expiry_reminder_sent = models.BooleanField(default=False)
 
     @property
     def weekdays_count(self):

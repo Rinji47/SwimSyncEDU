@@ -81,6 +81,7 @@
 {% include 'components/public_nav.html' with active='pools' %}
 
 <section class="page-shell pool-browse-shell">
+    {% include 'components/message.html' %}
     <div class="container">
         {% include "components/message.html" %}
         <div class="page-head pool-browse-hero">
@@ -107,6 +108,7 @@
                 type="text"
                 placeholder="Pool name or address..."
                 value="{{ request.GET.q|default_if_none:'' }}"
+                style="width: auto; min-width: 200px;"
             >
             <button class="btn-secondary" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
             <a class="btn-secondary" href="{% url 'nearby_pools' %}">Clear</a>

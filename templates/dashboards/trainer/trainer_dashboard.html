@@ -65,6 +65,38 @@
             </div>
         </section>
 
+        <section class="dashboard-section admin-panel">
+            <div class="admin-section-head">
+                <h2>Assigned Pools</h2>
+                <p>Your current or upcoming pool assignments.</p>
+            </div>
+            <div class="admin-list">
+                {% for assignment in assigned_pools %}
+                <article class="admin-list-row">
+                    <div class="admin-list-main">
+                        <div class="admin-list-top">
+                            <strong>{{ assignment.pool.name }}</strong>
+                            <span class="admin-inline-metric">
+                                {% if assignment.start_date > today %}
+                                    Upcoming
+                                {% else %}
+                                    Active
+                                {% endif %}
+                            </span>
+                        </div>
+                        <p>{{ assignment.pool.address }}</p>
+                        <small>
+                            From {{ assignment.start_date }}
+                            {% if assignment.end_date %}to {{ assignment.end_date }}{% else %}onward{% endif %}
+                        </small>
+                    </div>
+                </article>
+                {% empty %}
+                <p class="admin-empty-text">No pool assignments yet.</p>
+                {% endfor %}
+            </div>
+        </section>
+
         <div class="admin-panel-grid trainer-panel-grid">
             <section class="dashboard-section admin-panel">
                 <div class="admin-section-head">
